@@ -1,0 +1,5 @@
+package pink;
+
+message Ping {
+  required int32 opcode = 1;
+}

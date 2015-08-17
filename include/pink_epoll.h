@@ -1,0 +1,33 @@
+#ifndef PINK_EPOLL_H__
+#define PINK_EPOLL_H__
+#include "sys/epoll.h"
+#include "status.h"
+
+typedef struct PinkFiredEvent {
+    int fd_;
+    int mask_;
+}PinkFiredEvent;
+
+class PinkEpoll
+{
+
+public:
+    PinkEpoll();
+    ~PinkEpoll();
+    Status PinkAddEvent(int fd, int mask);
+    void PinkDelEvent(int fd);
+    Status PinkModEvent(int fd, int oMask, int mask);
+
+    int PinkPoll();
+
+    PinkFiredEvent *firedevent() { return firedevent_; }
+
+private:
+
+    int epfd_;
+    struct epoll_event *events_;
+    int timeout_;
+    PinkFiredEvent *firedevent_;
+};
+
+#endif

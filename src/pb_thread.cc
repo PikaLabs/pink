@@ -1,18 +1,31 @@
 #include "pb_thread.h"
 
+PbThread::PbThread()
+{
+    /*
+     * install the protobuf handler here
+     */
+}
+
+int PbThread::Install(std::string &name, handler &h)
+{
+    map[name] = h;
+}
+
 virtual void *ThreadMain()
 {
-    thread_id_ = pthread_self();
     int nfds;
-    TickFiredEvent *tfe = NULL;
+    PinkFiredEvent *tfe = NULL;
     char bb[1];
-    TickItem ti;
-    TickConn *inConn;
+    PinkItem ti;
+    PinkConn *inConn;
     for (;;) {
-        nfds = tickEpoll_->TickPoll();
-        log_info("nfds %d", nfds);
+        nfds = PinkEpoll_->PinkPoll();
+        /*
+         * log_info("nfds %d", nfds);
+         */
         for (int i = 0; i < nfds; i++) {
-            tfe = (tickEpoll_->firedevent()) + i;
+            tfe = (PinkEpoll_->firedevent()) + i;
             log_info("tfe->fd_ %d tfe->mask_ %d", tfe->fd_, tfe->mask_);
             if (tfe->fd_ == notify_receive_fd_ && (tfe->mask_ & EPOLLIN)) {
                 read(notify_receive_fd_, bb, 1);
@@ -21,11 +34,11 @@ virtual void *ThreadMain()
                 ti = conn_queue_.front();
                 conn_queue_.pop();
                 }
-                TickConn *tc = new TickConn(ti.fd());
+                PinkConn *tc = new PinkConn(ti.fd());
                 tc->SetNonblock();
                 conns_[ti.fd()] = tc;
 
-                tickEpoll_->TickAddEvent(ti.fd(), EPOLLIN);
+                PinkEpoll_->PinkAddEvent(ti.fd(), EPOLLIN);
                 log_info("receive one fd %d", ti.fd());
                 /*
                  * tc->set_thread(this);
@@ -34,12 +47,13 @@ virtual void *ThreadMain()
             int shouldClose = 0;
             if (tfe->mask_ & EPOLLIN) {
                 inConn = conns_[tfe->fd_];
-                // log_info("come if readable %d", (inConn == NULL));
+                getpeername(tfe->fd_, (sockaddr*) &peer, &pLen);
+                log_info("come if readable %d", (inConn == NULL));
                 if (inConn == NULL) {
                     continue;
                 }
-                if (inConn->TickGetRequest() == 0) {
-                    tickEpoll_->TickModEvent(tfe->fd_, 0, EPOLLOUT);
+                if (inConn->PinkGetRequest() == 0) {
+                    PinkEpoll_->PinkModEvent(tfe->fd_, 0, EPOLLOUT);
                 } else {
                     delete(inConn);
                     shouldClose = 1;
@@ -52,9 +66,9 @@ virtual void *ThreadMain()
                 if (inConn == NULL) {
                     continue;
                 }
-                if (inConn->TickSendReply() == 0) {
+                if (inConn->PinkSendReply() == 0) {
                     log_info("SendReply ok");
-                    tickEpoll_->TickModEvent(tfe->fd_, 0, EPOLLIN);
+                    PinkEpoll_->PinkModEvent(tfe->fd_, 0, EPOLLIN);
                 }
             }
             if ((tfe->mask_  & EPOLLERR) || (tfe->mask_ & EPOLLHUP)) {

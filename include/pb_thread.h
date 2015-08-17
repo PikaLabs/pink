@@ -17,9 +17,11 @@ private:
     virtual void *ThreadMain(); 
 
     typedef std::function<void(void)> handler;
-    int Install(std::string, handler);
+
+    int Install(std::string &name, handler &h);
+
     std::map<std::string, handler> pbHandler_; 
 
-}
+};
 
 #endif

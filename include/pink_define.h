@@ -5,6 +5,8 @@
 #define PINK_MAX_MESSAGE 1024
 #define PINK_NAME_LEN 1024
 
+#define PB_MAX_MESSAGE 10240
+
 /*
  * The pb head and code length
  */

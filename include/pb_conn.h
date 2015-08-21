@@ -5,7 +5,9 @@
 #include "csapp.h"
 #include "pink_define.h"
 
-template<typename T>
+/*
+ * template<typename T>
+ */
 class PbConn
 {
 public:

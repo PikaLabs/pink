@@ -1,5 +1,7 @@
 #include "pb_conn.h"
 #include "pink_define.h"
+#include "pink_util.h"
+#include "xdebug.h"
 
 void PbConn::InitPara()
 {
@@ -59,7 +61,7 @@ Status PbConn::PbReadBuf()
 int PbConn::PbGetRequest()
 {
     ssize_t nread = 0;
-    nread = read(fd_, rbuf_ + rbuf_len_, Pb_MAX_MESSAGE);
+    nread = read(fd_, rbuf_ + rbuf_len_, PB_MAX_MESSAGE);
     if (nread == -1) {
         if (errno == EAGAIN) {
             nread = 0;
@@ -75,7 +77,7 @@ int PbConn::PbGetRequest()
     std::string *key;
     std::string *value;
     std::string *host;
-    int packet_len = Pb_MAX_MESSAGE;
+    int packet_len = PB_MAX_MESSAGE;
     if (nread) {
         rbuf_len_ += nread;
         while (flag) {
@@ -110,7 +112,8 @@ int PbConn::PbGetRequest()
                 }
                 break;
             case kComplete:
-                pbHandler_(r_opcode_);
+                log_info("kCompelete");
+                // pbHandler_[r_opcode_]();
                 return 0;
                 break;
 
@@ -133,12 +136,6 @@ int PbConn::PbSendReply()
     ssize_t nwritten = 0;
     log_info("wbuf_len %d", wbuf_len_);
     while (wbuf_len_ > 0) {
-        /*
-         * log_info("write buf %s\n", wbuf_ + wbuf_pos_);
-         */
-        // for (int i = 0; i < wbuf_len_; i++) {
-        //     log_info("%c", wbuf_[i]);
-        // }
         nwritten = write(fd_, wbuf_ + wbuf_pos_, wbuf_len_ - wbuf_pos_);
         if (nwritten <= 0) {
             break;
@@ -177,7 +174,6 @@ Status PbConn::PbReadHeader(rio_t *rio)
     header_len_ = 0;
     while (1) {
         nread = rio_readnb(rio, buf, COMMAND_HEADER_LENGTH);
-        // log_info("nread %d", nread);
         if (nread == -1) {
             if ((errno == EAGAIN && (flags_ & O_NONBLOCK)) || (errno == EINTR)) {
                 continue;

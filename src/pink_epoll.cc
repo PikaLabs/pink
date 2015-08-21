@@ -66,7 +66,7 @@ void PinkEpoll::PinkDelEvent(int fd)
 int PinkEpoll::PinkPoll()
 {
     int retval, numevents = 0;
-    retval = epoll_wait(epfd_, events_, Pink_MAX_CLIENTS, 500);
+    retval = epoll_wait(epfd_, events_, PINK_MAX_CLIENTS, 500);
     if (retval > 0) {
         numevents = retval;
         for (int i = 0; i < numevents; i++) {

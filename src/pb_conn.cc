@@ -112,6 +112,7 @@ int PbConn::PbGetRequest()
                 }
                 break;
             case kComplete:
+
                 log_info("kCompelete");
                 // pbHandler_[r_opcode_]();
                 return 0;

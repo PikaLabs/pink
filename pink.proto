@@ -1,5 +1,12 @@
 package pink;
 
 message Ping {
-  required int32 opcode = 1;
+  enum Type { 
+    PING = 0; 
+    PONG = 1;
+  }
+
+  required Type t = 1;
+  required string address = 2;
+  required int32 port = 3;
 }

@@ -13,6 +13,10 @@
 #define COMMAND_HEADER_LENGTH 4
 #define COMMAND_CODE_LENGTH 4
 
+#include <functional>
+#include <iostream>
+#include <map>
+
 /*
  * The socket block type
  */
@@ -29,11 +33,10 @@ enum EventStatus {
 
 enum ConnStatus {
     kHeader = 0,
-    kCode = 1,
-    kPacket = 2,
-    kComplete = 3,
-    kBuildObuf = 4,
-    kWriteObuf = 5,
+    kPacket = 1,
+    kComplete = 2,
+    kBuildObuf = 3,
+    kWriteObuf = 4,
 };
 
 /*
@@ -51,5 +54,6 @@ enum ConnStatus {
 #define SPACE ' '
 #define COLON ':'
 #define SHARP '#'
+
 
 #endif

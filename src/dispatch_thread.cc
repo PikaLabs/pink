@@ -68,4 +68,5 @@ void *DispatchThread::ThreadMain()
       }
     }
   }
+  return NULL;
 }

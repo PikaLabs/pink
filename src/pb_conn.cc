@@ -80,7 +80,6 @@ int PbConn::PbGetRequest()
   ssize_t nread = 0;
   nread = read(fd_, rbuf_ + rbuf_len_, PB_MAX_MESSAGE);
 
-  log_info("nread number %d", nread);
   if (nread == -1) {
     if (errno == EAGAIN) {
       nread = 0;

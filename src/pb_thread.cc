@@ -98,5 +98,5 @@ void *PbThread::ThreadMain()
       }
     }
   }
-
+  return NULL;
 }

@@ -65,7 +65,6 @@ void *PbThread::ThreadMain()
       int shouldClose = 0;
       if (tfe->mask_ & EPOLLIN) {
         inConn = conns_[tfe->fd_];
-        log_info("come if readable %d", (inConn == NULL));
         if (inConn == NULL) {
           continue;
         }
@@ -76,15 +75,9 @@ void *PbThread::ThreadMain()
           shouldClose = 1;
         }
       }
-      log_info("tfe mask %d %d %d", tfe->mask_, EPOLLIN, EPOLLOUT);
       if (tfe->mask_ & EPOLLOUT) {
-        log_info("Come in the EPOLLOUT branch fd %d mask %d", tfe->fd_, tfe->mask_);
-        log_info("conn_ size %d", conns_.size());
 
         std::map<int, PbConn *>::iterator iter = conns_.begin();
-        for (; iter != conns_.end(); iter++) {
-          log_info("iter first %d", iter->first);
-        }
 
         if (tfe == NULL) {
           continue;
@@ -96,7 +89,7 @@ void *PbThread::ThreadMain()
         }
         inConn = iter->second;
         if (inConn->PbSendReply() == 0) {
-          log_info("SendReply ok");
+          // log_info("SendReply ok");
           pinkEpoll_->PinkModEvent(tfe->fd_, 0, EPOLLIN);
         }
       }

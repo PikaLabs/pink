@@ -70,7 +70,7 @@ Status PbConn::PbReadBuf()
     log_info("packetLen is %d\n", packetLen);
 
   }
-  s = PbReadPacket(&rio);
+  // s = PbReadPacket(&rio);
   return s;
 }
 
@@ -101,7 +101,6 @@ int PbConn::PbGetRequest()
         case kHeader:
           if (rbuf_len_ - cur_pos_ >= COMMAND_HEADER_LENGTH) {
             memcpy((char *)(&integer), rbuf_ + cur_pos_, sizeof(int32_t));
-            log_info("integer is %d", integer);
             header_len_ = ntohl(integer);
             log_info("Header_len %d", header_len_);
             connStatus_ = kPacket;
@@ -113,29 +112,26 @@ int PbConn::PbGetRequest()
         case kPacket:
           if (rbuf_len_ >= header_len_) {
             cur_pos_ += header_len_;
+            log_info("k Packet cur_pos_ %d rbuf_len_ %d", cur_pos_, rbuf_len_);
             connStatus_ = kComplete;
           } else {
             flag = false;
           }
           break;
         case kComplete:
-          log_info("header_len %d rbuf_ %s complete", header_len_, rbuf_ + COMMAND_HEADER_LENGTH);
           pbThread_->DealMessage(rbuf_ + COMMAND_HEADER_LENGTH, header_len_, res_);
-
-          log_info("res addr %p", res_);
-          if (res_ == NULL) {
-            log_info("res error");
-          } else {
-            log_info("res ok");
-          }
           wbuf_len_ = res_->ByteSize();
           res_->SerializeToArray(wbuf_ + 4, wbuf_len_);
-          log_info("wbuf_len %d", wbuf_len_);
           uint32_t u;
           u = htonl(wbuf_len_);
           memcpy(wbuf_, &u, sizeof(uint32_t));
           wbuf_len_ += COMMAND_HEADER_LENGTH;
-
+          log_info("cur_pos_ %d rbuf_len_ %d", cur_pos_, rbuf_len_);
+          connStatus_ = kHeader;
+          if (cur_pos_ == rbuf_len_) {
+            cur_pos_ = 0;
+            rbuf_len_ = 0;
+          }
           return 0;
           break;
 

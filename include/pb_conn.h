@@ -6,6 +6,7 @@
 #include "pink_define.h"
 #include "pink_util.h"
 #include "xdebug.h"
+#include <google/protobuf/message.h>
 #include <map>
 
 class PbThread;
@@ -57,6 +58,8 @@ private:
   int32_t rbuf_len_;
 
   ConnStatus connStatus_;
+
+  google::protobuf::Message *res_;
 
   char* wbuf_;
   int32_t wbuf_len_;

@@ -24,6 +24,9 @@ const ::google::protobuf::Descriptor* Ping_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   Ping_reflection_ = NULL;
 const ::google::protobuf::EnumDescriptor* Ping_Type_descriptor_ = NULL;
+const ::google::protobuf::Descriptor* PingRes_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  PingRes_reflection_ = NULL;
 
 }  // namespace
 
@@ -52,6 +55,22 @@ void protobuf_AssignDesc_pink_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(Ping));
   Ping_Type_descriptor_ = Ping_descriptor_->enum_type(0);
+  PingRes_descriptor_ = file->message_type(1);
+  static const int PingRes_offsets_[2] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PingRes, res_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PingRes, mess_),
+  };
+  PingRes_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      PingRes_descriptor_,
+      PingRes::default_instance_,
+      PingRes_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PingRes, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(PingRes, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(PingRes));
 }
 
 namespace {
@@ -66,6 +85,8 @@ void protobuf_RegisterTypes(const ::std::string&) {
   protobuf_AssignDescriptorsOnce();
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     Ping_descriptor_, &Ping::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    PingRes_descriptor_, &PingRes::default_instance());
 }
 
 }  // namespace
@@ -73,6 +94,8 @@ void protobuf_RegisterTypes(const ::std::string&) {
 void protobuf_ShutdownFile_pink_2eproto() {
   delete Ping::default_instance_;
   delete Ping_reflection_;
+  delete PingRes::default_instance_;
+  delete PingRes_reflection_;
 }
 
 void protobuf_AddDesc_pink_2eproto() {
@@ -84,11 +107,14 @@ void protobuf_AddDesc_pink_2eproto() {
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
     "\n\npink.proto\022\004pink\"]\n\004Ping\022\032\n\001t\030\001 \002(\0162\017."
     "pink.Ping.Type\022\017\n\007address\030\002 \002(\t\022\014\n\004port\030"
-    "\003 \002(\005\"\032\n\004Type\022\010\n\004PING\020\000\022\010\n\004PONG\020\001", 113);
+    "\003 \002(\005\"\032\n\004Type\022\010\n\004PING\020\000\022\010\n\004PONG\020\001\"$\n\007Pin"
+    "gRes\022\013\n\003res\030\001 \002(\005\022\014\n\004mess\030\002 \002(\014", 151);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "pink.proto", &protobuf_RegisterTypes);
   Ping::default_instance_ = new Ping();
+  PingRes::default_instance_ = new PingRes();
   Ping::default_instance_->InitAsDefaultInstance();
+  PingRes::default_instance_->InitAsDefaultInstance();
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_pink_2eproto);
 }
 
@@ -428,6 +454,263 @@ void Ping::Swap(Ping* other) {
   ::google::protobuf::Metadata metadata;
   metadata.descriptor = Ping_descriptor_;
   metadata.reflection = Ping_reflection_;
+  return metadata;
+}
+
+
+// ===================================================================
+
+#ifndef _MSC_VER
+const int PingRes::kResFieldNumber;
+const int PingRes::kMessFieldNumber;
+#endif  // !_MSC_VER
+
+PingRes::PingRes()
+  : ::google::protobuf::Message() {
+  SharedCtor();
+}
+
+void PingRes::InitAsDefaultInstance() {
+}
+
+PingRes::PingRes(const PingRes& from)
+  : ::google::protobuf::Message() {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void PingRes::SharedCtor() {
+  _cached_size_ = 0;
+  res_ = 0;
+  mess_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+PingRes::~PingRes() {
+  SharedDtor();
+}
+
+void PingRes::SharedDtor() {
+  if (mess_ != &::google::protobuf::internal::kEmptyString) {
+    delete mess_;
+  }
+  if (this != default_instance_) {
+  }
+}
+
+void PingRes::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* PingRes::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return PingRes_descriptor_;
+}
+
+const PingRes& PingRes::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_pink_2eproto();
+  return *default_instance_;
+}
+
+PingRes* PingRes::default_instance_ = NULL;
+
+PingRes* PingRes::New() const {
+  return new PingRes;
+}
+
+void PingRes::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    res_ = 0;
+    if (has_mess()) {
+      if (mess_ != &::google::protobuf::internal::kEmptyString) {
+        mess_->clear();
+      }
+    }
+  }
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool PingRes::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // required int32 res = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &res_)));
+          set_has_res();
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(18)) goto parse_mess;
+        break;
+      }
+
+      // required bytes mess = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_mess:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadBytes(
+                input, this->mutable_mess()));
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void PingRes::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // required int32 res = 1;
+  if (has_res()) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->res(), output);
+  }
+
+  // required bytes mess = 2;
+  if (has_mess()) {
+    ::google::protobuf::internal::WireFormatLite::WriteBytes(
+      2, this->mess(), output);
+  }
+
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* PingRes::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required int32 res = 1;
+  if (has_res()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->res(), target);
+  }
+
+  // required bytes mess = 2;
+  if (has_mess()) {
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteBytesToArray(
+        2, this->mess(), target);
+  }
+
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int PingRes::ByteSize() const {
+  int total_size = 0;
+
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required int32 res = 1;
+    if (has_res()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->res());
+    }
+
+    // required bytes mess = 2;
+    if (has_mess()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::BytesSize(
+          this->mess());
+    }
+
+  }
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = total_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void PingRes::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const PingRes* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const PingRes*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void PingRes::MergeFrom(const PingRes& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from.has_res()) {
+      set_res(from.res());
+    }
+    if (from.has_mess()) {
+      set_mess(from.mess());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void PingRes::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void PingRes::CopyFrom(const PingRes& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool PingRes::IsInitialized() const {
+  if ((_has_bits_[0] & 0x00000003) != 0x00000003) return false;
+
+  return true;
+}
+
+void PingRes::Swap(PingRes* other) {
+  if (other != this) {
+    std::swap(res_, other->res_);
+    std::swap(mess_, other->mess_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+::google::protobuf::Metadata PingRes::GetMetadata() const {
+  protobuf_AssignDescriptorsOnce();
+  ::google::protobuf::Metadata metadata;
+  metadata.descriptor = PingRes_descriptor_;
+  metadata.reflection = PingRes_reflection_;
   return metadata;
 }
 

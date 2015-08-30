@@ -26,7 +26,7 @@ BadaThread::~BadaThread()
 
 }
 
-int BadaThread::DealMessage(const char* buf, const int len)
+int BadaThread::DealMessage(const char* buf, const int len, google::protobuf::Message * &res)
 {
   ping_.ParseFromArray(buf, len);
   std::cout<<"Message is "<< ping_.DebugString();
@@ -34,6 +34,15 @@ int BadaThread::DealMessage(const char* buf, const int len)
   printf("%d %s %d\n", ping_.t(), ping_.address().data(), ping_.port());
 
   log_info("Bada Deal Message");
+
+  pingRes_.set_res(11234);
+  pingRes_.set_mess("heiheidfdfdf");
+
+  res = &pingRes_;
+
+  int wbuf_len_ = res->ByteSize();
+  log_info("res addr %p", res);
+  log_info("Bada thread wbuf_len %d", wbuf_len_);
 
   return 0;
 }

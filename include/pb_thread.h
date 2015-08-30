@@ -15,6 +15,7 @@
 #include "csapp.h"
 #include "xdebug.h"
 #include <sys/epoll.h>
+#include <google/protobuf/message.h>
 
 
 class PbConn;
@@ -38,7 +39,7 @@ public:
 
 
 
-  virtual int DealMessage(const char* buf, const int len) = 0;
+  virtual int DealMessage(const char* buf, const int len, google::protobuf::Message * &res) = 0;
 
 private:
   virtual void *ThreadMain();

@@ -3,10 +3,10 @@
 #include "sys/epoll.h"
 #include "status.h"
 
-typedef struct PinkFiredEvent {
+struct PinkFiredEvent {
     int fd_;
     int mask_;
-}PinkFiredEvent;
+};
 
 class PinkEpoll
 {

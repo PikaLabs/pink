@@ -120,7 +120,21 @@ int PbConn::PbGetRequest()
           break;
         case kComplete:
           log_info("header_len %d rbuf_ %s complete", header_len_, rbuf_ + COMMAND_HEADER_LENGTH);
-          pbThread_->DealMessage(rbuf_ + COMMAND_HEADER_LENGTH, header_len_);
+          pbThread_->DealMessage(rbuf_ + COMMAND_HEADER_LENGTH, header_len_, res_);
+
+          log_info("res addr %p", res_);
+          if (res_ == NULL) {
+            log_info("res error");
+          } else {
+            log_info("res ok");
+          }
+          wbuf_len_ = res_->ByteSize();
+          res_->SerializeToArray(wbuf_ + 4, wbuf_len_);
+          log_info("wbuf_len %d", wbuf_len_);
+          uint32_t u;
+          u = htonl(wbuf_len_);
+          memcpy(wbuf_, &u, sizeof(uint32_t));
+          wbuf_len_ += COMMAND_HEADER_LENGTH;
 
           return 0;
           break;
@@ -141,8 +155,8 @@ int PbConn::PbGetRequest()
 
 int PbConn::PbSendReply()
 {
+  log_info("wbuf_len_ is %d", wbuf_len_);
   ssize_t nwritten = 0;
-  log_info("wbuf_len %d", wbuf_len_);
   while (wbuf_len_ > 0) {
     nwritten = write(fd_, wbuf_ + wbuf_pos_, wbuf_len_ - wbuf_pos_);
     if (nwritten <= 0) {

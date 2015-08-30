@@ -51,32 +51,8 @@ bool PbConn::SetNonblock()
 }
 
 
-Status PbConn::PbReadBuf()
-{
-  Status s;
-  rio_t rio;
-  rio_readinitb(&rio, fd_);
-
-  char buffer[4];
-  int packetLen;
-  while (1) {
-    //Peek into the socket and get the packet size
-    if((packetLen = recv(fd_, buffer, 4, MSG_PEEK))== -1){
-
-      log_info("Error receiving data %d\n", errno);
-    } else if (packetLen == 0) {
-      break;
-    }
-    log_info("packetLen is %d\n", packetLen);
-
-  }
-  // s = PbReadPacket(&rio);
-  return s;
-}
-
 int PbConn::PbGetRequest()
 {
-  log_info("In the pbgetrequest");
   ssize_t nread = 0;
   nread = read(fd_, rbuf_ + rbuf_len_, PB_MAX_MESSAGE);
 
@@ -120,13 +96,8 @@ int PbConn::PbGetRequest()
           break;
         case kComplete:
           pbThread_->DealMessage(rbuf_ + COMMAND_HEADER_LENGTH, header_len_, res_);
-          wbuf_len_ = res_->ByteSize();
-          res_->SerializeToArray(wbuf_ + 4, wbuf_len_);
-          uint32_t u;
-          u = htonl(wbuf_len_);
-          memcpy(wbuf_, &u, sizeof(uint32_t));
-          wbuf_len_ += COMMAND_HEADER_LENGTH;
-          log_info("cur_pos_ %d rbuf_len_ %d", cur_pos_, rbuf_len_);
+
+          BuildObuf();
           connStatus_ = kHeader;
           if (cur_pos_ == rbuf_len_) {
             cur_pos_ = 0;
@@ -182,44 +153,15 @@ int PbConn::PbSendReply()
   }
 }
 
-Status PbConn::PbReadPacket(rio_t *rio)
-{
-  Status s;
-  int nread = 0;
-  if (header_len_ < 4) {
-    return Status::Corruption("The packet no integrity");
-  }
-  while (1) {
-    nread = rio_readnb(rio, (void *)(rbuf_ + COMMAND_HEADER_LENGTH), header_len_ - 4);
-    if (nread == -1) {
-      if ((errno == EAGAIN && (flags_ & O_NONBLOCK)) || (errno == EINTR)) {
-        continue;
-      } else {
-        s = Status::IOError("Read data error");
-        return s;
-      }
-    } else if (nread == 0) {
-      return Status::Corruption("Connect has interrupt");
-    } else {
-      break;
-    }
-  }
-  rbuf_len_ = nread;
-  log_info("rbuf len %d", rbuf_len_);
-  return Status::OK();
-}
 
-Status PbConn::BuildObuf(int32_t opcode, const int packet_len)
+Status PbConn::BuildObuf()
 {
-  uint32_t code_len = COMMAND_CODE_LENGTH + packet_len;
+  wbuf_len_ = res_->ByteSize();
+  res_->SerializeToArray(wbuf_ + 4, wbuf_len_);
   uint32_t u;
-
-  u = htonl(code_len);
+  u = htonl(wbuf_len_);
   memcpy(wbuf_, &u, sizeof(uint32_t));
-  u = htonl(opcode);
-  memcpy(wbuf_ + COMMAND_CODE_LENGTH, &u, sizeof(uint32_t));
-
-  wbuf_len_ = COMMAND_HEADER_LENGTH + COMMAND_CODE_LENGTH + packet_len;
+  wbuf_len_ += COMMAND_HEADER_LENGTH;
 
   return Status::OK();
 }

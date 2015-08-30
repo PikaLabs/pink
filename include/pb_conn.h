@@ -35,19 +35,9 @@ private:
   int fd_;
   int flags_;
 
-  /*
-   * These functions parse the message from client
-   */
-  Status PbReadHeader(rio_t *rio);
-
-  Status PbReadPacket(rio_t *rio);
-
-
   PbThread *pbThread_;
 
-
-
-  Status BuildObuf(int32_t opcode, const int packet_len);
+  Status BuildObuf();
   /*
    * The Variable need by read the buf,
    * We allocate the memory when we start the server

@@ -59,6 +59,7 @@ int PbConn::PbGetRequest()
   if (nread == -1) {
     if (errno == EAGAIN) {
       nread = 0;
+      return 1;
     } else {
       return -1;
     }
@@ -134,16 +135,13 @@ int PbConn::PbSendReply()
       wbuf_len_ = 0;
       wbuf_pos_ = 0;
     }
-
-    if (nwritten == -1) {
-      if (errno == EAGAIN) {
-        nwritten = 0;
-      } else {
-        /*
-         * Here we clear this connection
-         */
-        return 0;
-      }
+  }
+  if (nwritten == -1) {
+    if (errno == EAGAIN) {
+      nwritten = 0;
+    } else {
+      // Here we should close the connection
+      return -1;
     }
   }
   if (wbuf_len_ == 0) {

@@ -68,15 +68,26 @@ void *PbThread::ThreadMain()
         if (inConn == NULL) {
           continue;
         }
-        if (inConn->PbGetRequest() == 0) {
+        int GetRes = inConn->PbGetRequest();
+        if (GetRes == 0) {
           pinkEpoll_->PinkModEvent(tfe->fd_, 0, EPOLLOUT);
-        } else {
+        } else if (GetRes == 1) {
+          /*
+           * This branch is that wo don't read all the data or we come into the EAGAIN branch
+           */
+          continue;
+        } else if (GetRes == -1) {
+          /*
+           * In this branch we need close the fd
+           * 1. there is some error on this fd
+           * 2. the client has send the close operator
+           *
+           */
           delete(inConn);
           shouldClose = 1;
         }
       }
       if (tfe->mask_ & EPOLLOUT) {
-
         std::map<int, PbConn *>::iterator iter = conns_.begin();
 
         if (tfe == NULL) {
@@ -87,10 +98,12 @@ void *PbThread::ThreadMain()
         if (iter == conns_.end()) {
           continue;
         }
+
         inConn = iter->second;
         if (inConn->PbSendReply() == 0) {
-          // log_info("SendReply ok");
           pinkEpoll_->PinkModEvent(tfe->fd_, 0, EPOLLIN);
+        } else {
+
         }
       }
       if ((tfe->mask_  & EPOLLERR) || (tfe->mask_ & EPOLLHUP)) {

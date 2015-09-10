@@ -25,8 +25,8 @@ public:
   void InitPara();
 
   Status PbReadBuf();
-  int PbGetRequest();
-  int PbSendReply();
+  ReadStatus PbGetRequest();
+  WriteStatus PbSendReply();
   void set_fd(int fd) { fd_ = fd; };
   int flags() { return flags_; };
 

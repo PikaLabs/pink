@@ -68,17 +68,17 @@ void *PbThread::ThreadMain()
         if (inConn == NULL) {
           continue;
         }
-        int GetRes = inConn->PbGetRequest();
-        if (GetRes == 0) {
+        ReadStatus getRes = inConn->PbGetRequest();
+        if (getRes == kReadAll) {
           pinkEpoll_->PinkModEvent(tfe->fd_, 0, EPOLLOUT);
-        } else if (GetRes == 1) {
+        } else if (getRes == kReadHalf) {
           /*
            * This branch is that wo don't read all the data or we come into the EAGAIN branch
            */
           continue;
-        } else if (GetRes == -1) {
+        } else if (getRes == kReadError || getRes == kReadClose) {
           /*
-           * In this branch we need close the fd
+           * In this branch we need close the fd, there is two situation
            * 1. there is some error on this fd
            * 2. the client has send the close operator
            *
@@ -100,10 +100,14 @@ void *PbThread::ThreadMain()
         }
 
         inConn = iter->second;
-        if (inConn->PbSendReply() == 0) {
+        WriteStatus writeStatus = inConn->PbSendReply();
+        if (writeStatus == kWriteAll) {
           pinkEpoll_->PinkModEvent(tfe->fd_, 0, EPOLLIN);
-        } else {
-
+        } else if (writeStatus == kWriteHalf) {
+          continue;
+        } else if (writeStatus == kWriteError) {
+          delete(inConn);
+          shouldClose = 1;
         }
       }
       if ((tfe->mask_  & EPOLLERR) || (tfe->mask_ & EPOLLHUP)) {

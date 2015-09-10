@@ -51,20 +51,19 @@ bool PbConn::SetNonblock()
 }
 
 
-int PbConn::PbGetRequest()
+ReadStatus PbConn::PbGetRequest()
 {
   ssize_t nread = 0;
   nread = read(fd_, rbuf_ + rbuf_len_, PB_MAX_MESSAGE);
 
   if (nread == -1) {
     if (errno == EAGAIN) {
-      nread = 0;
-      return 1;
+      return kReadHalf;
     } else {
-      return -1;
+      return kReadError;
     }
   } else if (nread == 0) {
-    return -1;
+    return kReadClose;
   }
 
   int32_t integer = 0;
@@ -104,7 +103,7 @@ int PbConn::PbGetRequest()
             cur_pos_ = 0;
             rbuf_len_ = 0;
           }
-          return 0;
+          return kReadAll;
           break;
 
           /*
@@ -118,10 +117,10 @@ int PbConn::PbGetRequest()
       }
     }
   }
-  return -1;
+  return kReadHalf;
 }
 
-int PbConn::PbSendReply()
+WriteStatus PbConn::PbSendReply()
 {
   log_info("wbuf_len_ is %d", wbuf_len_);
   ssize_t nwritten = 0;
@@ -138,16 +137,16 @@ int PbConn::PbSendReply()
   }
   if (nwritten == -1) {
     if (errno == EAGAIN) {
-      nwritten = 0;
+      return kWriteHalf;
     } else {
       // Here we should close the connection
-      return -1;
+      return kWriteError;
     }
   }
   if (wbuf_len_ == 0) {
-    return 0;
+    return kWriteAll;
   } else {
-    return -1;
+    return kWriteHalf;
   }
 }
 

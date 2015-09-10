@@ -21,22 +21,35 @@
  * The socket block type
  */
 enum BlockType {
-    kBlock = 0,
-    kNonBlock = 1,
+  kBlock = 0,
+  kNonBlock = 1,
 };
 
 enum EventStatus {
-    kNone = 0,
-    kReadable = 1,
-    kWriteable = 2,
+  kNone = 0,
+  kReadable = 1,
+  kWriteable = 2,
 };
 
 enum ConnStatus {
-    kHeader = 0,
-    kPacket = 1,
-    kComplete = 2,
-    kBuildObuf = 3,
-    kWriteObuf = 4,
+  kHeader = 0,
+  kPacket = 1,
+  kComplete = 2,
+  kBuildObuf = 3,
+  kWriteObuf = 4,
+};
+
+enum ReadStatus {
+  kReadHalf = 0,
+  kReadAll = 1,
+  kReadError = 2,
+  kReadClose = 3,
+};
+
+enum WriteStatus {
+  kWriteHalf = 0,
+  kWriteAll = 1,
+  kWriteError = 2,
 };
 
 /*

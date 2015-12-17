@@ -7,23 +7,23 @@
 class PinkItem
 {
 public:
-    PinkItem() {};
-    PinkItem(int fd);
-    ~PinkItem();
+  PinkItem() {};
+  PinkItem(int fd);
+  ~PinkItem();
 
-    int fd() { return fd_; }
+  int fd() { return fd_; }
 
 private:
 
-    int fd_;
+  int fd_;
 
-    /*
-     * No copy && assigned allowed
-     */
-    /*
-     * PinkItem(const PinkItem&);
-     * void operator=(const PinkItem&);
-     */
+  /*
+   * No copy && assigned allowed
+   */
+  /*
+   * PinkItem(const PinkItem&);
+   * void operator=(const PinkItem&);
+   */
 
 };
 

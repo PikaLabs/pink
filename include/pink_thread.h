@@ -7,17 +7,17 @@ class Thread
 {
 
 public:
-    Thread();
-    virtual ~Thread();
-    void StartThread();
+  Thread();
+  virtual ~Thread();
+  void StartThread();
 
 
 private:
-    pthread_t thread_id_;
+  pthread_t thread_id_;
 
-    static void *RunThread(void *arg);
-    virtual void *ThreadMain() = 0; 
-    
+  static void *RunThread(void *arg);
+  virtual void *ThreadMain() = 0; 
+  
 };
 
 #endif

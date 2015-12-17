@@ -17,7 +17,7 @@
 #ifdef __XDEBUG__
 #define qf_debug(fmt, arg...) \
 { \
-	fprintf(stderr, "[----------debug--------][%s:%d]" fmt "\n", __FILE__, __LINE__, ##arg); \
+  fprintf(stderr, "[----------debug--------][%s:%d]" fmt "\n", __FILE__, __LINE__, ##arg); \
 }
 #define pint(x) qf_debug("%s = %d", #x, x)
 #define psize(x) qf_debug("%s = %zu", #x, x)
@@ -30,7 +30,7 @@
 
 #define qf_bin_debug(buf, size) \
 { \
-	fwrite(buf, 1, size, stderr); \
+  fwrite(buf, 1, size, stderr); \
 }
 
 #define _debug_time_def timeval s1, e;
@@ -41,8 +41,8 @@
 #define clean_errno() (errno == 0 ? "None" : strerror(errno))
 #define log_err(M, ...) \
 { \
-    fprintf(stderr, "[ERROR] (%s:%d: errno: %s) " M "\n", __FILE__, __LINE__, clean_errno(), ##__VA_ARGS__); \
-    exit(-1); \
+  fprintf(stderr, "[ERROR] (%s:%d: errno: %s) " M "\n", __FILE__, __LINE__, clean_errno(), ##__VA_ARGS__); \
+  exit(-1); \
 }
 #define log_warn(M, ...) fprintf(stderr, "[WARN] (%s:%d: errno: %s) " M "\n", __FILE__, __LINE__, clean_errno(), ##__VA_ARGS__)
 #define log_info(M, ...) fprintf(stderr, "[INFO] (%s:%d) " M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
@@ -69,9 +69,9 @@
 
 #define qf_error(fmt, arg...) \
 { \
-	fprintf(stderr, "[%ld][%ld][%s:%d]" fmt "\n", (long)getpid(), (long)pthread_self(), __FILE__, __LINE__, ##arg); \
-    fflush(stderr);\
-    exit(-1);\
+  fprintf(stderr, "[%ld][%ld][%s:%d]" fmt "\n", (long)getpid(), (long)pthread_self(), __FILE__, __LINE__, ##arg); \
+  fflush(stderr);\
+  exit(-1);\
 }
 
 

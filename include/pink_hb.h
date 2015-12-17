@@ -5,7 +5,7 @@
 
 class PinkHb : public Thread
 {
-    void *ThreadMain();
+  void *ThreadMain();
 };
 
 #endif

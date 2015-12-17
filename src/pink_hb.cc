@@ -5,10 +5,10 @@
 
 void *PinkHb::ThreadMain()
 {
-    while (1) {
-        printf("pink thread\n");
-        sleep(1);
-    }
+  while (1) {
+    printf("pink thread\n");
+    sleep(1);
+  }
 
-    return NULL;
+  return NULL;
 }

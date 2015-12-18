@@ -22,8 +22,8 @@ DispatchThread::DispatchThread(int port, int work_num, PbThread **pbThread) :
   Setnonblocking(sockfd_);
 
   // init epoll
-  pinkEpoll_ = new PinkEpoll();
-  pinkEpoll_->PinkAddEvent(sockfd_, EPOLLIN | EPOLLERR | EPOLLHUP);
+  pink_epoll_ = new PinkEpoll();
+  pink_epoll_->PinkAddEvent(sockfd_, EPOLLIN | EPOLLERR | EPOLLHUP);
 
 
   last_thread_ = 0;
@@ -46,8 +46,8 @@ void *DispatchThread::ThreadMain()
   socklen_t clilen;
   int fd, connfd;
   for (;;) {
-    nfds = pinkEpoll_->PinkPoll();
-    pfe = pinkEpoll_->firedevent();
+    nfds = pink_epoll_->PinkPoll();
+    pfe = pink_epoll_->firedevent();
     for (int i = 0; i < nfds; i++) {
       fd = (pfe + i)->fd_;
       if (fd == sockfd_ && ((pfe + i)->mask_ & EPOLLIN)) {

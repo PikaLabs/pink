@@ -41,7 +41,7 @@ private:
   /*
    * The Epoll event handler
    */
-  PinkEpoll *pinkEpoll_;
+  PinkEpoll *pink_epoll_;
 
   /*
    * Here we used auto poll to find the next work thread,

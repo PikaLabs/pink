@@ -12,7 +12,7 @@ public:
   ~PbCli();
 
 private:
-  CliConn *cliConn_(int fd);
+  CliConn *cli_conn_(int fd);
 
   std::string host_;
   int port_;

@@ -12,7 +12,7 @@ PbThread::PbThread()
    * install the protobuf handler here
    */
   log_info("pbthread construct");
-  pinkEpoll_ = new PinkEpoll();
+  pink_epoll_ = new PinkEpoll();
   int fds[2];
   if (pipe(fds)) {
     // LOG(FATAL) << "Can't create notify pipe";
@@ -20,7 +20,7 @@ PbThread::PbThread()
   }
   notify_receive_fd_ = fds[0];
   notify_send_fd_ = fds[1];
-  pinkEpoll_->PinkAddEvent(notify_receive_fd_, EPOLLIN | EPOLLERR | EPOLLHUP);
+  pink_epoll_->PinkAddEvent(notify_receive_fd_, EPOLLIN | EPOLLERR | EPOLLHUP);
 
 }
 
@@ -38,12 +38,12 @@ void *PbThread::ThreadMain()
   PinkItem ti;
   PbConn *inConn;
   for (;;) {
-    nfds = pinkEpoll_->PinkPoll();
+    nfds = pink_epoll_->PinkPoll();
     /*
      * log_info("nfds %d", nfds);
      */
     for (int i = 0; i < nfds; i++) {
-      tfe = (pinkEpoll_->firedevent()) + i;
+      tfe = (pink_epoll_->firedevent()) + i;
       log_info("tfe->fd_ %d tfe->mask_ %d", tfe->fd_, tfe->mask_);
       if (tfe->fd_ == notify_receive_fd_ && (tfe->mask_ & EPOLLIN)) {
         read(notify_receive_fd_, bb, 1);
@@ -56,7 +56,7 @@ void *PbThread::ThreadMain()
         tc->SetNonblock();
         conns_[ti.fd()] = tc;
 
-        pinkEpoll_->PinkAddEvent(ti.fd(), EPOLLIN);
+        pink_epoll_->PinkAddEvent(ti.fd(), EPOLLIN);
         log_info("receive one fd %d", ti.fd());
         /*
          * tc->set_thread(this);
@@ -70,7 +70,7 @@ void *PbThread::ThreadMain()
         }
         ReadStatus getRes = inConn->PbGetRequest();
         if (getRes == kReadAll) {
-          pinkEpoll_->PinkModEvent(tfe->fd_, 0, EPOLLOUT);
+          pink_epoll_->PinkModEvent(tfe->fd_, 0, EPOLLOUT);
         } else if (getRes == kReadHalf) {
           /*
            * This branch is that wo don't read all the data or we come into the EAGAIN branch
@@ -102,7 +102,7 @@ void *PbThread::ThreadMain()
         inConn = iter->second;
         WriteStatus writeStatus = inConn->PbSendReply();
         if (writeStatus == kWriteAll) {
-          pinkEpoll_->PinkModEvent(tfe->fd_, 0, EPOLLIN);
+          pink_epoll_->PinkModEvent(tfe->fd_, 0, EPOLLIN);
         } else if (writeStatus == kWriteHalf) {
           continue;
         } else if (writeStatus == kWriteError) {

@@ -37,15 +37,10 @@ public:
   Mutex mutex_;
 
 
-
-
   virtual int DealMessage(const char* buf, const int len, google::protobuf::Message * &res) = 0;
 
 private:
   virtual void *ThreadMain();
-
-
-
 
   /*
    * These two fd receive the notify from dispatch thread
@@ -53,14 +48,12 @@ private:
   int notify_receive_fd_;
   int notify_send_fd_;
 
-
-
   std::map<int, PbConn *> conns_;
 
   /*
    * The epoll handler
    */
-  PinkEpoll *pinkEpoll_;
+  PinkEpoll *pink_epoll_;
 };
 
 #endif

@@ -74,46 +74,46 @@ ReadStatus PbConn::PbGetRequest()
     rbuf_len_ += nread;
     while (flag) {
       switch (connStatus_) {
-        case kHeader:
-          if (rbuf_len_ - cur_pos_ >= COMMAND_HEADER_LENGTH) {
-            memcpy((char *)(&integer), rbuf_ + cur_pos_, sizeof(int32_t));
-            header_len_ = ntohl(integer);
-            log_info("Header_len %d", header_len_);
-            connStatus_ = kPacket;
-            cur_pos_ += COMMAND_HEADER_LENGTH;
-          } else {
-            flag = false;
-          }
-          break;
-        case kPacket:
-          if (rbuf_len_ >= header_len_) {
-            cur_pos_ += header_len_;
-            log_info("k Packet cur_pos_ %d rbuf_len_ %d", cur_pos_, rbuf_len_);
-            connStatus_ = kComplete;
-          } else {
-            flag = false;
-          }
-          break;
-        case kComplete:
-          pbThread_->DealMessage(rbuf_ + COMMAND_HEADER_LENGTH, header_len_, res_);
+      case kHeader:
+        if (rbuf_len_ - cur_pos_ >= COMMAND_HEADER_LENGTH) {
+          memcpy((char *)(&integer), rbuf_ + cur_pos_, sizeof(int32_t));
+          header_len_ = ntohl(integer);
+          log_info("Header_len %d", header_len_);
+          connStatus_ = kPacket;
+          cur_pos_ += COMMAND_HEADER_LENGTH;
+        } else {
+          flag = false;
+        }
+        break;
+      case kPacket:
+        if (rbuf_len_ >= header_len_) {
+          cur_pos_ += header_len_;
+          log_info("k Packet cur_pos_ %d rbuf_len_ %d", cur_pos_, rbuf_len_);
+          connStatus_ = kComplete;
+        } else {
+          flag = false;
+        }
+        break;
+      case kComplete:
+        pbThread_->DealMessage(rbuf_ + COMMAND_HEADER_LENGTH, header_len_, res_);
 
-          BuildObuf();
-          connStatus_ = kHeader;
-          if (cur_pos_ == rbuf_len_) {
-            cur_pos_ = 0;
-            rbuf_len_ = 0;
-          }
-          return kReadAll;
-          break;
+        BuildObuf();
+        connStatus_ = kHeader;
+        if (cur_pos_ == rbuf_len_) {
+          cur_pos_ = 0;
+          rbuf_len_ = 0;
+        }
+        return kReadAll;
+        break;
 
-          /*
-           * Add this switch case just for delete compile warning
-           */
-        case kBuildObuf:
-          break;
+        /*
+         * Add this switch case just for delete compile warning
+         */
+      case kBuildObuf:
+        break;
 
-        case kWriteObuf:
-          break;
+      case kWriteObuf:
+        break;
       }
     }
   }

@@ -3,9 +3,20 @@
 
 #include "pb_thread.h"
 #include "pink.pb.h"
+#include "pb_conn.h"
 #include <google/protobuf/message.h>
 
-class BadaThread : public PbThread
+class BadaConn: public PbConn {
+public:
+  explicit BadaConn(int fd);
+  virtual int DealMessage();
+private:
+  pink::Ping ping_;
+  pink::PingRes pingRes_;
+};
+
+
+class BadaThread : public WorkerThread<BadaConn>
 {
 public:
   BadaThread();
@@ -13,13 +24,8 @@ public:
 
   int PrintNum();
 
-  virtual int DealMessage(const char* buf, const int len, google::protobuf::Message * &res);
-
 private:
 
-  pink::Ping ping_;
-
-  pink::PingRes pingRes_;
   int bada_num_;
 
 };

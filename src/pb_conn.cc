@@ -6,7 +6,9 @@
 
 #include <string>
 
-void PbConn::InitPara()
+
+PbConn::PbConn(int fd) :
+  PinkConn(fd)
 {
   rbuf_ = (char *)malloc(sizeof(char) * PB_MAX_MESSAGE);
   header_len_ = -1;
@@ -14,25 +16,6 @@ void PbConn::InitPara()
   rbuf_len_ = 0;
 
   wbuf_ = (char *)malloc(sizeof(char) * PB_MAX_MESSAGE);
-}
-
-PbConn::PbConn(int fd) :
-  fd_(fd)
-{
-	InitPara();
-}
-
-PbConn::PbConn(int fd, PbThread *phThread) :
-  fd_(fd),
-  pbThread_(phThread)
-{
-    log_info("PbConn construct pbHandler");
-    InitPara();
-}
-
-PbConn::PbConn()
-{
-  InitPara();
 }
 
 PbConn::~PbConn()
@@ -43,7 +26,7 @@ PbConn::~PbConn()
 
 bool PbConn::SetNonblock()
 {
-  flags_ = Setnonblocking(fd_);
+  flags_ = Setnonblocking(fd());
   if (flags_ == -1) {
     return false;
   }
@@ -51,10 +34,10 @@ bool PbConn::SetNonblock()
 }
 
 
-ReadStatus PbConn::PbGetRequest()
+ReadStatus PbConn::GetRequest()
 {
   ssize_t nread = 0;
-  nread = read(fd_, rbuf_ + rbuf_len_, PB_MAX_MESSAGE);
+  nread = read(fd(), rbuf_ + rbuf_len_, PB_MAX_MESSAGE);
 
   if (nread == -1) {
     if (errno == EAGAIN) {
@@ -95,7 +78,7 @@ ReadStatus PbConn::PbGetRequest()
         }
         break;
       case kComplete:
-        pbThread_->DealMessage(rbuf_ + COMMAND_HEADER_LENGTH, header_len_, res_);
+        DealMessage();
 
         BuildObuf();
         connStatus_ = kHeader;
@@ -120,12 +103,12 @@ ReadStatus PbConn::PbGetRequest()
   return kReadHalf;
 }
 
-WriteStatus PbConn::PbSendReply()
+WriteStatus PbConn::SendReply()
 {
   log_info("wbuf_len_ is %d", wbuf_len_);
   ssize_t nwritten = 0;
   while (wbuf_len_ > 0) {
-    nwritten = write(fd_, wbuf_ + wbuf_pos_, wbuf_len_ - wbuf_pos_);
+    nwritten = write(fd(), wbuf_ + wbuf_pos_, wbuf_len_ - wbuf_pos_);
     if (nwritten <= 0) {
       break;
     }

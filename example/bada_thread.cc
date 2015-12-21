@@ -1,11 +1,38 @@
 #include "bada_thread.h"
 #include "xdebug.h"
 
+#include "pb_conn.h"
 #include <functional>
 #include <string>
 
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
+
+BadaConn::BadaConn(int fd) :
+  PbConn(fd)
+{
+}
+
+int BadaConn::DealMessage()
+{
+  ping_.ParseFromArray(rbuf_ + 4, header_len_);
+  /*
+   *   std::cout<<"Message is "<< ping_.DebugString();
+   * 
+   *   printf("%d %s %d\n", ping_.t(), ping_.address().data(), ping_.port());
+   * 
+   *   log_info("Bada Deal Message");
+   */
+
+  pingRes_.set_res(11234);
+  pingRes_.set_mess("heiheidfdfdf");
+
+  res_ = &pingRes_;
+
+  int wbuf_len_ = res_->ByteSize();
+
+  return 0;
+}
 
 
 
@@ -25,25 +52,3 @@ BadaThread::~BadaThread()
 {
 
 }
-
-int BadaThread::DealMessage(const char* buf, const int len, google::protobuf::Message * &res)
-{
-  ping_.ParseFromArray(buf, len);
-/*
- *   std::cout<<"Message is "<< ping_.DebugString();
- * 
- *   printf("%d %s %d\n", ping_.t(), ping_.address().data(), ping_.port());
- * 
- *   log_info("Bada Deal Message");
- */
-
-  pingRes_.set_res(11234);
-  pingRes_.set_mess("heiheidfdfdf");
-
-  res = &pingRes_;
-
-  int wbuf_len_ = res->ByteSize();
-
-  return 0;
-}
-

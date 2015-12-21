@@ -10,11 +10,11 @@
 
 int main()
 {
-  BadaThread *badaThread[10];
-  for (int i = 0; i < 10; i++) {
+  BadaThread *badaThread[1];
+  for (int i = 0; i < 1; i++) {
     badaThread[i] = new BadaThread();
   }
-  Thread *t = new DispatchThread(9211, 1, reinterpret_cast<PbThread **>(badaThread));
+  Thread *t = new DispatchThread<BadaConn>(9211, 0, reinterpret_cast<WorkerThread<BadaConn> **>(badaThread));
 
   t->StartThread();
 

@@ -1,7 +1,7 @@
 #include "pb_conn.h"
 #include "pink_define.h"
 #include "pink_util.h"
-#include "pb_thread.h"
+#include "worker_thread.h"
 #include "xdebug.h"
 
 #include <string>

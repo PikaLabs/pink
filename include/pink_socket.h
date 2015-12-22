@@ -11,6 +11,8 @@ public:
 
   void Listen();
 
+  void Close();
+
   /*
    * The get and set functions
    */
@@ -54,7 +56,6 @@ private:
 
   int SetNonBlock();
 
-  void Close();
   /*
    * The tcp server port and address
    */

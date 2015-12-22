@@ -1,6 +1,6 @@
 CXX = g++
 CXXFLAGS = -Wall -W -DDEBUG -g -O0 -D__XDEBUG__
-OBJECT = pink
+OBJECT = pink holy
 SRC_DIR = ./
 OUTPUT = ./output
 
@@ -32,7 +32,10 @@ all: $(OBJECT)
 	@echo "Success, go, go, go..."
 
 
-$(OBJECT): $(OBJS)
+pink: pink.cc bada_thread.cc pink.pb.cc
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+
+holy: holy.cc holy_test.cc pink.pb.cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
 $(OBJS): %.o : %.cc

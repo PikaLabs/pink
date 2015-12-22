@@ -92,8 +92,8 @@ int main(int argv, char** argc){
   uint32_t integer = 0;
   uint32_t header_len;
 
-  for (int i =0;i<1000;i++){
-    for (int j = 0 ;j<100000;j++) {
+  for (int i =0;i<10000;i++){
+    for (int j = 0 ;j<10000;j++) {
 
       if( (bytecount=send(hsock, (void *) pkt,siz,0))== -1 ) {
         fprintf(stderr, "Error sending data %d\n", errno);
@@ -111,7 +111,7 @@ int main(int argv, char** argc){
       printf("ping_res %d\n", ping_res.res());
 
       printf("Sent bytes %d\n", bytecount);
-      usleep(1);
+      // usleep(1);
     }
   }
   delete pkt;

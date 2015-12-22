@@ -18,9 +18,7 @@
 #include "worker_thread.h"
 #include "pink_util.h"
 #include "pink_socket.h"
-
-class PinkEpoll;
-class ServerSocket;
+#include "pink_epoll.h"
 
 template <typename T>
 class DispatchThread : public Thread
@@ -46,10 +44,9 @@ public:
       worker_thread_[i]->StartThread();
     }
   }
-  // This type dispahch thread will work and Deal the conn
-  DispatchThread(int port);
   ~DispatchThread()
   {
+    server_socket_->Close();
   }
 
   virtual void *ThreadMain()
@@ -62,10 +59,10 @@ public:
     int fd, connfd;
     for (;;) {
       nfds = pink_epoll_->PinkPoll();
-      pfe = pink_epoll_->firedevent();
       for (int i = 0; i < nfds; i++) {
-        fd = (pfe + i)->fd_;
-        if (fd == server_socket_->sockfd() && ((pfe + i)->mask_ & EPOLLIN)) {
+        pfe = (pink_epoll_->firedevent()) + i;
+        fd = pfe->fd_;
+        if (fd == server_socket_->sockfd() && (pfe->mask_ & EPOLLIN)) {
           connfd = accept(server_socket_->sockfd(), (struct sockaddr *) &cliaddr, &clilen);
           log_info("Accept new fd %d", connfd);
           std::queue<PinkItem> *q = &(worker_thread_[last_thread_]->conn_queue_);
@@ -77,7 +74,7 @@ public:
           write(worker_thread_[last_thread_]->notify_send_fd(), "", 1);
           last_thread_++;
           last_thread_ %= work_num_;
-        } else if ((pfe + i)->mask_ & (EPOLLRDHUP | EPOLLERR | EPOLLHUP)) {
+        } else if (pfe->mask_ & (EPOLLRDHUP | EPOLLERR | EPOLLHUP)) {
           log_info("Epoll timeout event");
         }
       }

@@ -73,19 +73,19 @@ private:
   virtual void *ThreadMain()
   {
     int nfds;
-    PinkFiredEvent *tfe = NULL;
+    PinkFiredEvent *pfe = NULL;
     char bb[1];
     PinkItem ti;
-    PinkConn *inConn;
+    PinkConn *in_conn;
     for (;;) {
       nfds = pink_epoll_->PinkPoll();
       /*
        * log_info("nfds %d", nfds);
        */
       for (int i = 0; i < nfds; i++) {
-        tfe = (pink_epoll_->firedevent()) + i;
-        log_info("tfe->fd_ %d tfe->mask_ %d", tfe->fd_, tfe->mask_);
-        if (tfe->fd_ == notify_receive_fd_ && (tfe->mask_ & EPOLLIN)) {
+        pfe = (pink_epoll_->firedevent()) + i;
+        log_info("pfe->fd_ %d pfe->mask_ %d", pfe->fd_, pfe->mask_);
+        if (pfe->fd_ == notify_receive_fd_ && (pfe->mask_ & EPOLLIN)) {
           read(notify_receive_fd_, bb, 1);
           {
             MutexLock l(&mutex_);
@@ -102,15 +102,15 @@ private:
            * tc->set_thread(this);
            */
         }
-        int shouldClose = 0;
-        if (tfe->mask_ & EPOLLIN) {
-          inConn = static_cast<PinkConn *>(conns_[tfe->fd_]);
-          if (inConn == NULL) {
+        int should_close = 0;
+        if (pfe->mask_ & EPOLLIN) {
+          in_conn = static_cast<PinkConn *>(conns_[pfe->fd_]);
+          if (in_conn == NULL) {
             continue;
           }
-          ReadStatus getRes = inConn->GetRequest();
+          ReadStatus getRes = in_conn->GetRequest();
           if (getRes == kReadAll) {
-            pink_epoll_->PinkModEvent(tfe->fd_, 0, EPOLLOUT);
+            pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLOUT);
           } else if (getRes == kReadHalf) {
             /*
              * This branch is that wo don't read all the data or we come into the EAGAIN branch
@@ -123,40 +123,40 @@ private:
              * 2. the client has send the close operator
              *
              */
-            delete(inConn);
-            shouldClose = 1;
+            delete(in_conn);
+            should_close = 1;
           }
         }
-        if (tfe->mask_ & EPOLLOUT) {
+        if (pfe->mask_ & EPOLLOUT) {
           std::map<int, void *>::iterator iter = conns_.begin();
 
-          if (tfe == NULL) {
+          if (pfe == NULL) {
             continue;
           }
 
-          iter = conns_.find(tfe->fd_);
+          iter = conns_.find(pfe->fd_);
           if (iter == conns_.end()) {
             continue;
           }
 
-          inConn = static_cast<PinkConn *>(iter->second);
-          WriteStatus write_status = inConn->SendReply();
+          in_conn = static_cast<PinkConn *>(iter->second);
+          WriteStatus write_status = in_conn->SendReply();
           if (write_status == kWriteAll) {
-            pink_epoll_->PinkModEvent(tfe->fd_, 0, EPOLLIN);
+            pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLIN);
           } else if (write_status == kWriteHalf) {
             continue;
           } else if (write_status == kWriteError) {
-            delete(inConn);
-            shouldClose = 1;
+            delete(in_conn);
+            should_close = 1;
           }
         }
-        if ((tfe->mask_  & EPOLLERR) || (tfe->mask_ & EPOLLHUP)) {
-          log_info("close tfe fd here");
-          close(tfe->fd_);
+        if ((pfe->mask_  & EPOLLERR) || (pfe->mask_ & EPOLLHUP)) {
+          log_info("close pfe fd here");
+          close(pfe->fd_);
         }
-        if (shouldClose) {
-          log_info("close tfe fd here");
-          close(tfe->fd_);
+        if (should_close) {
+          log_info("close pfe fd here");
+          close(pfe->fd_);
         }
       }
     }

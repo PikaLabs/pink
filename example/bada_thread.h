@@ -1,7 +1,7 @@
 #ifndef BADA_THREAD_H_
 #define BADA_THREAD_H_
 
-#include "pb_thread.h"
+#include "worker_thread.h"
 #include "pink.pb.h"
 #include "pb_conn.h"
 #include <google/protobuf/message.h>
@@ -10,6 +10,8 @@ class BadaConn: public PbConn {
 public:
   explicit BadaConn(int fd);
   virtual int DealMessage();
+
+
 private:
   pink::Ping ping_;
   pink::PingRes pingRes_;

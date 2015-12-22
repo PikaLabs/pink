@@ -15,6 +15,8 @@ BadaConn::BadaConn(int fd) :
 
 int BadaConn::DealMessage()
 {
+
+  log_info("In the badaconn DealMessage branch");
   ping_.ParseFromArray(rbuf_ + 4, header_len_);
   /*
    *   std::cout<<"Message is "<< ping_.DebugString();

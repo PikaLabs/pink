@@ -69,7 +69,6 @@ public:
           connfd = accept(server_socket_->sockfd(), (struct sockaddr *) &cliaddr, &clilen);
           log_info("Accept new fd %d", connfd);
           std::queue<PinkItem> *q = &(worker_thread_[last_thread_]->conn_queue_);
-          log_info("pfe must happen");
           PinkItem ti(connfd);
           {
             MutexLock l(&worker_thread_[last_thread_]->mutex_);

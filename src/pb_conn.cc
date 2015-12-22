@@ -49,7 +49,7 @@ ReadStatus PbConn::GetRequest()
     return kReadClose;
   }
 
-  int32_t integer = 0;
+  uint32_t integer = 0;
   bool flag = true;
 
 
@@ -59,9 +59,9 @@ ReadStatus PbConn::GetRequest()
       switch (connStatus_) {
       case kHeader:
         if (rbuf_len_ - cur_pos_ >= COMMAND_HEADER_LENGTH) {
-          memcpy((char *)(&integer), rbuf_ + cur_pos_, sizeof(int32_t));
+          memcpy((char *)(&integer), rbuf_ + cur_pos_, sizeof(uint32_t));
           header_len_ = ntohl(integer);
-          log_info("Header_len %d", header_len_);
+          log_info("Header_len %u", header_len_);
           connStatus_ = kPacket;
           cur_pos_ += COMMAND_HEADER_LENGTH;
         } else {
@@ -69,7 +69,7 @@ ReadStatus PbConn::GetRequest()
         }
         break;
       case kPacket:
-        if (rbuf_len_ >= header_len_) {
+        if (rbuf_len_ >= header_len_ + COMMAND_HEADER_LENGTH) {
           cur_pos_ += header_len_;
           log_info("k Packet cur_pos_ %d rbuf_len_ %d", cur_pos_, rbuf_len_);
           connStatus_ = kComplete;
@@ -82,6 +82,7 @@ ReadStatus PbConn::GetRequest()
 
         BuildObuf();
         connStatus_ = kHeader;
+        log_info("%d %d", cur_pos_, rbuf_len_);
         if (cur_pos_ == rbuf_len_) {
           cur_pos_ = 0;
           rbuf_len_ = 0;

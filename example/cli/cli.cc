@@ -36,10 +36,10 @@ int main(int argv, char** argc){
   ping.set_port(9888);
 
   cout<<"size after serilizing is "<<ping.ByteSize()<<endl;
-  int32_t siz = ping.ByteSize()+4;
-  int32_t u = htonl(siz);
+  uint32_t siz = ping.ByteSize()+4;
+  uint32_t u = htonl(siz - 4);
   char *pkt = new char [siz];
-  memcpy(pkt, &u, sizeof(int32_t));
+  memcpy(pkt, &u, sizeof(uint32_t));
   ping.SerializeToArray(pkt + sizeof(int32_t), 10010);
 
   int host_port= 9211;
@@ -89,11 +89,11 @@ int main(int argv, char** argc){
   pink::PingRes ping_res;
 
   char buf[1024];
-  int32_t integer = 0;
-  int32_t header_len;
+  uint32_t integer = 0;
+  uint32_t header_len;
 
-  for (int i =0;i<1;i++){
-    for (int j = 0 ;j<1;j++) {
+  for (int i =0;i<1000;i++){
+    for (int j = 0 ;j<100000;j++) {
 
       if( (bytecount=send(hsock, (void *) pkt,siz,0))== -1 ) {
         fprintf(stderr, "Error sending data %d\n", errno);

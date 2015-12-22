@@ -35,18 +35,18 @@ public:
    * The Variable need by read the buf,
    * We allocate the memory when we start the server
    */
-  int header_len_;
+  uint32_t header_len_;
   char* rbuf_;
-  int32_t cur_pos_;
-  int32_t rbuf_len_;
+  uint32_t cur_pos_;
+  uint32_t rbuf_len_;
 
   ConnStatus connStatus_;
 
   google::protobuf::Message *res_;
 
   char* wbuf_;
-  int32_t wbuf_len_;
-  int32_t wbuf_pos_;
+  uint32_t wbuf_len_;
+  uint32_t wbuf_pos_;
 
 private:
 

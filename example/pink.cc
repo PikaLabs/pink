@@ -2,7 +2,6 @@
 #include <unistd.h>
 
 #include "pink_thread.h"
-#include "pink_hb.h"
 #include "worker_thread.h"
 #include "dispatch_thread.h"
 #include "pink.pb.h"

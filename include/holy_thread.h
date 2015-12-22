@@ -133,8 +133,7 @@ public:
           if ((pfe->mask_  & EPOLLERR) || (pfe->mask_ & EPOLLHUP)) {
             log_info("close pfe fd here");
             close(pfe->fd_);
-          }
-          if (should_close) {
+          } else if (should_close) {
             log_info("close pfe fd here");
             close(pfe->fd_);
           }

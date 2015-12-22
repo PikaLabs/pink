@@ -45,7 +45,7 @@ $(LIBRARY): $(OBJS)
 	ar -rcs $@ $(OBJS)
 	cp -r ./include $(OUTPUT)/
 	mv $@ $(OUTPUT)/lib/
-	make -C example
+	make -C example __PERF=$(__PERF)
 
 
 $(OBJECT): $(OBJS)

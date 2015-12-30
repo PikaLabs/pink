@@ -21,6 +21,9 @@ public:
   bool SetNonblock();
   void InitPara();
 
+  void SetIsReply(bool is_reply);
+  bool IsReply();
+
   ReadStatus GetRequest();
   WriteStatus SendReply();
 
@@ -51,6 +54,7 @@ public:
 private:
 
   int flags_;
+  bool is_reply_;
 
   Status BuildObuf();
 };

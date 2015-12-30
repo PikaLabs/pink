@@ -89,7 +89,7 @@ public:
               continue;
             }
             ReadStatus getRes = in_conn->GetRequest();
-            if (getRes == kReadAll) {
+            if (getRes == kReadAll && in_conn->IsReply()) {
               pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLOUT);
             } else if (getRes == kReadHalf) {
               /*

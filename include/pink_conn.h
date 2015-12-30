@@ -12,10 +12,7 @@ public:
   virtual ReadStatus GetRequest() = 0;
   virtual WriteStatus SendReply() = 0;
 
-  // PinkConn *CreateConn(ConnFactory &ConnFactory);
-
   virtual int DealMessage() = 0;
-
 
   void set_fd(int fd) { 
     fd_ = fd; 
@@ -23,6 +20,7 @@ public:
   int fd() {
     return fd_;
   }
+
 private:
   
   int fd_;

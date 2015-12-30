@@ -1,7 +1,7 @@
 #include "pink_thread.h"
 
-  Thread::Thread()
-: thread_id_(0)
+Thread::Thread() :
+  thread_id_(0)
 {
 }
 

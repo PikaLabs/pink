@@ -6,7 +6,6 @@
 
 #include <string>
 
-
 PbConn::PbConn(int fd) :
   PinkConn(fd)
 {

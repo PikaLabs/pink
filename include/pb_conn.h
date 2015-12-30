@@ -13,7 +13,7 @@
 class PbConn: public PinkConn
 {
 public:
-  PbConn(int fd);
+  explicit PbConn(int fd);
   ~PbConn();
   /*
    * Set the fd to nonblock && set the flag_ the the fd flag

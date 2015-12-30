@@ -8,10 +8,8 @@
 
 class BadaConn: public PbConn {
 public:
-  explicit BadaConn(int fd);
+  BadaConn(int fd, Thread *thread);
   virtual int DealMessage();
-
-
 private:
   pink::Ping ping_;
   pink::PingRes pingRes_;

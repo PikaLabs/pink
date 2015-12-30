@@ -6,15 +6,21 @@
 #include "pb_conn.h"
 #include <google/protobuf/message.h>
 
+
+#include <vector>
+
+class PinkThread;
+
 class PinkHolyConn: public PbConn {
 public:
-  explicit PinkHolyConn(int fd);
+  PinkHolyConn(int fd, Thread *thread);
   virtual int DealMessage();
-
 
 private:
   pink::Ping ping_;
   pink::PingRes pingRes_;
+
+  PinkThread *pink_thread_;
 };
 
 
@@ -24,7 +30,8 @@ public:
   explicit PinkThread(int port);
   virtual ~PinkThread();
 
-
+  std::vector<int> v;
+  
 private:
 
 

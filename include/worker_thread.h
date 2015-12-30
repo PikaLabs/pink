@@ -18,7 +18,7 @@
 #include <google/protobuf/message.h>
 
 
-template <typename PinkConn>
+template <typename Conn>
 class WorkerThread : public Thread
 {
 public:
@@ -76,7 +76,7 @@ private:
     PinkFiredEvent *pfe = NULL;
     char bb[1];
     PinkItem ti;
-    PinkConn *in_conn;
+    Conn *in_conn;
     for (;;) {
       nfds = pink_epoll_->PinkPoll();
       /*
@@ -92,7 +92,7 @@ private:
             ti = conn_queue_.front();
             conn_queue_.pop();
           }
-          PinkConn *tc = new PinkConn(ti.fd());
+          Conn *tc = new Conn(ti.fd(), this);
           tc->SetNonblock();
           conns_[ti.fd()] = tc;
 
@@ -104,7 +104,7 @@ private:
         }
         int should_close = 0;
         if (pfe->mask_ & EPOLLIN) {
-          in_conn = static_cast<PinkConn *>(conns_[pfe->fd_]);
+          in_conn = static_cast<Conn *>(conns_[pfe->fd_]);
           if (in_conn == NULL) {
             continue;
           }
@@ -139,7 +139,7 @@ private:
             continue;
           }
 
-          in_conn = static_cast<PinkConn *>(iter->second);
+          in_conn = static_cast<Conn *>(iter->second);
           WriteStatus write_status = in_conn->SendReply();
           if (write_status == kWriteAll) {
             pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLIN);

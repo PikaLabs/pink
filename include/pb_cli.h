@@ -3,8 +3,6 @@
 
 #include <string>
 
-class CliConn;
-
 class PbCli
 {
 public:
@@ -12,7 +10,7 @@ public:
   ~PbCli();
 
 private:
-  CliConn *cli_conn_(int fd);
+  PbCli *cli_conn_(int fd);
 
   std::string host_;
   int port_;

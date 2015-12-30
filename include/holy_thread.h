@@ -21,7 +21,7 @@
 #include "pink_epoll.h"
 #include "pink_item.h"
 
-template <typename PinkConn>
+template <typename Conn>
 class HolyThread: public Thread
 {
 public:
@@ -65,7 +65,7 @@ public:
     struct sockaddr_in cliaddr;
     socklen_t clilen;
     int fd, connfd;
-    PinkConn *in_conn;
+    Conn *in_conn;
     for (;;) {
       nfds = pink_epoll_->PinkPoll();
       for (int i = 0; i < nfds; i++) {
@@ -76,7 +76,7 @@ public:
           connfd = accept(server_socket_->sockfd(), (struct sockaddr *) &cliaddr, &clilen);
           log_info("Accept new fd %d", connfd);
           
-          PinkConn *tc = new PinkConn(connfd);
+          Conn *tc = new Conn(connfd, this);
           tc->SetNonblock();
           conns_[connfd] = tc;
 
@@ -84,7 +84,7 @@ public:
         } else {
           int should_close = 0;
           if (pfe->mask_ & EPOLLIN) {
-            in_conn = static_cast<PinkConn *>(conns_[pfe->fd_]);
+            in_conn = static_cast<Conn *>(conns_[pfe->fd_]);
             if (in_conn == NULL) {
               continue;
             }
@@ -119,7 +119,7 @@ public:
               continue;
             }
 
-            in_conn = static_cast<PinkConn *>(iter->second);
+            in_conn = static_cast<Conn *>(iter->second);
             WriteStatus write_status = in_conn->SendReply();
             if (write_status == kWriteAll) {
               pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLIN);

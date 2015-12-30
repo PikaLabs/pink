@@ -8,7 +8,7 @@
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
-BadaConn::BadaConn(int fd) :
+BadaConn::BadaConn(int fd, Thread *thread) :
   PbConn(fd)
 {
 }

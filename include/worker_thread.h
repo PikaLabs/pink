@@ -40,6 +40,7 @@ public:
   }
 
   virtual ~WorkerThread() {
+    delete(pink_epoll_);
   }
 
   /*
@@ -109,7 +110,7 @@ private:
             continue;
           }
           ReadStatus getRes = in_conn->GetRequest();
-          if (getRes == kReadAll && in_conn->IsReply()) {
+          if (getRes == kReadAll && in_conn->is_reply()) {
             pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLOUT);
           } else if (getRes == kReadHalf) {
             /*

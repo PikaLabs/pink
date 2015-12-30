@@ -13,7 +13,6 @@ PbConn::PbConn(int fd) :
   header_len_ = -1;
   cur_pos_ = 0;
   rbuf_len_ = 0;
-  is_reply_ = true;
 
   wbuf_ = (char *)malloc(sizeof(char) * PB_MAX_MESSAGE);
 }
@@ -31,16 +30,6 @@ bool PbConn::SetNonblock()
     return false;
   }
   return true;
-}
-
-void PbConn::SetIsReply(bool is_reply)
-{
-  is_reply_ = is_reply;
-}
-
-bool PbConn::IsReply()
-{
-  return is_reply_;
 }
 
 ReadStatus PbConn::GetRequest()

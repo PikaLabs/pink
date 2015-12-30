@@ -1,9 +1,9 @@
 CXX = g++
 ifeq ($(__PERF), 1)
-	CXXFLAGS = -O0 -g -pg -pipe -fPIC -D__XDEBUG__ -W -Wwrite-strings -Wpointer-arith -Wreorder -Wswitch -Wsign-promo -Wredundant-decls -Wformat -Wall -Wconversion -D_GNU_SOURCE -std=c++11
+	CXXFLAGS = -O0 -g -pg -pipe -fPIC -D__XDEBUG__ -W -Wwrite-strings -Wpointer-arith -Wreorder -Wswitch -Wsign-promo -Wredundant-decls -Wformat -Wall -D_GNU_SOURCE -D__STDC_FORMAT_MACROS -std=c++11 -gdwarf-2 -Wno-unused-variable
 else
-	CXXFLAGS = -O2 -g -pipe -fPIC -W -Wwrite-strings -Wpointer-arith -Wreorder -Wswitch -Wsign-promo -Wredundant-decls -Wformat -Wall -Wconversion -D_GNU_SOURCE
-	# CXXFLAGS = -Wall -W -DDEBUG -g -O0 -D__XDEBUG__ -D__STDC_FORMAT_MACROS -fPIC -std=c++11 -gdwarf-2
+	CXXFLAGS = -O2 -pipe -fPIC -W -Wwrite-strings -Wpointer-arith -Wreorder -Wswitch -Wsign-promo -Wredundant-decls -Wformat -Wall -D_GNU_SOURCE -D__STDC_FORMAT_MACROS -std=c++11 -gdwarf-2 -Wno-unused-variable
+	# CXXFLAGS = -Wall -W -DDEBUG -g -O0 -D__XDEBUG__ 
 endif
 OBJECT = pink holy
 SRC_DIR = ./
@@ -18,7 +18,6 @@ LIBS = -lpink \
 
 INCLUDE_PATH = -I../output/include/
 
-LIBRARY = libpink.a
 .PHONY: all clean version
 
 
@@ -45,11 +44,6 @@ holy: holy.cc holy_test.cc pink.pb.cc
 
 $(OBJS): %.o : %.cc
 	$(CXX) $(CXXFLAGS) -c $< -o $@ $(INCLUDE_PATH) 
-
-$(LIBRARY): $(OBJS)
-	rm -rf $@
-	ar -rcs $@ $(OBJS)
-
 
 clean: 
 	rm -rf $(OUTPUT)

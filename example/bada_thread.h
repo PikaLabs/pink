@@ -6,13 +6,19 @@
 #include "pb_conn.h"
 #include <google/protobuf/message.h>
 
+class BadaThread;
+
 class BadaConn: public PbConn {
 public:
   BadaConn(int fd, Thread *thread);
+  virtual ~BadaConn();
   virtual int DealMessage();
+
 private:
   pink::Ping ping_;
   pink::PingRes pingRes_;
+
+  BadaThread *bada_thread_;
 };
 
 

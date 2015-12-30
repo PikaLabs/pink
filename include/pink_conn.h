@@ -9,12 +9,12 @@ public:
   explicit PinkConn(int fd);
   ~PinkConn();
 
-  virtual void SetIsReply(bool is_reply) = 0;
-  virtual bool IsReply() = 0;
   virtual ReadStatus GetRequest() = 0;
   virtual WriteStatus SendReply() = 0;
 
   virtual int DealMessage() = 0;
+
+
 
   void set_fd(int fd) { 
     fd_ = fd; 
@@ -23,9 +23,16 @@ public:
     return fd_;
   }
 
+  void set_is_reply(bool is_reply) {
+    is_reply_ = is_reply;
+  }
+  bool is_reply() {
+    return is_reply_;
+  }
 private:
   
   int fd_;
+  bool is_reply_;
 };
 
 #endif

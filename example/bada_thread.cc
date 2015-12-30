@@ -11,6 +11,12 @@
 BadaConn::BadaConn(int fd, Thread *thread) :
   PbConn(fd)
 {
+  bada_thread_ = reinterpret_cast<BadaThread *>(thread);
+}
+
+BadaConn::~BadaConn()
+{
+  bada_thread_ = NULL;
 }
 
 int BadaConn::DealMessage()

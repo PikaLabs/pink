@@ -15,7 +15,13 @@ PinkHolyConn::PinkHolyConn(int fd, Thread *thread) :
 {
   
   pink_thread_ = reinterpret_cast<PinkThread *>(thread);
+  set_is_reply(false);
 
+}
+
+PinkHolyConn::~PinkHolyConn()
+{
+  pink_thread_ = NULL;
 }
 
 int PinkHolyConn::DealMessage()
@@ -28,7 +34,7 @@ int PinkHolyConn::DealMessage()
 
   pink_thread_->v.push_back(123);
 
-  printf("pink_thread vestor size %d", pink_thread_->v.size());
+  log_info("pink_thread vestor size %zu", pink_thread_->v.size());
   pingRes_.set_res(11234);
   pingRes_.set_mess("heiheidfdfdf");
 

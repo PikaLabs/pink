@@ -44,8 +44,9 @@ public:
       worker_thread_[i]->StartThread();
     }
   }
-  ~DispatchThread()
+  virtual ~DispatchThread()
   {
+    delete(pink_epoll_);
     server_socket_->Close();
   }
 

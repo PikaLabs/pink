@@ -37,7 +37,7 @@ public:
 
   }
 
-  ~HolyThread()
+  virtual ~HolyThread()
   {
     server_socket_->Close();
   }
@@ -89,7 +89,7 @@ public:
               continue;
             }
             ReadStatus getRes = in_conn->GetRequest();
-            if (getRes == kReadAll && in_conn->IsReply()) {
+            if (getRes == kReadAll && in_conn->is_reply()) {
               pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLOUT);
             } else if (getRes == kReadHalf) {
               /*

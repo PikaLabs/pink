@@ -5,7 +5,8 @@
 #include "pink_thread.h"
 
 PinkConn::PinkConn(int fd):
-  fd_(fd)
+  fd_(fd),
+  is_reply_(true)
 {
 }
 

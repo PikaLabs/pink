@@ -10,4 +10,5 @@ void *PeriodThread::ThreadMain()
 {
   PeriodMain();
   select(0, NULL, NULL, NULL, &period_);
+  return NULL;
 }

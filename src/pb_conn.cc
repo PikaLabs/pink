@@ -13,6 +13,7 @@ PbConn::PbConn(int fd) :
   header_len_ = -1;
   cur_pos_ = 0;
   rbuf_len_ = 0;
+  is_reply_ = true;
 
   wbuf_ = (char *)malloc(sizeof(char) * PB_MAX_MESSAGE);
 }
@@ -32,6 +33,15 @@ bool PbConn::SetNonblock()
   return true;
 }
 
+void PbConn::SetIsReply(bool is_reply)
+{
+  is_reply_ = is_reply;
+}
+
+bool PbConn::IsReply()
+{
+  return is_reply_;
+}
 
 ReadStatus PbConn::GetRequest()
 {
@@ -78,8 +88,6 @@ ReadStatus PbConn::GetRequest()
         break;
       case kComplete:
         DealMessage();
-
-        BuildObuf();
         connStatus_ = kHeader;
         log_info("%d %d", cur_pos_, rbuf_len_);
         if (cur_pos_ == rbuf_len_) {
@@ -105,6 +113,7 @@ ReadStatus PbConn::GetRequest()
 
 WriteStatus PbConn::SendReply()
 {
+  BuildObuf();
   log_info("wbuf_len_ is %d", wbuf_len_);
   ssize_t nwritten = 0;
   while (wbuf_len_ > 0) {

@@ -1,0 +1,32 @@
+#ifndef PIKA_THREAD_H_
+#define PIKA_THREAD_H_
+
+#include "worker_thread.h"
+#include "redis_conn.h"
+
+class PikaThread;
+
+class PikaConn: public RedisConn {
+public:
+  explicit PikaConn(int fd, Thread *thread);
+  virtual int DealMessage();
+private:
+  PikaThread *pika_thread_;
+};
+
+
+class PikaThread : public WorkerThread<PikaConn>
+{
+public:
+  PikaThread();
+  virtual ~PikaThread();
+
+  int PrintNum();
+
+private:
+
+  int pika_num_;
+
+};
+
+#endif

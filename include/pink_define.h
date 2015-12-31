@@ -44,6 +44,9 @@ enum ReadStatus {
   kReadAll = 1,
   kReadError = 2,
   kReadClose = 3,
+  kFullError = 4,
+  kParseError = 5,
+  kOk = 6,
 };
 
 enum WriteStatus {
@@ -51,6 +54,13 @@ enum WriteStatus {
   kWriteAll = 1,
   kWriteError = 2,
 };
+
+/*
+ * define the redis protocol
+ */
+#define REDIS_MAX_MESSAGE 10240
+#define REDIS_REQ_INLINE 1
+#define REDIS_REQ_MULTIBULK 2
 
 /*
  * define the macro in PINK_conf

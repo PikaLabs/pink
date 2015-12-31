@@ -47,6 +47,11 @@ void ServerSocket::Listen()
   sockfd_ = socket(AF_INET, SOCK_STREAM, 0);
   memset(&servaddr_, 0, sizeof(servaddr_));
 
+  int yes = 1;
+  if (setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1) {
+    //LOG(FATAL) << "setsockopt SO_REUSEADDR: " << strerror(errno);
+  }
+
   servaddr_.sin_family = AF_INET;
   servaddr_.sin_addr.s_addr = htonl(INADDR_ANY);
   servaddr_.sin_port = htons(port_);

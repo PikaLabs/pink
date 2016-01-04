@@ -48,6 +48,7 @@ public:
   int32_t multibulk_len_;
   int32_t bulk_len_;
   bool is_find_sep_;
+  bool is_overtake_;
   std::vector<std::string> argv_;
 
   ConnStatus connStatus_;
@@ -60,8 +61,6 @@ public:
 private:
 
   int flags_;
-
-  Status BuildObuf();
 };
 
 #endif

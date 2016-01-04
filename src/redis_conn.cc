@@ -15,6 +15,7 @@ RedisConn::RedisConn(int fd) :
   multibulk_len_ = 0;
   bulk_len_ = -1;
   is_find_sep_ = true;
+  is_overtake_ = false;
   last_read_pos_ = -1;
   next_parse_pos_ = 0;
 
@@ -48,6 +49,9 @@ ReadStatus RedisConn::ProcessMultibulkBuffer() {
     if (pos != -1) {
       multibulk_len_ = GetNextNum(pos);
       next_parse_pos_ = (pos + 1) % REDIS_MAX_MESSAGE;
+      if ((last_read_pos_ + 1) % REDIS_MAX_MESSAGE == next_parse_pos_) {
+        return kReadHalf;
+      }
       argv_.clear();
     } else {
       if ((last_read_pos_ + 1) % REDIS_MAX_MESSAGE == next_parse_pos_) {
@@ -58,16 +62,19 @@ ReadStatus RedisConn::ProcessMultibulkBuffer() {
     }
   }
   std::string tmp;
-  while (multibulk_len_) {
+  while (!is_overtake_ && multibulk_len_) {
     if (bulk_len_ == -1) {
       pos = FindNextSeparators();
-      if (pos) {
+      if (pos != -1) {
         if (rbuf_[next_parse_pos_] != '$') {
            return kParseError;//PARSE_ERROR
         }
 
         bulk_len_ = GetNextNum(pos);
         next_parse_pos_ = (pos + 1) % REDIS_MAX_MESSAGE;
+        if ((last_read_pos_ + 1) % REDIS_MAX_MESSAGE == next_parse_pos_) {
+          return kReadHalf;
+        }
       } else {
         if ((last_read_pos_ + 1) % REDIS_MAX_MESSAGE == next_parse_pos_) {
           return kFullError; /*FULL_ERROR*/
@@ -84,22 +91,31 @@ ReadStatus RedisConn::ProcessMultibulkBuffer() {
         next_parse_pos_ = (next_parse_pos_ + (bulk_len_ + 2)) % REDIS_MAX_MESSAGE;
         bulk_len_ = -1;
         multibulk_len_--;
+        if ((last_read_pos_ + 1) % REDIS_MAX_MESSAGE == next_parse_pos_) {
+          is_overtake_ = true;
+        }
       }
     } else {
       if (REDIS_MAX_MESSAGE - next_parse_pos_  + last_read_pos_ + 1 < bulk_len_ + 2) {
+        if ((last_read_pos_ + 1) % REDIS_MAX_MESSAGE == next_parse_pos_) {
+          return kFullError;
+        }
         break;
       } else {
-        tmp = std::string(rbuf_ + next_parse_pos_, REDIS_MAX_MESSAGE - next_parse_pos_) + std::string(rbuf_, last_read_pos_ + 1);
+        tmp = std::string(rbuf_ + next_parse_pos_, REDIS_MAX_MESSAGE - next_parse_pos_) + std::string(rbuf_, bulk_len_ - (REDIS_MAX_MESSAGE - next_parse_pos_));
         argv_.push_back(tmp);
-        next_parse_pos_ = bulk_len_ + 3 - (REDIS_MAX_MESSAGE - next_parse_pos_);
+        next_parse_pos_ = bulk_len_ - (REDIS_MAX_MESSAGE - next_parse_pos_) + 2;
         bulk_len_ = -1;
         multibulk_len_--;
+        if ((last_read_pos_ + 1) % REDIS_MAX_MESSAGE == next_parse_pos_) {
+          is_overtake_ = true;
+        }
       }
     }
   }
 
   if (multibulk_len_ == 0) {
-    return kOk; /*OK*/
+    return kReadAll; /*OK*/
   } else {
     return kReadHalf; /*HALF*/
   }
@@ -114,7 +130,7 @@ void RedisConn::ResetClient() {
 
 ReadStatus RedisConn::ProcessInputBuffer() {
   ReadStatus ret;
-  while ((last_read_pos_ + 1) % REDIS_MAX_MESSAGE != next_parse_pos_) { //is_find_sep_ ?
+  while (/*(last_read_pos_ + 1) % REDIS_MAX_MESSAGE != next_parse_pos_ && */!is_overtake_) { //is_find_sep_ ?
     if (!req_type_) {
       if (rbuf_[next_parse_pos_] == '*') {
         req_type_ = REDIS_REQ_MULTIBULK;
@@ -125,10 +141,10 @@ ReadStatus RedisConn::ProcessInputBuffer() {
 
     if (req_type_ == REDIS_REQ_INLINE) {
       //ProcessInlineBuffer();
-      return kOk;
+      return kReadAll;
     } else if (req_type_ == REDIS_REQ_MULTIBULK) {
       ret = ProcessMultibulkBuffer();
-      if (ret != kOk/*OK*/) { //FULL_ERROR || HALF || PARSE_ERROR
+      if (ret != kReadAll/*OK*/) { //FULL_ERROR || HALF || PARSE_ERROR
         return ret;
       }
     } else {
@@ -140,9 +156,10 @@ ReadStatus RedisConn::ProcessInputBuffer() {
       ResetClient();
     } else {
       DealMessage(); 
+      set_is_reply(true);
     }
   }
-  return kOk;/*OK*/
+  return kReadAll;/*OK*/
 }
 
 ReadStatus RedisConn::GetRequest()
@@ -175,7 +192,8 @@ ReadStatus RedisConn::GetRequest()
   }
 
   if (nread) {
-    last_read_pos_ += nread;
+    last_read_pos_ = (last_read_pos_ + nread) % REDIS_MAX_MESSAGE;
+    is_overtake_ = false;
   }
   ReadStatus ret = ProcessInputBuffer();
   if (ret == kFullError/*FULL_ERROR*/) {
@@ -212,12 +230,6 @@ WriteStatus RedisConn::SendReply()
   } else {
     return kWriteHalf;
   }
-}
-
-
-Status RedisConn::BuildObuf()
-{
-  return Status::OK();
 }
 
 int32_t RedisConn::FindNextSeparators() {

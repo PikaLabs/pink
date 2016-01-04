@@ -14,7 +14,15 @@ PikaConn::PikaConn(int fd, Thread *thread) :
 int PikaConn::DealMessage()
 {
 
-  log_info("para num: %d", argv_.size());
+  std::string res;
+  std::vector<std::string>::iterator iter = argv_.begin();
+  for (iter; iter != argv_.end(); iter++) {
+    res.append(*iter);
+    res.append(" ");
+  }
+  log_info("%s", res.c_str());
+  strncpy(wbuf_, "+OK\r\n", 5);
+  wbuf_len_ = 5;
   return 0;
 }
 

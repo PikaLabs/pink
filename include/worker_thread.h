@@ -110,24 +110,17 @@ private:
             continue;
           }
           ReadStatus getRes = in_conn->GetRequest();
-          if (getRes == kReadAll && in_conn->is_reply()) {
-            pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLOUT);
-          } else if (getRes == kReadHalf) {
-            /*
-             * This branch is that wo don't read all the data or we come into the EAGAIN branch
-             */
-            continue;
-          } else if (getRes == kReadError || getRes == kReadClose) {
-            /*
-             * In this branch we need close the fd, there is two situation
-             * 1. there is some error on this fd
-             * 2. the client has send the close operator
-             *
-             */
+          if (getRes != kReadAll && getRes != kReadHalf) {
+            // kReadError kReadClose kFullError kParseError
             delete(in_conn);
             should_close = 1;
+          } else if (in_conn->is_reply()) {
+            pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLOUT);
+          } else {
+            continue;
           }
         }
+
         if (pfe->mask_ & EPOLLOUT) {
           std::map<int, void *>::iterator iter = conns_.begin();
 
@@ -143,6 +136,7 @@ private:
           in_conn = static_cast<Conn *>(iter->second);
           WriteStatus write_status = in_conn->SendReply();
           if (write_status == kWriteAll) {
+            in_conn->set_is_reply(false);
             pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLIN);
           } else if (write_status == kWriteHalf) {
             continue;

@@ -6,7 +6,7 @@
 
 PinkConn::PinkConn(int fd):
   fd_(fd),
-  is_reply_(true)
+  is_reply_(false)
 {
 }
 

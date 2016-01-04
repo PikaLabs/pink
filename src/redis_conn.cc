@@ -102,8 +102,12 @@ ReadStatus RedisConn::ProcessMultibulkBuffer() {
         }
         break;
       } else {
-        tmp = std::string(rbuf_ + next_parse_pos_, REDIS_MAX_MESSAGE - next_parse_pos_) + std::string(rbuf_, bulk_len_ - (REDIS_MAX_MESSAGE - next_parse_pos_));
-        argv_.push_back(tmp);
+        if (REDIS_MAX_MESSAGE - next_parse_pos_ >= bulk_len_) {
+          argv_.push_back(std::string(rbuf_ + next_parse_pos_, bulk_len_));
+        } else {
+          tmp = std::string(rbuf_ + next_parse_pos_, REDIS_MAX_MESSAGE - next_parse_pos_) + std::string(rbuf_, bulk_len_ - (REDIS_MAX_MESSAGE - next_parse_pos_));
+          argv_.push_back(tmp);
+        }
         next_parse_pos_ = bulk_len_ - (REDIS_MAX_MESSAGE - next_parse_pos_) + 2;
         bulk_len_ = -1;
         multibulk_len_--;
@@ -204,7 +208,6 @@ ReadStatus RedisConn::GetRequest()
 
 WriteStatus RedisConn::SendReply()
 {
-  log_info("wbuf_len_ is %d", wbuf_len_);
   ssize_t nwritten = 0;
   while (wbuf_len_ > 0) {
     nwritten = write(fd(), wbuf_ + wbuf_pos_, wbuf_len_ - wbuf_pos_);
@@ -254,7 +257,11 @@ int32_t RedisConn::GetNextNum(int32_t pos) {
     // [next_parse_pos_ + 1, pos - next_parse_pos_- 2]
     tmp = std::string(rbuf_ + next_parse_pos_ + 1, pos - next_parse_pos_ - 2);
   } else {
-    tmp = std::string(rbuf_ + ((next_parse_pos_ + 1) % REDIS_MAX_MESSAGE), REDIS_MAX_MESSAGE - next_parse_pos_ - 1) + std::string(rbuf_, pos - 1);
+    if (pos != 0) {
+      tmp = std::string(rbuf_ + ((next_parse_pos_ + 1) % REDIS_MAX_MESSAGE), REDIS_MAX_MESSAGE - next_parse_pos_ - 1) + std::string(rbuf_, pos - 1);
+    } else {
+      tmp = std::string(rbuf_ + ((next_parse_pos_ + 1) % REDIS_MAX_MESSAGE), REDIS_MAX_MESSAGE - next_parse_pos_ - 1);
+    }
     // [next_parse_pos_ + 1, REDIS_MAX_MESSAGE - next_parse_pos_ - 1] + [0, pos - 1]
   }
   char* end;

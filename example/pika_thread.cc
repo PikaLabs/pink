@@ -21,8 +21,8 @@ int PikaConn::DealMessage()
     res.append(" ");
   }
   log_info("%s", res.c_str());
-  strncpy(wbuf_, "+OK\r\n", 5);
-  wbuf_len_ = 5;
+  strncat(wbuf_ + wbuf_len_, "+OK\r\n", 5);
+  wbuf_len_ += 5;
   return 0;
 }
 

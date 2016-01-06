@@ -1,3 +1,5 @@
+#include <stdlib.h>
+#include <limits.h>
 #include "redis_conn.h"
 #include "pink_define.h"
 #include "pink_util.h"
@@ -47,7 +49,10 @@ ReadStatus RedisConn::ProcessMultibulkBuffer() {
 
     pos = FindNextSeparators();
     if (pos != -1) {
-      multibulk_len_ = GetNextNum(pos);
+        if (GetNextNum(pos, &multibulk_len_) != 0) {
+            //Protocol error: invalid multibulk length
+            return kParseError; 
+        }
       next_parse_pos_ = (pos + 1) % REDIS_MAX_MESSAGE;
       if ((last_read_pos_ + 1) % REDIS_MAX_MESSAGE == next_parse_pos_) {
         return kReadHalf;
@@ -70,7 +75,10 @@ ReadStatus RedisConn::ProcessMultibulkBuffer() {
            return kParseError;//PARSE_ERROR
         }
 
-        bulk_len_ = GetNextNum(pos);
+        if (GetNextNum(pos, &bulk_len_) != 0) {
+            //Protocol error: invalid bulk length
+            return kParseError; 
+        }
         next_parse_pos_ = (pos + 1) % REDIS_MAX_MESSAGE;
         if ((last_read_pos_ + 1) % REDIS_MAX_MESSAGE == next_parse_pos_) {
           return kReadHalf;
@@ -251,7 +259,7 @@ int32_t RedisConn::FindNextSeparators() {
   return -1;
 }
 
-int32_t RedisConn::GetNextNum(int32_t pos) {
+int32_t RedisConn::GetNextNum(int32_t pos, int32_t *value) {
   std::string tmp;
   if (pos > next_parse_pos_) {
     // [next_parse_pos_ + 1, pos - next_parse_pos_- 2]
@@ -264,7 +272,15 @@ int32_t RedisConn::GetNextNum(int32_t pos) {
     }
     // [next_parse_pos_ + 1, REDIS_MAX_MESSAGE - next_parse_pos_ - 1] + [0, pos - 1]
   }
+
   char* end;
+  errno = 0;
   long num = strtol(tmp.c_str(), &end, 10);
-  return static_cast<int32_t>(num);
+  if ((num == 0 && errno == EINVAL) || 
+          ((num == LONG_MAX || num == LONG_MIN) && errno == ERANGE)) {
+    return -1;
+  }
+
+  if (value) *value = static_cast<int32_t>(num);
+  return 0;
 }

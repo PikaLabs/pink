@@ -105,10 +105,18 @@ private:
         }
         int should_close = 0;
         if (pfe->mask_ & EPOLLIN) {
-          in_conn = static_cast<Conn *>(conns_[pfe->fd_]);
-          if (in_conn == NULL) {
+          std::map<int, void *>::iterator iter = conns_.begin();
+
+          if (pfe == NULL) {
             continue;
           }
+
+          iter = conns_.find(pfe->fd_);
+          if (iter == conns_.end()) {
+            continue;
+          }
+
+          in_conn = static_cast<Conn *>(iter->second);
           ReadStatus getRes = in_conn->GetRequest();
           if (getRes != kReadAll && getRes != kReadHalf) {
             // kReadError kReadClose kFullError kParseError

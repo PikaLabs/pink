@@ -22,6 +22,10 @@ public:
   void InitPara();
   void ResetClient();
 
+  int flags() {
+    return flags_;
+  };
+
   ReadStatus ProcessInputBuffer();
   ReadStatus ProcessMultibulkBuffer();
   int32_t FindNextSeparators();
@@ -29,10 +33,6 @@ public:
 
   ReadStatus GetRequest();
   WriteStatus SendReply();
-
-  int flags() { 
-    return flags_; 
-  };
 
   virtual int DealMessage() = 0;
 
@@ -59,7 +59,6 @@ public:
   uint32_t wbuf_len_;
 
 private:
-
   int flags_;
 };
 

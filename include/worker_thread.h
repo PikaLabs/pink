@@ -102,63 +102,64 @@ private:
           /*
            * tc->set_thread(this);
            */
-        }
-        int should_close = 0;
-        if (pfe->mask_ & EPOLLIN) {
-          std::map<int, void *>::iterator iter = conns_.begin();
+        } else {
+          int should_close = 0;
+          if (pfe->mask_ & EPOLLIN) {
+            std::map<int, void *>::iterator iter = conns_.begin();
 
-          if (pfe == NULL) {
-            continue;
+            if (pfe == NULL) {
+              continue;
+            }
+
+            iter = conns_.find(pfe->fd_);
+            if (iter == conns_.end()) {
+              continue;
+            }
+
+            in_conn = static_cast<Conn *>(iter->second);
+            ReadStatus getRes = in_conn->GetRequest();
+            if (getRes != kReadAll && getRes != kReadHalf) {
+              // kReadError kReadClose kFullError kParseError
+              delete(in_conn);
+              should_close = 1;
+            } else if (in_conn->is_reply()) {
+              pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLOUT);
+            } else {
+              continue;
+            }
           }
 
-          iter = conns_.find(pfe->fd_);
-          if (iter == conns_.end()) {
-            continue;
-          }
+          if (pfe->mask_ & EPOLLOUT) {
+            std::map<int, void *>::iterator iter = conns_.begin();
 
-          in_conn = static_cast<Conn *>(iter->second);
-          ReadStatus getRes = in_conn->GetRequest();
-          if (getRes != kReadAll && getRes != kReadHalf) {
-            // kReadError kReadClose kFullError kParseError
-            delete(in_conn);
-            should_close = 1;
-          } else if (in_conn->is_reply()) {
-            pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLOUT);
-          } else {
-            continue;
-          }
-        }
+            if (pfe == NULL) {
+              continue;
+            }
 
-        if (pfe->mask_ & EPOLLOUT) {
-          std::map<int, void *>::iterator iter = conns_.begin();
+            iter = conns_.find(pfe->fd_);
+            if (iter == conns_.end()) {
+              continue;
+            }
 
-          if (pfe == NULL) {
-            continue;
+            in_conn = static_cast<Conn *>(iter->second);
+            WriteStatus write_status = in_conn->SendReply();
+            if (write_status == kWriteAll) {
+              in_conn->set_is_reply(false);
+              pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLIN);
+            } else if (write_status == kWriteHalf) {
+              continue;
+            } else if (write_status == kWriteError) {
+              delete(in_conn);
+              should_close = 1;
+            }
           }
-
-          iter = conns_.find(pfe->fd_);
-          if (iter == conns_.end()) {
-            continue;
+          if ((pfe->mask_  & EPOLLERR) || (pfe->mask_ & EPOLLHUP)) {
+            log_info("close pfe fd here");
+            close(pfe->fd_);
+          } else if (should_close) {
+            log_info("close pfe fd here");
+            close(pfe->fd_);
           }
-
-          in_conn = static_cast<Conn *>(iter->second);
-          WriteStatus write_status = in_conn->SendReply();
-          if (write_status == kWriteAll) {
-            in_conn->set_is_reply(false);
-            pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLIN);
-          } else if (write_status == kWriteHalf) {
-            continue;
-          } else if (write_status == kWriteError) {
-            delete(in_conn);
-            should_close = 1;
-          }
-        }
-        if ((pfe->mask_  & EPOLLERR) || (pfe->mask_ & EPOLLHUP)) {
-          log_info("close pfe fd here");
-          close(pfe->fd_);
-        } else if (should_close) {
-          log_info("close pfe fd here");
-          close(pfe->fd_);
         }
       }
     }

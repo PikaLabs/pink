@@ -41,6 +41,154 @@ bool RedisConn::SetNonblock()
   return true;
 }
 
+static bool IsHexDigit(char ch) {
+  return (ch>='0' && ch<='9') || (ch>='a' && ch<='f') || (ch>='A' && ch<'F');
+}
+
+static int HexDigitToInt32(char ch) {
+  if (ch <= '9' && ch >= '0') {
+    return ch-'0';
+  } else if (ch <= 'F' && ch >= 'A') {
+    return ch-'A';
+  } else if (ch <= 'f' && ch >= 'a') {
+    return ch-'a';
+  } else {
+    return 0;
+  }
+}
+static int split2args(const std::string& req_buf, std::vector<std::string>& argv) {
+  const char *p = req_buf.data();
+  std::string arg;
+
+  while(1) {
+    /* skip blanks */
+    while(*p && isspace(*p)) p++;
+    if (*p) {
+      /* get a token */
+      int inq=0;  /* set to 1 if we are in "quotes" */
+      int insq=0; /* set to 1 if we are in 'single quotes' */
+      int done=0;
+
+      arg.clear();
+      while(!done) {
+        if (inq) {
+          if (*p == '\\' && *(p+1) == 'x' &&
+              IsHexDigit(*(p+2)) &&
+              IsHexDigit(*(p+3))) {
+            unsigned char byte = HexDigitToInt32(*(p+2))*16 + HexDigitToInt32(*(p+3));
+            arg.append(1, byte);
+            p += 3;
+          } else if (*p == '\\' && *(p+1)) {
+            char c;
+
+            p++;
+            switch(*p) {
+              case 'n': c = '\n'; break;
+              case 'r': c = '\r'; break;
+              case 't': c = '\t'; break;
+              case 'b': c = '\b'; break;
+              case 'a': c = '\a'; break;
+              default: c = *p; break;
+            }
+            arg.append(1, c);
+          } else if (*p == '"') {
+            /* closing quote must be followed by a space or
+            * nothing at all. */
+            if (*(p+1) && !isspace(*(p+1))) {
+              argv.clear();
+              return -1;
+            };
+            done=1;
+          } else if (!*p) {
+            /* unterminated quotes */
+            argv.clear();
+            return -1;
+          } else {
+            arg.append(1, *p);
+          }
+        } else if (insq) {
+          if (*p == '\\' && *(p+1) == '\'') {
+            p++;
+            arg.append(1, '\'');
+          } else if (*p == '\'') {
+            /* closing quote must be followed by a space or
+            * nothing at all. */
+            if (*(p+1) && !isspace(*(p+1))) {
+              argv.clear();
+              return -1;
+            }
+            done=1;
+          } else if (!*p) {
+            /* unterminated quotes */
+            argv.clear();
+            return -1;
+          } else {
+            arg.append(1, *p);
+          }
+        } else {
+          switch(*p) {
+            case ' ':
+            case '\n':
+            case '\r':
+            case '\t':
+            case '\0':
+              done=1;
+            break;
+            case '"':
+              inq=1;
+            break;
+            case '\'':
+              insq=1;
+            break;
+            default:
+              //current = sdscatlen(current,p,1);
+              arg.append(1, *p);
+              break;
+          }
+        }
+        if (*p) p++;
+      }
+      argv.push_back(arg);
+    } else {
+      return 0;
+    }
+  }
+}
+
+ReadStatus RedisConn::ProcessInlineBuffer() {
+  int32_t pos, ret;
+  pos = FindNextSeparators();
+  if (pos == -1 && (last_read_pos_ + 1) % REDIS_MAX_MESSAGE == next_parse_pos_) {
+    return kFullError;
+  }
+  if (pos == -1 && (last_read_pos_ + 1) % REDIS_MAX_MESSAGE != next_parse_pos_) {
+    return kReadHalf;
+  }
+  std::string req_buf;
+  if (pos > next_parse_pos_) {
+    req_buf = std::string(rbuf_ + next_parse_pos_, pos - next_parse_pos_-1);
+  } else if (pos == 0) {
+    req_buf = std::string(rbuf_ + next_parse_pos_, REDIS_MAX_MESSAGE - next_parse_pos_ - 1);
+  } else {
+    req_buf = std::string(rbuf_ + next_parse_pos_, REDIS_MAX_MESSAGE - next_parse_pos_) + std::string(rbuf_, pos - 1);
+  }
+  argv_.clear();
+  ret = split2args(req_buf, argv_);
+  next_parse_pos_ = (pos+1)%REDIS_MAX_MESSAGE;
+  if (ret == -1) {
+    return kParseError;
+  }
+
+  if ((last_read_pos_+1)%REDIS_MAX_MESSAGE == next_parse_pos_) {
+    is_overtake_ = true;
+  }
+  for (std::vector<std::string>::iterator iter = argv_.begin(); iter != argv_.end(); iter++) {
+    std::cout << *iter << " ";
+  }
+  std::cout << std::endl;
+  return kReadAll;
+}
+
 ReadStatus RedisConn::ProcessMultibulkBuffer() {
   int32_t pos;
   if (multibulk_len_ == 0) {
@@ -152,8 +300,10 @@ ReadStatus RedisConn::ProcessInputBuffer() {
     }
 
     if (req_type_ == REDIS_REQ_INLINE) {
-      //ProcessInlineBuffer();
-      return kReadAll;
+      ret = ProcessInlineBuffer();
+      if (ret != kReadAll) {
+        return ret;
+      }
     } else if (req_type_ == REDIS_REQ_MULTIBULK) {
       ret = ProcessMultibulkBuffer();
       if (ret != kReadAll/*OK*/) { //FULL_ERROR || HALF || PARSE_ERROR
@@ -171,6 +321,7 @@ ReadStatus RedisConn::ProcessInputBuffer() {
       set_is_reply(true);
     }
   }
+  req_type_ = 0;
   return kReadAll;/*OK*/
 }
 

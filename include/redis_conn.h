@@ -24,6 +24,7 @@ public:
 
   ReadStatus ProcessInputBuffer();
   ReadStatus ProcessMultibulkBuffer();
+  ReadStatus ProcessInlineBuffer();
   int32_t FindNextSeparators();
   int32_t GetNextNum(int32_t pos, int32_t *value);
 

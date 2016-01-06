@@ -182,10 +182,6 @@ ReadStatus RedisConn::ProcessInlineBuffer() {
   if ((last_read_pos_+1)%REDIS_MAX_MESSAGE == next_parse_pos_) {
     is_overtake_ = true;
   }
-  for (std::vector<std::string>::iterator iter = argv_.begin(); iter != argv_.end(); iter++) {
-    std::cout << *iter << " ";
-  }
-  std::cout << std::endl;
   return kReadAll;
 }
 

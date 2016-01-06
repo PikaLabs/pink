@@ -290,7 +290,7 @@ void RedisConn::ResetClient() {
 
 ReadStatus RedisConn::ProcessInputBuffer() {
   ReadStatus ret;
-  while (/*(last_read_pos_ + 1) % REDIS_MAX_MESSAGE != next_parse_pos_ && */!is_overtake_) { //is_find_sep_ ?
+  while (!is_overtake_) {
     if (!req_type_) {
       if (rbuf_[next_parse_pos_] == '*') {
         req_type_ = REDIS_REQ_MULTIBULK;
@@ -322,6 +322,8 @@ ReadStatus RedisConn::ProcessInputBuffer() {
     }
   }
   req_type_ = 0;
+  next_parse_pos_ = 0;
+  last_read_pos_ = -1;
   return kReadAll;/*OK*/
 }
 
@@ -335,7 +337,7 @@ ReadStatus RedisConn::GetRequest()
     //err_msg_ = "-ERR: Protocol error: too big mbulk count string\r\n";  
     return kParseError;
   } else if (next_read_pos >= next_parse_pos_) {
-    read_len = REDIS_MAX_MESSAGE - next_read_pos;
+    read_len = REDIS_IOBUF_LEN < (REDIS_MAX_MESSAGE - next_read_pos) ? REDIS_IOBUF_LEN : (REDIS_MAX_MESSAGE - next_read_pos);
   } else if (next_read_pos < next_parse_pos_) {
     read_len = next_parse_pos_ - next_read_pos;
   } 

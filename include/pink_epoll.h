@@ -18,7 +18,7 @@ public:
   void PinkDelEvent(int fd);
   Status PinkModEvent(int fd, int oMask, int mask);
 
-  int PinkPoll();
+  int PinkPoll(int timeout);
 
   PinkFiredEvent *firedevent() { return firedevent_; }
 

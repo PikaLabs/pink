@@ -64,6 +64,11 @@ enum WriteStatus {
 #define REDIS_REQ_MULTIBULK 2
 
 /*
+ * define the pink cron frequency (ms)
+ */
+#define PINK_CRON_FREQUENCY 1000
+
+/*
  * define the macro in PINK_conf
  */
 

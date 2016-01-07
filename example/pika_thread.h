@@ -20,6 +20,7 @@ class PikaThread : public WorkerThread<PikaConn>
 public:
   PikaThread();
   virtual ~PikaThread();
+  virtual void CronHandle();
 
   int PrintNum();
 

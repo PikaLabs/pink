@@ -6,13 +6,11 @@
 
 
 PikaConn::PikaConn(int fd, Thread *thread) :
-  RedisConn(fd)
-{
+  RedisConn(fd) {
   pika_thread_ = reinterpret_cast<PikaThread *>(thread);
 }
 
-int PikaConn::DealMessage()
-{
+int PikaConn::DealMessage() {
 
 //  std::string res;
 //  std::vector<std::string>::iterator iter = argv_.begin();
@@ -28,18 +26,18 @@ int PikaConn::DealMessage()
 
 
 
-PikaThread::PikaThread()
-{
+PikaThread::PikaThread() {
   pika_num_ = 10;
 }
 
-int PikaThread::PrintNum()
-{
+int PikaThread::PrintNum() {
   log_info("PikaThread num %d", pika_num_);
   return 0;
 }
 
-PikaThread::~PikaThread()
-{
+PikaThread::~PikaThread() {
 
+}
+void PikaThread::CronHandle() {
+  log_info("======PikaThread Cron======");
 }

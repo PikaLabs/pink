@@ -43,6 +43,10 @@ public:
     delete(pink_epoll_);
   }
 
+  virtual void CronHandle() {
+    log_info("Come in worker_thread cronhandle");
+  }
+
   /*
    * The PbItem queue is the fd queue, receive from dispatch thread
    */
@@ -78,8 +82,26 @@ private:
     char bb[1];
     PinkItem ti;
     Conn *in_conn;
+
+    struct timeval when;
+    struct timeval now;
+    gettimeofday(&when, NULL);
+
+    when.tv_sec += (PINK_CRON_FREQUENCY / 1000);
+    when.tv_usec += ((PINK_CRON_FREQUENCY % 1000 ) * 1000);
+    int timeout = PINK_CRON_FREQUENCY;
+
     for (;;) {
-      nfds = pink_epoll_->PinkPoll();
+
+      gettimeofday(&now, NULL);
+      if (when.tv_sec > now.tv_sec || (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
+        timeout = (when.tv_sec - now.tv_sec) * 1000 + (when.tv_usec - now.tv_usec) / 1000;
+      } else {
+        CronHandle();
+        timeout = PINK_CRON_FREQUENCY;
+      }
+
+      nfds = pink_epoll_->PinkPoll(timeout);
       /*
        * log_info("nfds %d", nfds);
        */

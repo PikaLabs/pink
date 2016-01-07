@@ -11,6 +11,7 @@
 #include <sys/socket.h>
 #include <fcntl.h>
 #include <sys/epoll.h>
+#include <sys/time.h>
 
 #include "csapp.h"
 #include "xdebug.h"
@@ -50,6 +51,10 @@ public:
     server_socket_->Close();
   }
 
+  virtual void CronHandle() {
+    log_info("Come in dispatch_thread cronhandle");
+  }
+
   virtual void *ThreadMain()
   {
     int nfds;
@@ -58,8 +63,26 @@ public:
     struct sockaddr_in cliaddr;
     socklen_t clilen;
     int fd, connfd;
+
+    struct timeval when;
+    struct timeval now;
+    gettimeofday(&when, NULL);
+
+    when.tv_sec += (PINK_CRON_FREQUENCY / 1000);
+    when.tv_usec += ((PINK_CRON_FREQUENCY % 1000 ) * 1000);
+    int timeout = PINK_CRON_FREQUENCY;
+
     for (;;) {
-      nfds = pink_epoll_->PinkPoll();
+
+      gettimeofday(&now, NULL);
+      if (when.tv_sec > now.tv_sec || (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
+        timeout = (when.tv_sec - now.tv_sec) * 1000 + (when.tv_usec - now.tv_usec) / 1000;
+      } else {
+        CronHandle();
+        timeout = PINK_CRON_FREQUENCY;
+      }
+
+      nfds = pink_epoll_->PinkPoll(timeout);
       for (int i = 0; i < nfds; i++) {
         pfe = (pink_epoll_->firedevent()) + i;
         fd = pfe->fd_;

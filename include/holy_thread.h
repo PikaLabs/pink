@@ -96,8 +96,13 @@ public:
         fd = pfe->fd_;
         if (fd == server_socket_->sockfd() && (pfe->mask_ & EPOLLIN)) {
           connfd = accept(server_socket_->sockfd(), (struct sockaddr *) &cliaddr, &clilen);
+          if (connfd == -1) {
+            if (errno != EWOULDBLOCK) {
+                continue;
+            }
+          }
+
           log_info("Accept new fd %d", connfd);
-          
           Conn *tc = new Conn(connfd, this);
           tc->SetNonblock();
           conns_[connfd] = tc;

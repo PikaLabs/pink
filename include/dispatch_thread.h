@@ -88,6 +88,11 @@ public:
         fd = pfe->fd_;
         if (fd == server_socket_->sockfd() && (pfe->mask_ & EPOLLIN)) {
           connfd = accept(server_socket_->sockfd(), (struct sockaddr *) &cliaddr, &clilen);
+          if (connfd == -1) {
+            if (errno != EWOULDBLOCK) {
+                continue;
+            }
+          }
           log_info("Accept new fd %d", connfd);
           std::queue<PinkItem> *q = &(worker_thread_[last_thread_]->conn_queue_);
           PinkItem ti(connfd);

@@ -44,19 +44,20 @@ int BadaConn::DealMessage()
 
 
 
-BadaThread::BadaThread()
-{
+BadaThread::BadaThread(int cron_interval):
+  WorkerThread::WorkerThread(cron_interval) {
   bada_num_ = 10;
-
 }
 
-int BadaThread::PrintNum()
-{
+int BadaThread::PrintNum() {
   log_info("BadaThread num %d", bada_num_);
   return 0;
 }
 
-BadaThread::~BadaThread()
-{
+BadaThread::~BadaThread() {
 
+}
+
+void BadaThread::CronHandle() {
+  log_info("======bada cronhandle======");
 }

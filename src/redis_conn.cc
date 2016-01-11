@@ -28,8 +28,8 @@ RedisConn::RedisConn(int fd) :
 
 RedisConn::~RedisConn()
 {
-  free(rbuf_);
   free(wbuf_);
+  free(rbuf_);
 }
 
 bool RedisConn::SetNonblock()

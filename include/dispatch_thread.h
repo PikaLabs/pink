@@ -27,8 +27,9 @@ class DispatchThread : public Thread
 public:
   // This type Dispatch thread just get Connection and then Dispatch the fd to
   // worker thead
-  DispatchThread(int port, int work_num, WorkerThread<T> **worker_thread) :
-    work_num_(work_num) 
+  DispatchThread(int port, int work_num, WorkerThread<T> **worker_thread, int cron_interval = 0) :
+    Thread::Thread(cron_interval),
+    work_num_(work_num)
   {
 
     worker_thread_ = worker_thread;
@@ -68,18 +69,23 @@ public:
     struct timeval now;
     gettimeofday(&when, NULL);
 
-    when.tv_sec += (PINK_CRON_FREQUENCY / 1000);
-    when.tv_usec += ((PINK_CRON_FREQUENCY % 1000 ) * 1000);
-    int timeout = PINK_CRON_FREQUENCY;
+    when.tv_sec += (cron_interval_ / 1000);
+    when.tv_usec += ((cron_interval_ % 1000 ) * 1000);
+    int timeout = cron_interval_;
+    if (timeout <= 0) {
+      timeout = PINK_CRON_INTERVAL;
+    }
 
     for (;;) {
 
-      gettimeofday(&now, NULL);
-      if (when.tv_sec > now.tv_sec || (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
-        timeout = (when.tv_sec - now.tv_sec) * 1000 + (when.tv_usec - now.tv_usec) / 1000;
-      } else {
-        CronHandle();
-        timeout = PINK_CRON_FREQUENCY;
+      if (cron_interval_ > 0 ) {
+        gettimeofday(&now, NULL);
+        if (when.tv_sec > now.tv_sec || (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
+          timeout = (when.tv_sec - now.tv_sec) * 1000 + (when.tv_usec - now.tv_usec) / 1000;
+        } else {
+          CronHandle();
+          timeout = cron_interval_;
+        }
       }
 
       nfds = pink_epoll_->PinkPoll(timeout);
@@ -131,6 +137,7 @@ private:
   int last_thread_;
 
   int work_num_;
+//  int cron_interval_;
   /*
    * This is the work threads
    */

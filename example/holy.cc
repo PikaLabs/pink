@@ -7,7 +7,7 @@
 
 int main()
 {
-  Thread *t = new PinkThread(9211);
+  Thread *t = new PinkThread(9211, 1000);
 
   t->StartThread();
 

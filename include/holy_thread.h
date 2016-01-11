@@ -26,7 +26,8 @@ class HolyThread: public Thread
 {
 public:
   // This type thread thread will listen and work self list redis thread
-  explicit HolyThread(int port)
+  explicit HolyThread(int port, int cron_interval = 0) :
+    Thread::Thread(cron_interval)
   {
     server_socket_ = new ServerSocket(port);
 
@@ -43,7 +44,6 @@ public:
   }
 
   virtual void CronHandle() {
-    log_info("Come in holy_thread cronhandle");
   }
 private:
 
@@ -75,18 +75,23 @@ public:
     struct timeval now;
     gettimeofday(&when, NULL);
 
-    when.tv_sec += (PINK_CRON_FREQUENCY / 1000);
-    when.tv_usec += ((PINK_CRON_FREQUENCY % 1000 ) * 1000);
-    int timeout = PINK_CRON_FREQUENCY;
+    when.tv_sec += (cron_interval_ / 1000);
+    when.tv_usec += ((cron_interval_ % 1000 ) * 1000);
+    int timeout = cron_interval_;
+    if (timeout <= 0) {
+      timeout = PINK_CRON_INTERVAL;
+    }
 
     for (;;) {
 
-      gettimeofday(&now, NULL);
-      if (when.tv_sec > now.tv_sec || (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
-        timeout = (when.tv_sec - now.tv_sec) * 1000 + (when.tv_usec - now.tv_usec) / 1000;
-      } else {
-        CronHandle();
-        timeout = PINK_CRON_FREQUENCY;
+      if(cron_interval_ > 0) {
+        gettimeofday(&now, NULL);
+        if (when.tv_sec > now.tv_sec || (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
+          timeout = (when.tv_sec - now.tv_sec) * 1000 + (when.tv_usec - now.tv_usec) / 1000;
+        } else {
+          CronHandle();
+          timeout = cron_interval_;
+        }
       }
 
       nfds = pink_epoll_->PinkPoll(timeout);

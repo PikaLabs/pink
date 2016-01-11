@@ -26,7 +26,8 @@ int PikaConn::DealMessage() {
 
 
 
-PikaThread::PikaThread() {
+PikaThread::PikaThread(int cron_interval):
+  WorkerThread::WorkerThread(cron_interval) {
   pika_num_ = 10;
 }
 

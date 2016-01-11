@@ -14,7 +14,7 @@ class RedisConn: public PinkConn
 {
 public:
   RedisConn(int fd);
-  ~RedisConn();
+  virtual ~RedisConn();
   /*
    * Set the fd to nonblock && set the flag_ the the fd flag
    */
@@ -32,8 +32,8 @@ public:
   int32_t FindNextSeparators();
   int32_t GetNextNum(int32_t pos, int32_t *value);
 
-  ReadStatus GetRequest();
-  WriteStatus SendReply();
+  virtual ReadStatus GetRequest();
+  virtual WriteStatus SendReply();
 
   virtual int DealMessage() = 0;
 

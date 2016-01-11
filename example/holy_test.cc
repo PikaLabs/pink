@@ -47,8 +47,8 @@ int PinkHolyConn::DealMessage()
 
 
 
-PinkThread::PinkThread(int port) :
-  HolyThread<PinkHolyConn>(port)
+PinkThread::PinkThread(int port, int cron_interval) :
+  HolyThread<PinkHolyConn>(port, cron_interval)
 {
 
 }
@@ -57,4 +57,8 @@ PinkThread::PinkThread(int port) :
 PinkThread::~PinkThread()
 {
 
+}
+
+void PinkThread::CronHandle() {
+  log_info("======HolyThread Cron======");
 }

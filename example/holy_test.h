@@ -29,8 +29,9 @@ private:
 class PinkThread : public HolyThread<PinkHolyConn>
 {
 public:
-  explicit PinkThread(int port);
+  explicit PinkThread(int port, int cron_interval = 0);
   virtual ~PinkThread();
+  virtual void CronHandle();
 
   std::vector<int> v;
   

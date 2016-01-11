@@ -25,8 +25,9 @@ private:
 class BadaThread : public WorkerThread<BadaConn>
 {
 public:
-  BadaThread();
+  BadaThread(int cron_interval = 0);
   virtual ~BadaThread();
+  virtual void CronHandle();
 
   int PrintNum();
 

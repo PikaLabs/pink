@@ -18,7 +18,7 @@ private:
 class PikaThread : public WorkerThread<PikaConn>
 {
 public:
-  PikaThread();
+  PikaThread(int cron_interval = 0);
   virtual ~PikaThread();
   virtual void CronHandle();
 

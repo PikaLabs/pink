@@ -11,9 +11,9 @@ int main()
 {
   BadaThread *badaThread[1];
   for (int i = 0; i < 1; i++) {
-    badaThread[i] = new BadaThread();
+    badaThread[i] = new BadaThread(1000);
   }
-  Thread *t = new DispatchThread<BadaConn>(9211, 1, reinterpret_cast<WorkerThread<BadaConn> **>(badaThread));
+  Thread *t = new DispatchThread<BadaConn>(9211, 1, reinterpret_cast<WorkerThread<BadaConn> **>(badaThread), 3000);
 
   t->StartThread();
 

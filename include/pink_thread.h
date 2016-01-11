@@ -7,9 +7,11 @@ class Thread
 {
 
 public:
-  Thread();
+  Thread(int cron_interval = 0);
   virtual ~Thread();
   void StartThread();
+  virtual void CronHandle();
+  int cron_interval_;
 
 
 private:

@@ -7,7 +7,7 @@ class PinkConn
 {
 public:
   explicit PinkConn(int fd);
-  ~PinkConn();
+  virtual ~PinkConn();
 
   virtual ReadStatus GetRequest() = 0;
   virtual WriteStatus SendReply() = 0;

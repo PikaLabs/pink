@@ -60,7 +60,7 @@ public:
     return notify_send_fd_; 
   }
   Mutex mutex_;
-
+  std::map<std::string, void *> clients_;
 private:
   /*
    * These two fd receive the notify from dispatch thread
@@ -134,23 +134,21 @@ private:
            */
         } else {
           int should_close = 0;
+          std::map<int, void *>::iterator iter = conns_.begin();
+          if (pfe == NULL) {
+            continue;
+          }
+          iter = conns_.find(pfe->fd_);
+          if (iter == conns_.end()) {
+            continue;
+          }
+
           if (pfe->mask_ & EPOLLIN) {
-            std::map<int, void *>::iterator iter = conns_.begin();
-
-            if (pfe == NULL) {
-              continue;
-            }
-
-            iter = conns_.find(pfe->fd_);
-            if (iter == conns_.end()) {
-              continue;
-            }
 
             in_conn = static_cast<Conn *>(iter->second);
             ReadStatus getRes = in_conn->GetRequest();
             if (getRes != kReadAll && getRes != kReadHalf) {
               // kReadError kReadClose kFullError kParseError
-              delete(in_conn);
               should_close = 1;
             } else if (in_conn->is_reply()) {
               pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLOUT);
@@ -160,16 +158,6 @@ private:
           }
 
           if (pfe->mask_ & EPOLLOUT) {
-            std::map<int, void *>::iterator iter = conns_.begin();
-
-            if (pfe == NULL) {
-              continue;
-            }
-
-            iter = conns_.find(pfe->fd_);
-            if (iter == conns_.end()) {
-              continue;
-            }
 
             in_conn = static_cast<Conn *>(iter->second);
             WriteStatus write_status = in_conn->SendReply();
@@ -179,16 +167,14 @@ private:
             } else if (write_status == kWriteHalf) {
               continue;
             } else if (write_status == kWriteError) {
-              delete(in_conn);
               should_close = 1;
             }
           }
-          if ((pfe->mask_  & EPOLLERR) || (pfe->mask_ & EPOLLHUP)) {
+          if ((pfe->mask_  & EPOLLERR) || (pfe->mask_ & EPOLLHUP) || should_close) {
             log_info("close pfe fd here");
             close(pfe->fd_);
-          } else if (should_close) {
-            log_info("close pfe fd here");
-            close(pfe->fd_);
+            delete(in_conn);
+            conns_.erase(pfe->fd_);
           }
         }
       }

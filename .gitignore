@@ -28,3 +28,5 @@
 *.app
 
 tags
+output/
+example/output/

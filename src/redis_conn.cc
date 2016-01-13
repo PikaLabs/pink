@@ -9,8 +9,8 @@
 #include <string>
 
 
-RedisConn::RedisConn(int fd) :
-  PinkConn(fd)
+RedisConn::RedisConn(int fd, std::string ip_port) :
+  PinkConn(fd, ip_port)
 {
   rbuf_ = (char *)malloc(sizeof(char) * REDIS_MAX_MESSAGE);
   req_type_ = 0;

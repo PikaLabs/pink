@@ -53,7 +53,10 @@ public:
   }
 
   virtual void CronHandle() {
-    log_info("Come in dispatch_thread cronhandle");
+  }
+
+  virtual bool AccessHandle(std::string& ip) {
+    return true;
   }
 
   virtual void *ThreadMain()
@@ -62,7 +65,7 @@ public:
     PinkFiredEvent *pfe;
     Status s;
     struct sockaddr_in cliaddr;
-    socklen_t clilen;
+    socklen_t clilen = sizeof(struct sockaddr);
     int fd, connfd;
 
     struct timeval when;
@@ -75,6 +78,10 @@ public:
     if (timeout <= 0) {
       timeout = PINK_CRON_INTERVAL;
     }
+
+    std::string ip_port;
+    char port_buf[32];
+    char ip_addr[INET_ADDRSTRLEN] = "";
 
     for (;;) {
 
@@ -99,9 +106,20 @@ public:
                 continue;
             }
           }
+
+          ip_port = inet_ntop(AF_INET, &cliaddr.sin_addr, ip_addr, sizeof(ip_addr));
+          if (!AccessHandle(ip_port)) {
+            close(connfd);
+            continue;
+          }
+
+          ip_port.append(":");
+          sprintf(port_buf, "%d", ntohs(cliaddr.sin_port));
+          ip_port.append(port_buf);
+
           log_info("Accept new fd %d", connfd);
           std::queue<PinkItem> *q = &(worker_thread_[last_thread_]->conn_queue_);
-          PinkItem ti(connfd);
+          PinkItem ti(connfd, ip_port);
           {
             MutexLock l(&worker_thread_[last_thread_]->mutex_);
             q->push(ti);

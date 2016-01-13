@@ -13,7 +13,7 @@
 class RedisConn: public PinkConn
 {
 public:
-  RedisConn(int fd);
+  RedisConn(int fd, std::string ip_port);
   virtual ~RedisConn();
   /*
    * Set the fd to nonblock && set the flag_ the the fd flag

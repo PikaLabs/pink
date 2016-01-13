@@ -13,7 +13,7 @@
 class PbConn: public PinkConn
 {
 public:
-  explicit PbConn(int fd);
+  explicit PbConn(int fd, std::string ip_port);
   ~PbConn();
   /*
    * Set the fd to nonblock && set the flag_ the the fd flag

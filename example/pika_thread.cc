@@ -5,8 +5,8 @@
 #include <string>
 
 
-PikaConn::PikaConn(int fd, Thread *thread) :
-  RedisConn(fd) {
+PikaConn::PikaConn(int fd, std::string ip_port, Thread *thread) :
+  RedisConn(fd, ip_port) {
   pika_thread_ = reinterpret_cast<PikaThread *>(thread);
 }
 

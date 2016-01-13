@@ -13,7 +13,7 @@ class PinkThread;
 
 class PinkHolyConn: public PbConn {
 public:
-  PinkHolyConn(int fd, Thread *thread);
+  PinkHolyConn(int fd, std::string ip_port, Thread *thread);
   virtual ~PinkHolyConn();
   
   virtual int DealMessage();

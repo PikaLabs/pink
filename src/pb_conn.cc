@@ -6,8 +6,8 @@
 
 #include <string>
 
-PbConn::PbConn(int fd) :
-  PinkConn(fd)
+PbConn::PbConn(int fd, std::string ip_port) :
+  PinkConn(fd, ip_port)
 {
   rbuf_ = (char *)malloc(sizeof(char) * PB_MAX_MESSAGE);
   header_len_ = -1;

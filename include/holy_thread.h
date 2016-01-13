@@ -38,16 +38,21 @@ public:
 
   }
 
-  virtual ~HolyThread()
-  {
+  virtual ~HolyThread() {
     server_socket_->Close();
   }
 
   virtual void CronHandle() {
   }
-private:
+
+  virtual bool AccessHandle(std::string& ip_port) {
+    return true;
+  }
 
   std::map<int, void *> conns_;
+
+private:
+
 
   /*
    * The tcp server port and address
@@ -67,7 +72,7 @@ public:
     PinkFiredEvent *pfe;
     Status s;
     struct sockaddr_in cliaddr;
-    socklen_t clilen;
+    socklen_t clilen=sizeof(struct sockaddr);
     int fd, connfd;
     Conn *in_conn;
 
@@ -81,6 +86,10 @@ public:
     if (timeout <= 0) {
       timeout = PINK_CRON_INTERVAL;
     }
+
+    std::string ip_port;
+    char port_buf[32];
+    char ip_addr[INET_ADDRSTRLEN] = "";
 
     for (;;) {
 
@@ -100,38 +109,51 @@ public:
         log_info("tfe->fd_ %d tfe->mask_ %d", pfe->fd_, pfe->mask_);
         fd = pfe->fd_;
         if (fd == server_socket_->sockfd() && (pfe->mask_ & EPOLLIN)) {
-          connfd = accept(server_socket_->sockfd(), (struct sockaddr *) &cliaddr, &clilen);
-          if (connfd == -1) {
-            if (errno != EWOULDBLOCK) {
-                continue;
+          if (pfe->mask_ & EPOLLIN) {
+            connfd = accept(server_socket_->sockfd(), (struct sockaddr *) &cliaddr, &clilen);
+            if (connfd == -1) {
+              if (errno != EWOULDBLOCK) {
+                  continue;
+              }
             }
+
+            ip_port = inet_ntop(AF_INET, &cliaddr.sin_addr, ip_addr, sizeof(ip_addr));
+
+            if (!AccessHandle(ip_port)) {
+              close(connfd);
+              continue;
+            }
+
+            ip_port.append(":");
+            sprintf(port_buf, "%d", ntohs(cliaddr.sin_port));
+            ip_port.append(port_buf);
+
+            log_info("Accept new fd %d", connfd);
+            Conn *tc = new Conn(connfd, ip_port, this);
+            tc->SetNonblock();
+            conns_[connfd] = tc;
+
+            pink_epoll_->PinkAddEvent(connfd, EPOLLIN);
+          } else {
+            continue;
           }
-
-          log_info("Accept new fd %d", connfd);
-          Conn *tc = new Conn(connfd, this);
-          tc->SetNonblock();
-          conns_[connfd] = tc;
-
-          pink_epoll_->PinkAddEvent(connfd, EPOLLIN);
         } else {
           int should_close = 0;
+          std::map<int, void *>::iterator iter = conns_.begin();
+          if (pfe == NULL) {
+            continue;
+          }
+          iter = conns_.find(pfe->fd_);
+          if (iter == conns_.end()) {
+            continue;
+          }
+
           if (pfe->mask_ & EPOLLIN) {
-            std::map<int, void *>::iterator iter = conns_.begin();
-
-            if (pfe == NULL) {
-              continue;
-            }
-
-            iter = conns_.find(pfe->fd_);
-            if (iter == conns_.end()) {
-              continue;
-            }
 
             in_conn = static_cast<Conn *>(iter->second);
             ReadStatus getRes = in_conn->GetRequest();
             if (getRes != kReadAll && getRes != kReadHalf) {
               // kReadError kReadClose kFullError kParseError
-              delete(in_conn);
               should_close = 1;
             } else if (in_conn->is_reply()) {
               pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLOUT);
@@ -141,16 +163,6 @@ public:
           }
 
           if (pfe->mask_ & EPOLLOUT) {
-            std::map<int, void *>::iterator iter = conns_.begin();
-
-            if (pfe == NULL) {
-              continue;
-            }
-
-            iter = conns_.find(pfe->fd_);
-            if (iter == conns_.end()) {
-              continue;
-            }
 
             in_conn = static_cast<Conn *>(iter->second);
             WriteStatus write_status = in_conn->SendReply();
@@ -164,12 +176,11 @@ public:
               should_close = 1;
             }
           }
-          if ((pfe->mask_  & EPOLLERR) || (pfe->mask_ & EPOLLHUP)) {
+          if ((pfe->mask_  & EPOLLERR) || (pfe->mask_ & EPOLLHUP) || should_close) {
             log_info("close pfe fd here");
             close(pfe->fd_);
-          } else if (should_close) {
-            log_info("close pfe fd here");
-            close(pfe->fd_);
+            delete(in_conn);
+            conns_.erase(pfe->fd_);
           }
         }
       }

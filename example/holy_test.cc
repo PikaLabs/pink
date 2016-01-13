@@ -10,8 +10,8 @@
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
-PinkHolyConn::PinkHolyConn(int fd, Thread *thread) :
-  PbConn(fd)
+PinkHolyConn::PinkHolyConn(int fd, std::string ip_port, Thread *thread) :
+  PbConn(fd, ip_port)
 {
   
   pink_thread_ = reinterpret_cast<PinkThread *>(thread);

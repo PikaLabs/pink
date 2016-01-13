@@ -8,14 +8,16 @@ class PinkItem
 {
 public:
   PinkItem() {};
-  PinkItem(int fd);
+  PinkItem(int fd, std::string ip_port);
   ~PinkItem();
 
   int fd() { return fd_; }
+  std::string ip_port() { return ip_port_; }
 
 private:
 
   int fd_;
+  std::string ip_port_;
 
   /*
    * No copy && assigned allowed

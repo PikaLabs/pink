@@ -6,8 +6,9 @@
 #include <unistd.h>
 #include "csapp.h"
 
-PinkItem::PinkItem(int fd) :
-    fd_(fd)
+PinkItem::PinkItem(int fd, std::string ip_port) :
+    fd_(fd),
+    ip_port_(ip_port)
 {
 }
 

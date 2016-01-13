@@ -10,7 +10,7 @@ class BadaThread;
 
 class BadaConn: public PbConn {
 public:
-  BadaConn(int fd, Thread *thread);
+  BadaConn(int fd, std::string ip_port, Thread *thread);
   virtual ~BadaConn();
   virtual int DealMessage();
 

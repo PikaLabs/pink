@@ -8,8 +8,8 @@
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
-BadaConn::BadaConn(int fd, Thread *thread) :
-  PbConn(fd)
+BadaConn::BadaConn(int fd, std::string ip_port, Thread *thread) :
+  PbConn(fd, ip_port)
 {
   bada_thread_ = reinterpret_cast<BadaThread *>(thread);
 }

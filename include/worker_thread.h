@@ -61,6 +61,8 @@ public:
   }
   Mutex mutex_;
   std::map<std::string, void *> clients_;
+
+  std::map<int, void *> conns_;
 private:
   /*
    * These two fd receive the notify from dispatch thread
@@ -68,9 +70,6 @@ private:
   int notify_receive_fd_;
   int notify_send_fd_;
  
-//  int cron_interval_;
-
-  std::map<int, void *> conns_;
 
   /*
    * The epoll handler
@@ -116,19 +115,23 @@ private:
       for (int i = 0; i < nfds; i++) {
         pfe = (pink_epoll_->firedevent()) + i;
         log_info("pfe->fd_ %d pfe->mask_ %d", pfe->fd_, pfe->mask_);
-        if (pfe->fd_ == notify_receive_fd_ && (pfe->mask_ & EPOLLIN)) {
-          read(notify_receive_fd_, bb, 1);
-          {
-            MutexLock l(&mutex_);
-            ti = conn_queue_.front();
-            conn_queue_.pop();
-          }
-          Conn *tc = new Conn(ti.fd(), this);
-          tc->SetNonblock();
-          conns_[ti.fd()] = tc;
+        if (pfe->fd_ == notify_receive_fd_) {
+          if (pfe->mask_ & EPOLLIN) {
+            read(notify_receive_fd_, bb, 1);
+            {
+              MutexLock l(&mutex_);
+              ti = conn_queue_.front();
+              conn_queue_.pop();
+            }
+            Conn *tc = new Conn(ti.fd(), ti.ip_port(), this);
+            tc->SetNonblock();
+            conns_[ti.fd()] = tc;
 
-          pink_epoll_->PinkAddEvent(ti.fd(), EPOLLIN);
-          log_info("receive one fd %d", ti.fd());
+            pink_epoll_->PinkAddEvent(ti.fd(), EPOLLIN);
+            log_info("receive one fd %d", ti.fd());
+          } else {
+            continue;
+          }
           /*
            * tc->set_thread(this);
            */

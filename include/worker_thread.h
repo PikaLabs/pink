@@ -29,6 +29,7 @@ public:
      * install the protobuf handler here
      */
     log_info("WorkerThread construct");
+    pthread_rwlock_init(&rwlock_, NULL);
     pink_epoll_ = new PinkEpoll();
     int fds[2];
     if (pipe(fds)) {
@@ -60,9 +61,14 @@ public:
     return notify_send_fd_; 
   }
   Mutex mutex_;
-  std::map<std::string, void *> clients_;
 
-  std::map<int, void *> conns_;
+  pthread_rwlock_t* rwlock() {
+    return &rwlock_;
+  }
+  std::map<int, void *>* conns() {
+    return &conns_;
+  }
+
 private:
   /*
    * These two fd receive the notify from dispatch thread
@@ -70,6 +76,9 @@ private:
   int notify_receive_fd_;
   int notify_send_fd_;
  
+
+  pthread_rwlock_t rwlock_;
+  std::map<int, void *> conns_;
 
   /*
    * The epoll handler
@@ -125,8 +134,10 @@ private:
             }
             Conn *tc = new Conn(ti.fd(), ti.ip_port(), this);
             tc->SetNonblock();
+            {
+            RWLock l(&rwlock_, true);
             conns_[ti.fd()] = tc;
-
+            }
             pink_epoll_->PinkAddEvent(ti.fd(), EPOLLIN);
             log_info("receive one fd %d", ti.fd());
           } else {
@@ -175,9 +186,12 @@ private:
           }
           if ((pfe->mask_  & EPOLLERR) || (pfe->mask_ & EPOLLHUP) || should_close) {
             log_info("close pfe fd here");
+            {
+            RWLock l(&rwlock_, true);
             close(pfe->fd_);
             delete(in_conn);
             conns_.erase(pfe->fd_);
+            }
           }
         }
       }

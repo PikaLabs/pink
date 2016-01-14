@@ -20,6 +20,7 @@
 #include "pink_socket.h"
 #include "pink_epoll.h"
 #include "pink_item.h"
+#include "pink_mutex.h"
 
 template <typename Conn>
 class HolyThread: public Thread
@@ -32,6 +33,7 @@ public:
     server_socket_ = new ServerSocket(port);
 
     server_socket_->Listen();
+    pthread_rwlock_init(&rwlock_, NULL);
     // init epoll
     pink_epoll_ = new PinkEpoll();
     pink_epoll_->PinkAddEvent(server_socket_->sockfd(), EPOLLIN | EPOLLERR | EPOLLHUP);
@@ -49,7 +51,12 @@ public:
     return true;
   }
 
-  std::map<int, void *> conns_;
+  pthread_rwlock_t* rwlock() {
+    return &rwlock_;
+  }
+  std::map<int, void*>* conns() {
+    return &conns_;
+  }
 
 private:
 
@@ -60,6 +67,9 @@ private:
 
   ServerSocket *server_socket_;
   
+  pthread_rwlock_t rwlock_;
+  std::map<int, void *> conns_;
+
   /*
    * The Epoll event handler
    */
@@ -131,7 +141,10 @@ public:
             log_info("Accept new fd %d", connfd);
             Conn *tc = new Conn(connfd, ip_port, this);
             tc->SetNonblock();
+            {
+            RWLock l(&rwlock_, true);
             conns_[connfd] = tc;
+            }
 
             pink_epoll_->PinkAddEvent(connfd, EPOLLIN);
           } else {
@@ -178,9 +191,12 @@ public:
           }
           if ((pfe->mask_  & EPOLLERR) || (pfe->mask_ & EPOLLHUP) || should_close) {
             log_info("close pfe fd here");
+            {
+            RWLock l(&rwlock_, true);
             close(pfe->fd_);
             delete(in_conn);
             conns_.erase(pfe->fd_);
+            }
           }
         }
       }

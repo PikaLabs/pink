@@ -10,6 +10,9 @@ PikaConn::PikaConn(int fd, std::string ip_port, Thread *thread) :
   pika_thread_ = reinterpret_cast<PikaThread *>(thread);
 }
 
+PikaConn::~PikaConn() {
+}
+
 int PikaConn::DealMessage() {
 
 //  std::string res;

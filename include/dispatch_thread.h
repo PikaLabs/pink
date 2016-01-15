@@ -46,6 +46,15 @@ public:
       worker_thread_[i]->StartThread();
     }
   }
+
+  int work_num() {
+    return work_num_;
+  }
+
+  WorkerThread<T>** worker_thread() {
+    return worker_thread_;
+  }
+
   virtual ~DispatchThread()
   {
     delete(pink_epoll_);

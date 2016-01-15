@@ -95,8 +95,8 @@ private:
     Conn *in_conn;
 
     struct timeval when;
-    struct timeval now;
     gettimeofday(&when, NULL);
+    struct timeval now = when;
 
     when.tv_sec += (cron_interval_ / 1000);
     when.tv_usec += ((cron_interval_ % 1000 ) * 1000);
@@ -112,6 +112,8 @@ private:
         if (when.tv_sec > now.tv_sec || (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
           timeout = (when.tv_sec - now.tv_sec) * 1000 + (when.tv_usec - now.tv_usec) / 1000;
         } else {
+          when.tv_sec = now.tv_sec + (cron_interval_ / 1000);
+          when.tv_usec = now.tv_usec + ((cron_interval_ % 1000 ) * 1000);
           CronHandle();
           timeout = cron_interval_;
         }
@@ -161,6 +163,8 @@ private:
 
             in_conn = static_cast<Conn *>(iter->second);
             ReadStatus getRes = in_conn->GetRequest();
+            in_conn->set_last_interaction(&now);
+            log_info("now: %d, %d", now.tv_sec, now.tv_usec);
             if (getRes != kReadAll && getRes != kReadHalf) {
               // kReadError kReadClose kFullError kParseError
               should_close = 1;

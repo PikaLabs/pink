@@ -1,5 +1,7 @@
 #include "bada_sender.h"
 
+using namespace pink;
+
 void BadaSender::PeriodMain()
 {
   // ping_.set_t(pink::Ping::PING);

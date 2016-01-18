@@ -3,6 +3,8 @@
 #include "sys/epoll.h"
 #include "status.h"
 
+namespace pink {
+
 struct PinkFiredEvent {
   int fd_;
   int mask_;
@@ -29,5 +31,6 @@ private:
   int timeout_;
   PinkFiredEvent *firedevent_;
 };
+}
 
 #endif

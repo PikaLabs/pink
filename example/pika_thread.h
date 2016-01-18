@@ -4,6 +4,7 @@
 #include "worker_thread.h"
 #include "redis_conn.h"
 
+using namespace pink;
 class PikaThread;
 
 class PikaConn: public RedisConn {

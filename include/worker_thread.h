@@ -17,6 +17,7 @@
 #include <sys/epoll.h>
 #include <google/protobuf/message.h>
 
+namespace pink {
 
 template <typename Conn>
 class WorkerThread : public Thread
@@ -145,9 +146,6 @@ private:
           } else {
             continue;
           }
-          /*
-           * tc->set_thread(this);
-           */
         } else {
           int should_close = 0;
           std::map<int, void *>::iterator iter = conns_.begin();
@@ -204,5 +202,7 @@ private:
   }
 
 };
+
+}
 
 #endif

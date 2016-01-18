@@ -4,6 +4,8 @@
 #include "status.h"
 #include "pink_define.h"
 
+namespace pink {
+  
 class PinkItem
 {
 public:
@@ -28,5 +30,7 @@ private:
    */
 
 };
+
+}
 
 #endif

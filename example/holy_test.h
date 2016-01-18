@@ -9,6 +9,8 @@
 
 #include <vector>
 
+using namespace pink;
+
 class PinkThread;
 
 class PinkHolyConn: public PbConn {

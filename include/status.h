@@ -6,6 +6,8 @@
 #include "slice.h"
 #include "stdint.h"
 
+namespace pink {
+
 class Status {
 public:
   // Create a success status.
@@ -97,6 +99,7 @@ inline void Status::operator=(const Status& s) {
     delete[] state_;
     state_ = (s.state_ == NULL) ? NULL : CopyState(s.state_);
   }
+}
 }
 
 #endif

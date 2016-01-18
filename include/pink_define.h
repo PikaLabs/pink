@@ -1,6 +1,12 @@
 #ifndef PINK_DEFINE_H__
 #define PINK_DEFINE_H__
 
+#include <functional>
+#include <iostream>
+#include <map>
+
+namespace pink {
+
 #define PINK_MAX_CLIENTS 10240
 #define PINK_MAX_MESSAGE 1024
 #define PINK_NAME_LEN 1024
@@ -13,9 +19,6 @@
 #define COMMAND_HEADER_LENGTH 4
 #define COMMAND_CODE_LENGTH 4
 
-#include <functional>
-#include <iostream>
-#include <map>
 
 /*
  * The socket block type
@@ -84,5 +87,6 @@ enum WriteStatus {
 #define COLON ':'
 #define SHARP '#'
 
+}
 
 #endif

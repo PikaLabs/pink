@@ -3,6 +3,8 @@
 #include "xdebug.h"
 #include "status.h"
 
+namespace pink {
+
 PinkEpoll::PinkEpoll()
 {
   epfd_ = epoll_create(1024); 
@@ -91,4 +93,6 @@ int PinkEpoll::PinkPoll(int timeout)
     }
   }
   return numevents;
+}
+
 }

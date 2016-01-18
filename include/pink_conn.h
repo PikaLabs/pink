@@ -5,6 +5,7 @@
 
 #include "pink_define.h"
 
+namespace pink {
 class PinkConn
 {
 public:
@@ -65,5 +66,6 @@ private:
   uint64_t conn_querynum_;
   struct timeval last_interaction_;
 };
+}
 
 #endif

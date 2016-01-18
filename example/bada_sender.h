@@ -6,6 +6,8 @@
 #include <google/protobuf/message.h>
 #include "period_thread.h"
 
+using namespace pink;
+
 class BadaSender : public PeriodThread
 {
 public:

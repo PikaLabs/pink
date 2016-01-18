@@ -22,6 +22,8 @@
 #include "pink_item.h"
 #include "pink_mutex.h"
 
+namespace pink {
+
 template <typename Conn>
 class HolyThread: public Thread
 {
@@ -47,7 +49,7 @@ public:
   virtual void CronHandle() {
   }
 
-  virtual bool AccessHandle(std::string& ip_port) {
+  virtual bool AccessHandle(const std::string& ip) {
     return true;
   }
 
@@ -208,5 +210,6 @@ public:
   }
 
 };
+}
 
 #endif

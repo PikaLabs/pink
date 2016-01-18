@@ -1,6 +1,7 @@
 #ifndef PINK_SOCKET_H_
 #define PINK_SOCKET_H_
 
+namespace pink {
 class ServerSocket
 {
 public:
@@ -74,5 +75,7 @@ private:
   struct sockaddr_in servaddr_;
   int sockfd_;
 };
+
+}
 
 #endif

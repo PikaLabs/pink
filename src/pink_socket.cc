@@ -11,6 +11,8 @@
 
 #include "pink_socket.h"
 
+namespace pink {
+
 ServerSocket::ServerSocket(int port) :
   port_(port),
   send_timeout_(0),
@@ -83,4 +85,5 @@ int ServerSocket::SetNonBlock()
 void ServerSocket::Close()
 {
   close(sockfd_);
+}
 }

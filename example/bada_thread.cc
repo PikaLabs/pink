@@ -8,6 +8,8 @@
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
+using namespace pink;
+
 BadaConn::BadaConn(int fd, std::string ip_port, Thread *thread) :
   PbConn(fd, ip_port)
 {

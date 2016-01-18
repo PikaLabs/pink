@@ -15,16 +15,15 @@ namespace pink {
 class RedisConn: public PinkConn
 {
 public:
-  RedisConn(int fd, std::string ip_port);
+  RedisConn(const int fd, const std::string &ip_port);
   virtual ~RedisConn();
   /*
    * Set the fd to nonblock && set the flag_ the the fd flag
    */
   bool SetNonblock();
-  void InitPara();
   void ResetClient();
 
-  int flags() {
+  int flags() const {
     return flags_;
   };
 

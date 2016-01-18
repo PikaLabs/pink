@@ -155,7 +155,7 @@ private:
 
             in_conn = static_cast<Conn *>(iter->second);
             ReadStatus getRes = in_conn->GetRequest();
-            in_conn->set_last_interaction(&now);
+            in_conn->set_last_interaction(now);
             log_info("now: %d, %d", now.tv_sec, now.tv_usec);
             if (getRes != kReadAll && getRes != kReadHalf) {
               // kReadError kReadClose kFullError kParseError

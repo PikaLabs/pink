@@ -8,7 +8,7 @@
 
 namespace pink {
 
-PinkItem::PinkItem(int fd, std::string ip_port) :
+PinkItem::PinkItem(const int fd, const std::string &ip_port) :
     fd_(fd),
     ip_port_(ip_port)
 {

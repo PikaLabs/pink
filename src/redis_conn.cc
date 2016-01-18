@@ -122,7 +122,8 @@ static int split2args(const std::string& req_buf, std::vector<std::string>& argv
     }
   }
 }
-RedisConn::RedisConn(int fd, std::string ip_port) :
+
+RedisConn::RedisConn(const int fd, const std::string &ip_port) :
   PinkConn(fd, ip_port),
   last_read_pos_(-1),
   next_parse_pos_(0),

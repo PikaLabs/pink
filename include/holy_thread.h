@@ -164,7 +164,7 @@ public:
 
             in_conn = static_cast<Conn *>(iter->second);
             ReadStatus getRes = in_conn->GetRequest();
-            in_conn->set_last_interaction(&now);
+            in_conn->set_last_interaction(now);
             if (getRes != kReadAll && getRes != kReadHalf) {
               // kReadError kReadClose kFullError kParseError
               should_close = 1;

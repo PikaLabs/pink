@@ -6,7 +6,7 @@
 
 namespace pink {
 
-PinkConn::PinkConn(int fd, std::string ip_port):
+PinkConn::PinkConn(const int fd, const std::string &ip_port):
   fd_(fd),
   ip_port_(ip_port),
   is_reply_(false),

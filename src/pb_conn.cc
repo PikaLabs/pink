@@ -8,7 +8,7 @@
 
 namespace pink {
 
-PbConn::PbConn(int fd, std::string ip_port) :
+PbConn::PbConn(const int fd, const std::string &ip_port) :
   PinkConn(fd, ip_port),
   header_len_(-1),
   cur_pos_(0),

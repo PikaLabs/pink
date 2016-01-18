@@ -14,7 +14,7 @@ namespace pink {
 class PbConn: public PinkConn
 {
 public:
-  explicit PbConn(int fd, std::string ip_port);
+  PbConn(const int fd, const std::string &ip_port);
   ~PbConn();
   /*
    * Set the fd to nonblock && set the flag_ the the fd flag

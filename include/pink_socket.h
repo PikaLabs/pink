@@ -74,6 +74,14 @@ private:
   
   struct sockaddr_in servaddr_;
   int sockfd_;
+
+  /*
+   * No allowed copy and copy assign operator
+   */
+
+  ServerSocket(const ServerSocket&);
+  void operator=(const ServerSocket&);
+
 };
 
 }

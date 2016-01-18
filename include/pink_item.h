@@ -10,7 +10,7 @@ class PinkItem
 {
 public:
   PinkItem() {};
-  PinkItem(int fd, std::string ip_port);
+  PinkItem(const int fd, const std::string &ip_port);
   ~PinkItem();
 
   int fd() const {

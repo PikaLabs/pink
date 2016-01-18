@@ -66,8 +66,8 @@ public:
   pthread_rwlock_t* rwlock() {
     return &rwlock_;
   }
-  std::map<int, void *>* conns() {
-    return &conns_;
+  std::map<int, void *> conns() {
+    return conns_;
   }
 
 private:

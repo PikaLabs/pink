@@ -45,6 +45,7 @@ $(LIBRARY): $(OBJS)
 	ar -rcs $@ $(OBJS)
 	cp -r ./include $(OUTPUT)/
 	mv $@ $(OUTPUT)/lib/
+	protoc -I=./ --cpp_out=./example/ ./pink.proto
 	make -C example __PERF=$(__PERF)
 
 

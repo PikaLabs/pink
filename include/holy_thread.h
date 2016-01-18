@@ -55,12 +55,8 @@ public:
     return true;
   }
 
-  pthread_rwlock_t* rwlock() {
-    return &rwlock_;
-  }
-  std::map<int, void*>* conns() const{
-    return &conns_;
-  }
+  pthread_rwlock_t rwlock_;
+  std::map<int, void *> conns_;
 
 private:
 
@@ -70,9 +66,6 @@ private:
    */
 
   ServerSocket *server_socket_;
-  
-  pthread_rwlock_t rwlock_;
-  std::map<int, void *> conns_;
 
   /*
    * The Epoll event handler

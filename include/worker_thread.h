@@ -63,12 +63,8 @@ public:
   }
   Mutex mutex_;
 
-  pthread_rwlock_t* rwlock() {
-    return &rwlock_;
-  }
-  std::map<int, void *> conns() {
-    return conns_;
-  }
+  pthread_rwlock_t rwlock_;
+  std::map<int, void *> conns_;
 
 private:
   /*
@@ -78,8 +74,6 @@ private:
   int notify_send_fd_;
  
 
-  pthread_rwlock_t rwlock_;
-  std::map<int, void *> conns_;
 
   /*
    * The epoll handler

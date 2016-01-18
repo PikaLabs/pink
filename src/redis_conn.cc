@@ -9,38 +9,6 @@
 #include <string>
 
 namespace pink {
-
-RedisConn::RedisConn(int fd, std::string ip_port) :
-  PinkConn(fd, ip_port),
-  last_read_pos_(-1),
-  next_parse_pos_(0),
-  req_type_(0),
-  multibulk_len_(0),
-  bulk_len_(-1),
-  is_find_sep_(true),
-  is_overtake_(false),
-  wbuf_pos_(0),
-  wbuf_len_(0)
-{
-  rbuf_ = (char *)malloc(sizeof(char) * REDIS_MAX_MESSAGE);
-  wbuf_ = (char *)malloc(sizeof(char) * REDIS_MAX_MESSAGE);
-}
-
-RedisConn::~RedisConn()
-{
-  free(wbuf_);
-  free(rbuf_);
-}
-
-bool RedisConn::SetNonblock()
-{
-  flags_ = Setnonblocking(fd());
-  if (flags_ == -1) {
-    return false;
-  }
-  return true;
-}
-
 static bool IsHexDigit(char ch) {
   return (ch>='0' && ch<='9') || (ch>='a' && ch<='f') || (ch>='A' && ch<'F');
 }
@@ -154,6 +122,36 @@ static int split2args(const std::string& req_buf, std::vector<std::string>& argv
     }
   }
 }
+RedisConn::RedisConn(int fd, std::string ip_port) :
+  PinkConn(fd, ip_port),
+  last_read_pos_(-1),
+  next_parse_pos_(0),
+  req_type_(0),
+  multibulk_len_(0),
+  bulk_len_(-1),
+  is_find_sep_(true),
+  is_overtake_(false),
+  wbuf_pos_(0),
+  wbuf_len_(0)
+{
+  rbuf_ = (char *)malloc(sizeof(char) * REDIS_MAX_MESSAGE);
+  wbuf_ = (char *)malloc(sizeof(char) * REDIS_MAX_MESSAGE);
+}
+
+RedisConn::~RedisConn()
+{
+  free(wbuf_);
+  free(rbuf_);
+}
+
+bool RedisConn::SetNonblock()
+{
+  flags_ = Setnonblocking(fd());
+  if (flags_ == -1) {
+    return false;
+  }
+  return true;
+}
 
 ReadStatus RedisConn::ProcessInlineBuffer() {
   int32_t pos, ret;
@@ -189,7 +187,6 @@ ReadStatus RedisConn::ProcessMultibulkBuffer() {
   int32_t pos;
   if (multibulk_len_ == 0) {
     /* The client should have been reset */;
-    //
 
     pos = FindNextSeparators();
     if (pos != -1) {

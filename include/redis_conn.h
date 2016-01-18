@@ -10,6 +10,8 @@
 #include <map>
 #include <vector>
 
+namespace pink {
+
 class RedisConn: public PinkConn
 {
 public:
@@ -62,5 +64,6 @@ public:
 private:
   int flags_;
 };
+}
 
 #endif

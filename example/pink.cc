@@ -7,6 +7,7 @@
 #include "pink.pb.h"
 #include "bada_thread.h"
 
+using namespace pink;
 int main()
 {
   BadaThread *badaThread[1];

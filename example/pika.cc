@@ -6,6 +6,7 @@
 #include "dispatch_thread.h"
 #include "pika_thread.h"
 
+using namespace pink;
 int main()
 {
   PikaThread *pikaThread[1];

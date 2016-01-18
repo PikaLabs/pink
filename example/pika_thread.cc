@@ -4,6 +4,7 @@
 #include <functional>
 #include <string>
 
+using namespace pink;
 
 PikaConn::PikaConn(int fd, std::string ip_port, Thread *thread) :
   RedisConn(fd, ip_port) {

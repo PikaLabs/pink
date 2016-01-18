@@ -4,6 +4,8 @@
 #include "pink_thread.h"
 #include <sys/time.h> 
 
+namespace pink {
+
 class PeriodThread : public Thread
 {
 public:
@@ -15,5 +17,6 @@ private:
   struct timeval period_;
 
 };
+}
 
 #endif

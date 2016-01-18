@@ -6,6 +6,8 @@
 #include "pb_conn.h"
 #include <google/protobuf/message.h>
 
+using namespace pink;
+
 class BadaThread;
 
 class BadaConn: public PbConn {

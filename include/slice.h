@@ -20,6 +20,7 @@
 #include <string.h>
 #include <string>
 
+namespace pink {
 
 class Slice {
 public:
@@ -100,5 +101,6 @@ inline int Slice::compare(const Slice& b) const {
     else if (size_ > b.size_) r = +1;
   }
   return r;
+}
 }
 #endif

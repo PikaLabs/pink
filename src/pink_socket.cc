@@ -10,6 +10,9 @@
 #include <string.h>
 
 #include "pink_socket.h"
+#include "pink_util.h"
+
+namespace pink {
 
 ServerSocket::ServerSocket(int port) :
   port_(port),
@@ -49,7 +52,6 @@ void ServerSocket::Listen()
 
   int yes = 1;
   if (setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1) {
-    //LOG(FATAL) << "setsockopt SO_REUSEADDR: " << strerror(errno);
   }
 
   servaddr_.sin_family = AF_INET;
@@ -68,13 +70,8 @@ void ServerSocket::Listen()
 
 int ServerSocket::SetNonBlock()
 {
-  if ((flags_ = fcntl(sockfd_, F_GETFL, 0)) < 0) {
-    close(sockfd_);
-    return -1;
-  }
-  flags_ |= O_NONBLOCK;
-  if (fcntl(sockfd_, F_SETFL, flags_) < 0) {
-    close(sockfd_);
+  flags_ = Setnonblocking(sockfd());
+  if (flags_ == -1) {
     return -1;
   }
   return 0;
@@ -83,4 +80,5 @@ int ServerSocket::SetNonBlock()
 void ServerSocket::Close()
 {
   close(sockfd_);
+}
 }

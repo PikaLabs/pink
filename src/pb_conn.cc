@@ -6,14 +6,15 @@
 
 #include <string>
 
+namespace pink {
+
 PbConn::PbConn(int fd, std::string ip_port) :
-  PinkConn(fd, ip_port)
+  PinkConn(fd, ip_port),
+  header_len_(-1),
+  cur_pos_(0),
+  rbuf_len_(0)
 {
   rbuf_ = (char *)malloc(sizeof(char) * PB_MAX_MESSAGE);
-  header_len_ = -1;
-  cur_pos_ = 0;
-  rbuf_len_ = 0;
-
   wbuf_ = (char *)malloc(sizeof(char) * PB_MAX_MESSAGE);
 }
 
@@ -142,4 +143,6 @@ Status PbConn::BuildObuf()
   wbuf_len_ += COMMAND_HEADER_LENGTH;
 
   return Status::OK();
+}
+
 }

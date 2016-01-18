@@ -21,6 +21,7 @@
 #include "pink_socket.h"
 #include "pink_epoll.h"
 
+namespace pink {
 template <typename T>
 class DispatchThread : public Thread
 {
@@ -59,12 +60,13 @@ public:
   {
     delete(pink_epoll_);
     server_socket_->Close();
+    delete(server_socket_);
   }
 
   virtual void CronHandle() {
   }
 
-  virtual bool AccessHandle(std::string& ip) {
+  virtual bool AccessHandle(const std::string& ip) {
     return true;
   }
 
@@ -174,5 +176,6 @@ private:
   DispatchThread(const DispatchThread&);
   void operator=(const DispatchThread&);
 };
+}
 
 #endif

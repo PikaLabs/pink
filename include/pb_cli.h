@@ -3,6 +3,8 @@
 
 #include <string>
 
+namespace pink {
+
 class PbCli
 {
 public:
@@ -18,5 +20,7 @@ private:
   PbCli(const PbCli&);
   void operator=(const PbCli&);
 };
+
+}
 
 #endif

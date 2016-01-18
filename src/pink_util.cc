@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include "pink_define.h"
 
+namespace pink {
 
 int Setnonblocking(int sockfd)
 {
@@ -21,3 +22,4 @@ int Setnonblocking(int sockfd)
   return flags;
 }
 
+}

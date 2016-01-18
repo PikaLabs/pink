@@ -22,6 +22,8 @@
 #include "pink_item.h"
 #include "pink_mutex.h"
 
+namespace pink {
+
 template <typename Conn>
 class HolyThread: public Thread
 {
@@ -41,20 +43,22 @@ public:
   }
 
   virtual ~HolyThread() {
+    delete(pink_epoll_);
     server_socket_->Close();
+    delete(server_socket_);
   }
 
   virtual void CronHandle() {
   }
 
-  virtual bool AccessHandle(std::string& ip_port) {
+  virtual bool AccessHandle(const std::string& ip) {
     return true;
   }
 
   pthread_rwlock_t* rwlock() {
     return &rwlock_;
   }
-  std::map<int, void*>* conns() {
+  std::map<int, void*>* conns() const{
     return &conns_;
   }
 
@@ -208,5 +212,6 @@ public:
   }
 
 };
+}
 
 #endif

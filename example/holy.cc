@@ -5,6 +5,8 @@
 #include "holy_test.h"
 #include "pink.pb.h"
 
+using namespace pink;
+
 int main()
 {
   Thread *t = new PinkThread(9211, 1000);

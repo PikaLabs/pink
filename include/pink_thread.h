@@ -3,6 +3,8 @@
 
 #include <pthread.h>
 
+namespace pink {
+
 class Thread
 {
 
@@ -21,5 +23,7 @@ private:
   virtual void *ThreadMain() = 0; 
   
 };
+
+}
 
 #endif

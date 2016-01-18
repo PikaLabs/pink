@@ -3,6 +3,8 @@
 
 #include <pthread.h>
 
+namespace pink {
+
 class CondVar;
 
 class Mutex {
@@ -71,5 +73,7 @@ class RWLock {
     RWLock(const RWLock&);
     void operator=(const RWLock&);
 };
+
+}
 
 #endif

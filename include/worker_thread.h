@@ -17,6 +17,7 @@
 #include <sys/epoll.h>
 #include <google/protobuf/message.h>
 
+namespace pink {
 
 template <typename Conn>
 class WorkerThread : public Thread
@@ -65,8 +66,8 @@ public:
   pthread_rwlock_t* rwlock() {
     return &rwlock_;
   }
-  std::map<int, void *>* conns() {
-    return &conns_;
+  std::map<int, void *> conns() {
+    return conns_;
   }
 
 private:
@@ -145,9 +146,6 @@ private:
           } else {
             continue;
           }
-          /*
-           * tc->set_thread(this);
-           */
         } else {
           int should_close = 0;
           std::map<int, void *>::iterator iter = conns_.begin();
@@ -204,5 +202,7 @@ private:
   }
 
 };
+
+}
 
 #endif

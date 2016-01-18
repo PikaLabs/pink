@@ -13,8 +13,12 @@ public:
   PinkItem(int fd, std::string ip_port);
   ~PinkItem();
 
-  int fd() { return fd_; }
-  std::string ip_port() { return ip_port_; }
+  int fd() const {
+    return fd_;
+  }
+  std::string ip_port() const {
+    return ip_port_;
+  }
 
 private:
 
@@ -22,12 +26,10 @@ private:
   std::string ip_port_;
 
   /*
-   * No copy && assigned allowed
+   * Here we should allow the copy and copy assign operator
    */
-  /*
-   * PinkItem(const PinkItem&);
-   * void operator=(const PinkItem&);
-   */
+  // PinkItem(const PinkItem&);
+  // void operator=(const PinkItem&);
 
 };
 

@@ -60,6 +60,7 @@ public:
   {
     delete(pink_epoll_);
     server_socket_->Close();
+    delete(server_socket_);
   }
 
   virtual void CronHandle() {

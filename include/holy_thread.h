@@ -29,7 +29,7 @@ class HolyThread: public Thread
 {
 public:
   // This type thread thread will listen and work self list redis thread
-  explicit HolyThread(int port, int cron_interval = 0) :
+  HolyThread(int port, int cron_interval = 0) :
     Thread::Thread(cron_interval)
   {
     server_socket_ = new ServerSocket(port);

@@ -5,7 +5,7 @@ else
 	CXXFLAGS = -O2 -pipe -fPIC -W -Wwrite-strings -Wpointer-arith -Wreorder -Wswitch -Wsign-promo -Wredundant-decls -Wformat -Wall -D_GNU_SOURCE -D__STDC_FORMAT_MACROS -std=c++11 -gdwarf-2 -Wno-unused-variable -Wno-maybe-uninitialized -Wno-unused-parameter
 	# CXXFLAGS = -Wall -W -DDEBUG -g -O0 -D__XDEBUG__ 
 endif
-OBJECT = pink holy pika
+OBJECT = pink holy pika pika_holy
 SRC_DIR = ./
 OUTPUT = ./output
 
@@ -43,6 +43,9 @@ holy: holy.cc holy_test.cc pink.pb.cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
 pika: pika.cc pika_thread.cc
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+
+pika_holy: pika_holy.cc pika_holy_thread.cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
 $(OBJS): %.o : %.cc

@@ -27,12 +27,6 @@ public:
     return flags_;
   };
 
-  ReadStatus ProcessInputBuffer();
-  ReadStatus ProcessMultibulkBuffer();
-  ReadStatus ProcessInlineBuffer();
-  int32_t FindNextSeparators();
-  int32_t GetNextNum(int32_t pos, int32_t *value);
-
   virtual ReadStatus GetRequest();
   virtual WriteStatus SendReply();
 
@@ -44,13 +38,6 @@ public:
    * We allocate the memory when we start the server
    */
   char* rbuf_;
-  int32_t last_read_pos_;
-  int32_t next_parse_pos_;
-  int32_t req_type_;
-  int32_t multibulk_len_;
-  int32_t bulk_len_;
-  bool is_find_sep_;
-  bool is_overtake_;
   std::vector<std::string> argv_;
 
   ConnStatus connStatus_;
@@ -62,6 +49,21 @@ public:
 
 private:
   int flags_;
+
+  int32_t last_read_pos_;
+  int32_t next_parse_pos_;
+  int32_t req_type_;
+  int32_t multibulk_len_;
+  int32_t bulk_len_;
+  bool is_find_sep_;
+  bool is_overtake_;
+
+  ReadStatus ProcessInputBuffer();
+  ReadStatus ProcessMultibulkBuffer();
+  ReadStatus ProcessInlineBuffer();
+  int32_t FindNextSeparators();
+  int32_t GetNextNum(int32_t pos, int32_t *value);
+
 };
 }
 

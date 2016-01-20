@@ -12,8 +12,11 @@ public:
   virtual ~Thread();
   void StartThread();
   virtual void CronHandle();
-
   int cron_interval_;
+
+  pthread_t thread_id() {
+    return thread_id_;
+  }
 private:
   pthread_t thread_id_;
 

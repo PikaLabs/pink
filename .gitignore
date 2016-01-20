@@ -29,5 +29,7 @@
 
 tags
 output/
+example/pink.pb.h
+example/pink.pb.cc
 example/output/
 example/cli/cli

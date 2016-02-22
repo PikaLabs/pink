@@ -8,10 +8,11 @@
 #include "pink_conn.h"
 #include "xdebug.h"
 #include <map>
-#include <vector>
+#include <deque>
 
 namespace pink {
 
+typedef std::deque<std::string> RedisCmdArgsType;
 class RedisConn: public PinkConn
 {
 public:
@@ -33,23 +34,20 @@ public:
   virtual int DealMessage() = 0;
 
 
+  RedisCmdArgsType argv_;
+
+  ConnStatus connStatus_;
+
+
+
+private:
   /*
    * The Variable need by read the buf,
    * We allocate the memory when we start the server
    */
   char* rbuf_;
-  std::vector<std::string> argv_;
-
-  ConnStatus connStatus_;
-
-
-  char* wbuf_;
-  uint32_t wbuf_pos_;
-  uint32_t wbuf_len_;
-
-private:
+  
   int flags_;
-
   int32_t last_read_pos_;
   int32_t next_parse_pos_;
   int32_t req_type_;
@@ -57,12 +55,17 @@ private:
   int32_t bulk_len_;
   bool is_find_sep_;
   bool is_overtake_;
+  uint32_t wbuf_pos_;
 
   ReadStatus ProcessInputBuffer();
   ReadStatus ProcessMultibulkBuffer();
   ReadStatus ProcessInlineBuffer();
   int32_t FindNextSeparators();
   int32_t GetNextNum(int32_t pos, int32_t *value);
+
+protected:
+  char* wbuf_;
+  uint32_t wbuf_len_;
 
 };
 }

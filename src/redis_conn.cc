@@ -24,7 +24,7 @@ static int HexDigitToInt32(char ch) {
     return 0;
   }
 }
-static int split2args(const std::string& req_buf, std::vector<std::string>& argv) {
+static int split2args(const std::string& req_buf, RedisCmdArgsType& argv) {
   const char *p = req_buf.data();
   std::string arg;
 

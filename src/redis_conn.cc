@@ -312,7 +312,6 @@ ReadStatus RedisConn::ProcessInputBuffer() {
       ResetClient();
     } else {
       DealMessage(); 
-      set_is_reply(true);
     }
   }
   req_type_ = 0;

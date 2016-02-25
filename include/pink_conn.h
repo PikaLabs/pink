@@ -38,18 +38,6 @@ public:
     return is_reply_;
   }
 
-  void PlusConnQuerynum() {
-    conn_querynum_++;
-  }
-
-  void set_conn_querynum(const uint64_t n) {
-    conn_querynum_ = n;
-  }
-
-  uint64_t conn_querynum() const {
-    return conn_querynum_;
-  }
-
   void set_last_interaction(const struct timeval &now) {
     last_interaction_ = now;
   }
@@ -63,7 +51,6 @@ private:
   int fd_;
   std::string ip_port_;
   bool is_reply_;
-  uint64_t conn_querynum_;
   struct timeval last_interaction_;
 
   /*

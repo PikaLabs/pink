@@ -7,7 +7,6 @@
 using namespace pink;
 
 PikaSimpleThread::PikaSimpleThread(int num):
-  SimpleThread::SimpleThread(),
   num_(num) {
 }
 

@@ -1,10 +1,10 @@
 #ifndef PIKA_SIMPLE_THREAD_H_
 #define PIKA_SIMPLE_THREAD_H_
 
-#include "simple_thread.h"
+#include "pink_thread.h"
 using namespace pink;
 
-class PikaSimpleThread : public SimpleThread
+class PikaSimpleThread : public Thread
 {
 public:
   PikaSimpleThread(int num);

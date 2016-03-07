@@ -58,7 +58,11 @@ void ServerSocket::Listen()
   servaddr_.sin_addr.s_addr = htonl(INADDR_ANY);
   servaddr_.sin_port = htons(port_);
 
-  bind(sockfd_, (struct sockaddr *) &servaddr_, sizeof(servaddr_));
+  int ret = bind(sockfd_, (struct sockaddr *) &servaddr_, sizeof(servaddr_));
+  if (ret < 0) {
+    fprintf(stderr, "bind port error");
+    exit(-1);
+  }
   listen(sockfd_, accept_backlog_);
   listening_ = true;
 

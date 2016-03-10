@@ -104,7 +104,6 @@ ReadStatus PbConn::GetRequest()
 WriteStatus PbConn::SendReply()
 {
   BuildObuf();
-  log_info("wbuf_len_ is %d", wbuf_len_);
   ssize_t nwritten = 0;
   while (wbuf_len_ > 0) {
     nwritten = write(fd(), wbuf_ + wbuf_pos_, wbuf_len_ - wbuf_pos_);

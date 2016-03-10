@@ -2,6 +2,8 @@
 #define PINK_CLI_SOCKET_H_
 
 #include "status.h"
+#include <netinet/in.h>
+#include <sys/socket.h>
 
 namespace pink {
 
@@ -12,7 +14,7 @@ public:
   Status Connect(const std::string &ip, const int port);
 
 
-  void sockfd() {
+  int sockfd() {
     return sockfd_;
   }
 

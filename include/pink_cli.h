@@ -12,18 +12,21 @@ class CliSocket;
 class PinkCli {
 
 public:
-  PinkCli(const std::string &peer_ip, const int peer_port);
+  PinkCli();
   ~PinkCli();
 
   Status Connect(const std::string &peer_ip, const int peer_port);
 
-  Status Write(const std::string wbuf);
-  Status Recv(const std::string *rbuf);
+  virtual Status Write(const void *msg) = 0;
+  virtual Status Recv(void *msg_res) = 0;
+
+  int fd();
 
 private:
 
   std::string peer_ip_;
   int peer_port_;
+
   CliSocket *cli_socket_;
 
 

@@ -1,6 +1,6 @@
 
-#ifndef __BADA_STATUS_H
-#define __BADA_STATUS_H
+#ifndef __PINK_STATUS_H
+#define __PINK_STATUS_H
 
 #include <string>
 #include "slice.h"

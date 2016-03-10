@@ -117,8 +117,14 @@ public:
         pfe = (pink_epoll_->firedevent()) + i;
         log_info("tfe->fd_ %d tfe->mask_ %d", pfe->fd_, pfe->mask_);
         fd = pfe->fd_;
-        if (fd == server_socket_->sockfd() && (pfe->mask_ & EPOLLIN)) {
-          if (pfe->mask_ & EPOLLIN) {
+        if (fd == server_socket_->sockfd()) {
+          /*
+           * this branch means the listen fd is error
+           */
+          if (pfe->mask_ & (EPOLLHUP | EPOLLERR)) {
+            close(pfe->fd_);
+            continue;
+          } else if (pfe->mask_ & EPOLLIN) {
             connfd = accept(server_socket_->sockfd(), (struct sockaddr *) &cliaddr, &clilen);
             if (connfd == -1) {
               if (errno != EWOULDBLOCK) {
@@ -137,7 +143,6 @@ public:
             sprintf(port_buf, "%d", ntohs(cliaddr.sin_port));
             ip_port.append(port_buf);
 
-            log_info("Accept new fd %d", connfd);
             Conn *tc = new Conn(connfd, ip_port, this);
             tc->SetNonblock();
             {
@@ -161,7 +166,6 @@ public:
           }
 
           if (pfe->mask_ & EPOLLIN) {
-
             in_conn = static_cast<Conn *>(iter->second);
             ReadStatus getRes = in_conn->GetRequest();
             in_conn->set_last_interaction(now);
@@ -174,7 +178,6 @@ public:
               continue;
             }
           }
-
           if (pfe->mask_ & EPOLLOUT) {
 
             in_conn = static_cast<Conn *>(iter->second);
@@ -189,7 +192,7 @@ public:
               should_close = 1;
             }
           }
-          if ((pfe->mask_  & EPOLLERR) || (pfe->mask_ & EPOLLHUP) || should_close) {
+          if ((pfe->mask_ & EPOLLERR) || (pfe->mask_ & EPOLLHUP) || should_close) {
             log_info("close pfe fd here");
             {
             RWLock l(&rwlock_, true);

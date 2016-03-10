@@ -1,13 +1,16 @@
 #ifndef PINK_SOCKET_H_
 #define PINK_SOCKET_H_
 
+#include <netinet/in.h>
+#include <sys/socket.h>
+
 namespace pink {
+
 class ServerSocket
 {
 public:
-  explicit ServerSocket(int port);
+  ServerSocket(int port, bool is_block = false);
 
-  ServerSocket(int port, bool is_block);
   ~ServerSocket();
 
   void Listen();
@@ -84,6 +87,6 @@ private:
 
 };
 
-}
+};
 
 #endif

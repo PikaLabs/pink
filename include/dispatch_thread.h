@@ -109,10 +109,14 @@ public:
       }
 
       nfds = pink_epoll_->PinkPoll(timeout);
+      /*
+       * we just have the listen socket fd in the epoll 
+       */
       for (int i = 0; i < nfds; i++) {
         pfe = (pink_epoll_->firedevent()) + i;
         fd = pfe->fd_;
-        if (fd == server_socket_->sockfd() && (pfe->mask_ & EPOLLIN)) {
+        if (fd == server_socket_->sockfd()) {
+          if (pfe->mask_ & EPOLLIN) {
           connfd = accept(server_socket_->sockfd(), (struct sockaddr *) &cliaddr, &clilen);
           if (connfd == -1) {
             if (errno != EWOULDBLOCK) {
@@ -129,8 +133,6 @@ public:
           ip_port.append(":");
           sprintf(port_buf, "%d", ntohs(cliaddr.sin_port));
           ip_port.append(port_buf);
-
-          log_info("Accept new fd %d", connfd);
           std::queue<PinkItem> *q = &(worker_thread_[last_thread_]->conn_queue_);
           PinkItem ti(connfd, ip_port);
           {
@@ -140,8 +142,11 @@ public:
           write(worker_thread_[last_thread_]->notify_send_fd(), "", 1);
           last_thread_++;
           last_thread_ %= work_num_;
-        } else if (pfe->mask_ & (EPOLLRDHUP | EPOLLERR | EPOLLHUP)) {
-          log_info("Epoll timeout event");
+        } else if (pfe->mask_ & (EPOLLERR | EPOLLHUP)) {
+          /*
+           * this branch means there is error on the listen fd
+           */
+          close(fd);
         }
       }
     }

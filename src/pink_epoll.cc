@@ -27,12 +27,8 @@ Status PinkEpoll::PinkAddEvent(int fd, int mask)
 {
   struct epoll_event ee;
   ee.data.fd = fd;
-  /*
-   * log_info("PinkAddEvent mask %d", mask);
-   */
   ee.events = mask;
   if (epoll_ctl(epfd_, EPOLL_CTL_ADD, fd, &ee) == -1) {
-    log_info("Epoll add error");
     return Status::Corruption("epollAdd error");
   }
   return Status::OK();
@@ -41,15 +37,10 @@ Status PinkEpoll::PinkAddEvent(int fd, int mask)
 
 Status PinkEpoll::PinkModEvent(int fd, int oMask, int mask)
 {
-  /*
-   * log_info("PinkModEvent mask %d %d", fd, (oMask | mask));
-   */
   struct epoll_event ee;
-  ee.data.u64 = 0;
   ee.data.fd = fd;
   ee.events = (oMask | mask);
   if (epoll_ctl(epfd_, EPOLL_CTL_MOD, fd, &ee) == -1) {
-    log_info("Epoll ctl error");
     return Status::Corruption("epollCtl error");
   }
   return Status::OK();

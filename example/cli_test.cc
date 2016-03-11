@@ -12,23 +12,23 @@ Pcli::Pcli()
 
 Status Pcli::Ping(const std::string &address)
 {
+  Status s;
   log_info("come in the Pcli::Ping");
   pink::Ping ping;
-
   ping.set_address(address);
   ping.set_port(111);
 
-  Send(&ping);
+  s = Send(&ping);
 
   pink::PingRes ping_res;
 
   log_info("Send ping success");
 
-  Recv(&ping_res);
+  s = Recv(&ping_res);
 
   log_info("ping_res %d\n", ping_res.res());
 
-  return Status::OK();
+  return s;
 }
 
 int main()

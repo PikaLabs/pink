@@ -171,7 +171,7 @@ private:
             WriteStatus write_status = in_conn->SendReply();
             log_info("in work thead SendReply after");
             if (write_status == kWriteAll) {
-              // in_conn->set_is_reply(false);
+              in_conn->set_is_reply(false);
               pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLIN);
             } else if (write_status == kWriteHalf) {
               continue;

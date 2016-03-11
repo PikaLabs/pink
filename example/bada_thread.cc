@@ -23,7 +23,7 @@ BadaConn::~BadaConn()
 
 int BadaConn::DealMessage()
 {
-
+  set_is_reply(true);
   log_info("In the badaconn DealMessage branch");
   ping_.ParseFromArray(rbuf_ + 4, header_len_);
   /*

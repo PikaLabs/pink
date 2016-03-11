@@ -9,7 +9,7 @@ namespace pink {
 PinkConn::PinkConn(const int fd, const std::string &ip_port):
   fd_(fd),
   ip_port_(ip_port),
-  is_reply_(true)
+  is_reply_(false)
 {
   gettimeofday(&last_interaction_, NULL);
 }

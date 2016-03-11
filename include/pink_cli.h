@@ -17,7 +17,7 @@ public:
 
   Status Connect(const std::string &peer_ip, const int peer_port);
 
-  virtual Status Write(const void *msg) = 0;
+  virtual Status Send(void *msg) = 0;
   virtual Status Recv(void *msg_res) = 0;
 
   int fd();

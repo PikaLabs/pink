@@ -10,7 +10,7 @@
 
 using namespace pink;
 
-BadaConn::BadaConn(int fd, std::string ip_port, Thread *thread) :
+BadaConn::BadaConn(int fd, ::std::string ip_port, Thread *thread) :
   PbConn(fd, ip_port)
 {
   bada_thread_ = reinterpret_cast<BadaThread *>(thread);
@@ -58,8 +58,4 @@ int BadaThread::PrintNum() {
 
 BadaThread::~BadaThread() {
 
-}
-
-void BadaThread::CronHandle() {
-  log_info("======bada cronhandle======");
 }

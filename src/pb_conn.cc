@@ -85,8 +85,6 @@ ReadStatus PbConn::GetRequest()
           rbuf_len_ = 0;
         }
         return kReadAll;
-        break;
-
         /*
          * Add this switch case just for delete compile warning
          */

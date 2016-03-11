@@ -2,14 +2,20 @@
 #define __PINK_CLI_TEST_H
 
 #include "status.h"
+#include "pb_cli.h"
+#include "pink.pb.h"
+#include "pink_cli.h"
 
-class Pcli: public PinkCli {
+#include <google/protobuf/message.h>
+
+using namespace pink;
+
+class Pcli: public PbCli
+{
 public:
   Pcli();
 
-  Status Ping();
-
-private:
+  Status Ping(const std::string &address);
 
 };
 

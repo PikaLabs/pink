@@ -1,5 +1,6 @@
 #include "pb_cli.h"
 #include "pink_define.h"
+#include "xdebug.h"
 
 #include <netinet/in.h>
 #include <fcntl.h>
@@ -38,8 +39,9 @@ void PbCli::BuildWbuf()
 
 }
 
-Status PbCli::Send(const void *msg)
+Status PbCli::Send(void *msg)
 {
+  log_info("The Send function");
   msg_ = reinterpret_cast<google::protobuf::Message *>(msg);
 
   BuildWbuf();
@@ -52,6 +54,7 @@ Status PbCli::Send(const void *msg)
    * because the fd in PbCli is block so we just use rio_written
    */
   wbuf_pos_ = 0;
+  log_info("wbuf_len_ %d", wbuf_len_);
   size_t nleft = wbuf_len_;
   ssize_t nwritten;
   while (nleft > 0) {
@@ -73,8 +76,10 @@ Status PbCli::Send(const void *msg)
 
 Status PbCli::Recv(void *msg_res)
 {
+  log_info("The Recv function");
   msg_res_ = reinterpret_cast<google::protobuf::Message *>(msg_res);
   ReadHeader();
+  log_info("packet_len_ %d", packet_len_);
   ReadPacket();
   msg_res_->ParseFromString(rbuf_);
 
@@ -86,8 +91,10 @@ int PbCli::ReadHeader()
   int nread = 0;
   rbuf_pos_ = 0;
   size_t nleft = COMMAND_HEADER_LENGTH;
+  log_info("nleft %d", nleft);
   while (nleft >= 0) {
     nread = read(fd(), (void*)rbuf_ + rbuf_pos_, nleft);
+    log_info("nread %d", nread);
     if (nread == -1) {
       if (errno == EINTR) {
         continue;

@@ -6,8 +6,6 @@
 #include <google/protobuf/message.h>
 
 namespace pink {
-
-
 /*
  * pbcli support block client
  * I think block client is enough for a client
@@ -19,8 +17,8 @@ public:
   ~PbCli();
 
 
-  Status Send(const void *msg);
-  Status Recv(void *msg_res);
+  virtual Status Send(void *msg);
+  virtual Status Recv(void *msg_res);
 
 private:
 

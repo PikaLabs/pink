@@ -26,7 +26,7 @@ public:
    */
   int set_send_timeout(int send_timeout);
 
-  int CliSocketset_recv_timeout(int recv_timeout);
+  int set_recv_timeout(int recv_timeout);
 
   void set_connect_timeout(int connect_timeout) {
     connect_timeout_ = connect_timeout;

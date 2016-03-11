@@ -6,6 +6,8 @@
 #include "pb_conn.h"
 #include <google/protobuf/message.h>
 
+#include <string>
+
 using namespace pink;
 
 class BadaThread;
@@ -29,7 +31,6 @@ class BadaThread : public WorkerThread<BadaConn>
 public:
   BadaThread(int cron_interval = 0);
   virtual ~BadaThread();
-  virtual void CronHandle();
 
   int PrintNum();
 

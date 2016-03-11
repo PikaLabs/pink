@@ -2,10 +2,11 @@
 #define PINK_CONN_H_
 
 #include <sys/time.h>
-
+#include <string>
 #include "pink_define.h"
 
 namespace pink {
+
 class PinkConn
 {
 public:
@@ -16,8 +17,6 @@ public:
   virtual WriteStatus SendReply() = 0;
 
   virtual int DealMessage() = 0;
-
-
 
   void set_fd(const int fd) { 
     fd_ = fd; 

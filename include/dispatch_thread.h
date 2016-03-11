@@ -28,6 +28,14 @@ class DispatchThread : public Thread
 public:
   // This type Dispatch thread just get Connection and then Dispatch the fd to
   // worker thead
+  /**
+   * @brief 
+   *
+   * @param port the port number
+   * @param work_num
+   * @param worker_thread the worker thred we define
+   * @param cron_interval the cron job interval
+   */
   DispatchThread(int port, int work_num, WorkerThread<T> **worker_thread, int cron_interval = 0) :
     Thread::Thread(cron_interval),
     work_num_(work_num)
@@ -115,38 +123,44 @@ public:
       for (int i = 0; i < nfds; i++) {
         pfe = (pink_epoll_->firedevent()) + i;
         fd = pfe->fd_;
+        log_info("come fd is %d\n", fd);
         if (fd == server_socket_->sockfd()) {
           if (pfe->mask_ & EPOLLIN) {
-          connfd = accept(server_socket_->sockfd(), (struct sockaddr *) &cliaddr, &clilen);
-          if (connfd == -1) {
-            if (errno != EWOULDBLOCK) {
+            connfd = accept(server_socket_->sockfd(), (struct sockaddr *) &cliaddr, &clilen);
+            log_info("Connect fd %d", connfd);
+            if (connfd == -1) {
+              if (errno != EWOULDBLOCK) {
                 continue;
+              }
             }
-          }
 
-          ip_port = inet_ntop(AF_INET, &cliaddr.sin_addr, ip_addr, sizeof(ip_addr));
-          if (!AccessHandle(ip_port)) {
-            close(connfd);
-            continue;
-          }
+            ip_port = inet_ntop(AF_INET, &cliaddr.sin_addr, ip_addr, sizeof(ip_addr));
+            if (!AccessHandle(ip_port)) {
+              close(connfd);
+              continue;
+            }
 
-          ip_port.append(":");
-          sprintf(port_buf, "%d", ntohs(cliaddr.sin_port));
-          ip_port.append(port_buf);
-          std::queue<PinkItem> *q = &(worker_thread_[last_thread_]->conn_queue_);
-          PinkItem ti(connfd, ip_port);
-          {
-            MutexLock l(&worker_thread_[last_thread_]->mutex_);
-            q->push(ti);
+            ip_port.append(":");
+            sprintf(port_buf, "%d", ntohs(cliaddr.sin_port));
+            ip_port.append(port_buf);
+            std::queue<PinkItem> *q = &(worker_thread_[last_thread_]->conn_queue_);
+            PinkItem ti(connfd, ip_port);
+            {
+              MutexLock l(&worker_thread_[last_thread_]->mutex_);
+              q->push(ti);
+            }
+            write(worker_thread_[last_thread_]->notify_send_fd(), "", 1);
+            last_thread_++;
+            last_thread_ %= work_num_;
+          } else if (pfe->mask_ & (EPOLLERR | EPOLLHUP)) {
+            /*
+             * this branch means there is error on the listen fd
+             */
+            log_info("close the fd here");
+            close(fd);
           }
-          write(worker_thread_[last_thread_]->notify_send_fd(), "", 1);
-          last_thread_++;
-          last_thread_ %= work_num_;
-        } else if (pfe->mask_ & (EPOLLERR | EPOLLHUP)) {
-          /*
-           * this branch means there is error on the listen fd
-           */
-          close(fd);
+        } else {
+          continue;
         }
       }
     }

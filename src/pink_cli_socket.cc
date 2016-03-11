@@ -1,11 +1,19 @@
 #include "pink_cli_socket.h"
 
+#include <sys/socket.h>
+#include <netdb.h>
+#include <poll.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+namespace pink {
+
 CliSocket::CliSocket()
 : send_timeout_(0),
   recv_timeout_(0),
   connect_timeout_(1000),
-  keep_alive(0),
-  is_block(true)
+  keep_alive_(0),
+  is_block_(true)
 {
 }
 
@@ -14,16 +22,16 @@ int CliSocket::set_send_timeout(int send_timeout) {
   send_timeout_ = send_timeout;
   int ret = 0;
   if (send_timeout_ > 0) {
-    ret = setsockopt(sockfd_, SOL_SOCKET, SO_SNDTIMEO, &timeout_, sizeof(timeout_));
+    ret = setsockopt(sockfd_, SOL_SOCKET, SO_SNDTIMEO, &send_timeout_, sizeof(send_timeout_));
   }
   return ret;
 }
 
-int CliSocketset_recv_timeout(int recv_timeout) {
+int CliSocket::set_recv_timeout(int recv_timeout) {
   recv_timeout_ = recv_timeout;
   int ret = 0;
   if (recv_timeout_ > 0) {
-    ret = setsockopt(sockfd_, SOL_SOCKET, SO_RCVTIMEO, &timeout_, sizeof(timeout_));
+    ret = setsockopt(sockfd_, SOL_SOCKET, SO_RCVTIMEO, &recv_timeout_, sizeof(recv_timeout_));
   }
   return ret;
 }
@@ -31,7 +39,7 @@ int CliSocketset_recv_timeout(int recv_timeout) {
 Status CliSocket::Connect(const std::string &ip, const int port)
 {
   Status s;
-  int sockfd, rv;
+  int rv;
 
   char cport[6];
   struct addrinfo hints, *servinfo, *p;
@@ -110,3 +118,5 @@ Status CliSocket::Connect(const std::string &ip, const int port)
   freeaddrinfo(p);
   return s;
 }
+
+};

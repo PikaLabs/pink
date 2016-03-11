@@ -8,7 +8,9 @@
 #include "pink_conn.h"
 #include "xdebug.h"
 #include <google/protobuf/message.h>
+#include <string>
 #include <map>
+
 namespace pink {
 
 class PbConn: public PinkConn
@@ -55,6 +57,7 @@ private:
 
   Status BuildObuf();
 };
+
 }
 
 #endif

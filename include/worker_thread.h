@@ -96,7 +96,7 @@ private:
     when.tv_sec += (cron_interval_ / 1000);
     when.tv_usec += ((cron_interval_ % 1000 ) * 1000);
     int timeout = cron_interval_;
-    if (timeout <= 0 ) {
+    if (timeout <= 0) {
       timeout = PINK_CRON_INTERVAL;
     }
 
@@ -115,9 +115,7 @@ private:
       }
 
       nfds = pink_epoll_->PinkPoll(timeout);
-      /*
-       * log_info("nfds %d", nfds);
-       */
+
       for (int i = 0; i < nfds; i++) {
         pfe = (pink_epoll_->firedevent()) + i;
         log_info("pfe->fd_ %d pfe->mask_ %d", pfe->fd_, pfe->mask_);
@@ -157,6 +155,7 @@ private:
             ReadStatus getRes = in_conn->GetRequest();
             in_conn->set_last_interaction(now);
             log_info("now: %d, %d", now.tv_sec, now.tv_usec);
+            log_info("in_conn->is_reply() %d", in_conn->is_reply());
             if (getRes != kReadAll && getRes != kReadHalf) {
               // kReadError kReadClose kFullError kParseError
               should_close = 1;
@@ -166,13 +165,13 @@ private:
               continue;
             }
           }
-
           if (pfe->mask_ & EPOLLOUT) {
-
             in_conn = static_cast<Conn *>(iter->second);
+            log_info("in work thead SendReply before");
             WriteStatus write_status = in_conn->SendReply();
+            log_info("in work thead SendReply after");
             if (write_status == kWriteAll) {
-              in_conn->set_is_reply(false);
+              // in_conn->set_is_reply(false);
               pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLIN);
             } else if (write_status == kWriteHalf) {
               continue;

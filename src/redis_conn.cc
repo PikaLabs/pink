@@ -196,10 +196,10 @@ ReadStatus RedisConn::ProcessMultibulkBuffer() {
             return kParseError; 
         }
       next_parse_pos_ = (pos + 1) % REDIS_MAX_MESSAGE;
+      argv_.clear();
       if ((last_read_pos_ + 1) % REDIS_MAX_MESSAGE == next_parse_pos_) {
         return kReadHalf;
       }
-      argv_.clear();
     } else {
       if ((last_read_pos_ + 1) % REDIS_MAX_MESSAGE == next_parse_pos_) {
         return kFullError; /*FULL_ERROR*/

@@ -29,7 +29,6 @@ private:
 
   CliSocket *cli_socket_;
 
-
 };
 
 };

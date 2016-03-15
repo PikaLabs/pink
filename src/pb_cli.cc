@@ -62,10 +62,10 @@ Status PbCli::Send(void *msg)
       if (errno == EINTR) {
         nwritten = 0;
         continue;
+      } else {
+        s = Status::IOError(wbuf_, "write bada context error");
+        return s;
       }
-    } else {
-      s = Status::IOError(wbuf_, "write bada context error");
-      return s;
     }
     nleft -= nwritten;
     wbuf_pos_ += nwritten;

@@ -112,7 +112,7 @@ ssize_t RedisCli::BufferRead() {
         return -1;
       }
     } else if (nread == 0) {    // we consider read null an error 
-      err = REDIS_ERR;
+      err_ = REDIS_ERR;
       return -1;
     }
 

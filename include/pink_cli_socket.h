@@ -19,7 +19,7 @@ public:
   }
 
   /*
-   * in the client socket, we support three type of timeout
+   * for the client socket, we support three type of timeout in miliseconds
    * 1. connect timeout
    * 2. send timeout
    * 3. recv timeout

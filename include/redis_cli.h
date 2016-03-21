@@ -15,9 +15,21 @@ class RedisCli : public PinkCli {
   RedisCli();
   ~RedisCli();
 
-  //void Init(int send_timeout = 0, int recv_timeout = 0, int connect_timeout = 0);
+  // We could set miliseconds timeout by 
+  //    set_send_timeout
+  //    set_recv_timeout
+  //    set_connect_timeout.
 
-  int SerializeCommand(std::string *cmd, const char *format, ...);
+
+  // We can serialize redis command by 2 ways:
+  // 1. by variable argmuments;
+  //    eg.  RedisCli::Serialize(cmd, "set %s %d", "key", 5);
+  //        cmd will be the result string;
+  // 2. by a string vector;
+  //    eg.  RedisCli::Serialize(argv, cmd);
+  //        also cmd will be the result string.
+  static int SerializeCommand(std::string *cmd, const char *format, ...);
+  static int SerializeCommand(RedisCmdArgsType argv, std::string *cmd);
 
   // msg should have been parsed
   virtual Status Send(void *msg);
@@ -52,6 +64,5 @@ class RedisCli : public PinkCli {
 
 };
 
-}
-
+}   // namespace pink
 #endif

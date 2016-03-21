@@ -19,25 +19,26 @@ CliSocket::CliSocket()
 
 
 int CliSocket::set_send_timeout(int send_timeout) {
-  send_timeout_ = send_timeout;
   int ret = 0;
-  if (send_timeout_ > 0) {
-    ret = setsockopt(sockfd_, SOL_SOCKET, SO_SNDTIMEO, &send_timeout_, sizeof(send_timeout_));
+  if (send_timeout > 0) {
+    send_timeout_ = send_timeout;
+    struct timeval timeout = {send_timeout_ / 1000, (send_timeout_ % 1000) * 1000};
+    ret = setsockopt(sockfd_, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
   }
   return ret;
 }
 
 int CliSocket::set_recv_timeout(int recv_timeout) {
-  recv_timeout_ = recv_timeout;
   int ret = 0;
-  if (recv_timeout_ > 0) {
-    ret = setsockopt(sockfd_, SOL_SOCKET, SO_RCVTIMEO, &recv_timeout_, sizeof(recv_timeout_));
+  if (recv_timeout > 0) {
+    recv_timeout_ = recv_timeout;
+    struct timeval timeout = {recv_timeout_ / 1000, (recv_timeout_ % 1000) * 1000};
+    ret = setsockopt(sockfd_, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
   }
   return ret;
 }
 
-Status CliSocket::Connect(const std::string &ip, const int port)
-{
+Status CliSocket::Connect(const std::string &ip, const int port) {
   Status s;
   int rv;
 

@@ -36,20 +36,6 @@ RedisCli::~RedisCli() {
   free(rbuf_);
 }
 
-#if 0
-void RedisCli::Init(int send_timeout, int recv_timeout, int connect_timeout) {
-  if (send_timeout > 0) {
-    cli_socket_->set_send_timeout(send_timeout);
-  }
-  if (recv_timeout > 0) {
-    cli_socket_->set_recv_timeout(recv_timeout);
-  }
-  if (connect_timeout > 0) {
-    cli_socket_->set_connect_timeout(connect_timeout);
-  }
-}
-#endif
-
 // We use passed-in send buffer here
 Status RedisCli::Send(void *msg) {
   log_info("The Send function");
@@ -255,6 +241,10 @@ int RedisCli::GetReplyFromReader() {
   }
 }
 
+//
+// Redis protocol related funcitons
+//
+
 // Calculate the number of bytes needed to represent an integer as string.
 static int intlen(int i) {
   int len = 0;
@@ -448,12 +438,42 @@ int redisvAppendCommand(std::string *cmd, const char *format, va_list ap) {
   return REDIS_OK;
 }
 
+
+int redisFormatCommandArgv(RedisCmdArgsType argv, std::string *cmd) {
+  size_t argc = argv.size();
+
+  int totlen = 1 + intlen(argc) + 2;
+  for (size_t i = 0; i < argc; i++) {
+    totlen +=  bulklen(argv[i].size());
+  }
+
+  cmd->clear();
+  cmd->reserve(totlen);
+
+  cmd->append(1, '*');
+  cmd->append(std::to_string(argc));
+  cmd->append("\r\n");
+  for (size_t i = 0; i < argc; i++) {
+    cmd->append(1, '$');
+    cmd->append(std::to_string(argv[i].size()));
+    cmd->append("\r\n");
+    cmd->append(argv[i]);
+    cmd->append("\r\n");
+  }
+
+  return REDIS_OK;
+}
+
 int RedisCli::SerializeCommand(std::string *cmd, const char *format, ...) {
   va_list ap;
   va_start(ap, format);
   int result = redisvAppendCommand(cmd, format, ap);
   va_end(ap);
   return result;
+}
+
+int RedisCli::SerializeCommand(RedisCmdArgsType argv, std::string *cmd)  {
+  return redisFormatCommandArgv(argv, cmd);
 }
 
 };  // namespace pink

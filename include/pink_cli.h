@@ -3,6 +3,7 @@
 
 #include <string>
 
+#include "pink_cli_socket.h"
 #include "status.h"
 
 namespace pink {
@@ -21,6 +22,18 @@ public:
   virtual Status Recv(void *msg_res) = 0;
 
   int fd();
+
+  virtual int set_send_timeout(int send_timeout) {
+    return cli_socket_->set_send_timeout(send_timeout);
+  }
+
+  virtual int set_recv_timeout(int recv_timeout) {
+    return cli_socket_->set_recv_timeout(recv_timeout);
+  }
+
+  virtual void set_connect_timeout(int connect_timeout) {
+    cli_socket_->set_connect_timeout(connect_timeout);
+  }
 
 private:
 

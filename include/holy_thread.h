@@ -43,6 +43,9 @@ public:
   }
 
   virtual ~HolyThread() {
+    should_exit_ = true;
+    pthread_join(thread_id(), NULL);
+
     delete(pink_epoll_);
     server_socket_->Close();
     delete(server_socket_);
@@ -98,8 +101,7 @@ public:
     char port_buf[32];
     char ip_addr[INET_ADDRSTRLEN] = "";
 
-    for (;;) {
-
+    while (!should_exit_) {
       if(cron_interval_ > 0) {
         gettimeofday(&now, NULL);
         if (when.tv_sec > now.tv_sec || (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
@@ -204,7 +206,22 @@ public:
         }
       }
     }
+
+    cleanup();
     return NULL;
+  }
+
+  // clean conns
+  void cleanup()
+  {
+    RWLock l(&rwlock_, true);
+    Conn *in_conn;
+    std::map<int, void *>::iterator iter = conns_.begin();
+    for (; iter != conns_.end(); iter++) {
+         close(iter->first);
+         in_conn = static_cast<Conn *>(iter->second);
+         delete in_conn;
+    }
   }
 
 };

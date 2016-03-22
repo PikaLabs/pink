@@ -9,12 +9,12 @@ void BGThread::Schedule(void (*function)(void*), void* arg) {
 
 void *BGThread::ThreadMain() {
   running_ = true;
-  while (!exit_) {
+  while (!should_exit_) {
     pthread_mutex_lock(&mu_);
-    while (queue_.empty() && !exit_) {
+    while (queue_.empty() && !should_exit_) {
       pthread_cond_wait(&signal_, &mu_);
     }
-    if (exit_) {
+    if (should_exit_) {
       pthread_mutex_unlock(&mu_);
       continue;
     }

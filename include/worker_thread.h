@@ -44,6 +44,9 @@ public:
   }
 
   virtual ~WorkerThread() {
+    should_exit_ = true;
+    pthread_join(thread_id(), NULL);
+
     delete(pink_epoll_);
   }
 
@@ -80,6 +83,18 @@ private:
    */
   PinkEpoll *pink_epoll_;
 
+  // clean conns
+  void cleanup()
+  {
+    RWLock l(&rwlock_, true);
+    Conn *in_conn;
+    std::map<int, void *>::iterator iter = conns_.begin();
+    for (; iter != conns_.end(); iter++) {
+         close(iter->first);
+         in_conn = static_cast<Conn *>(iter->second);
+         delete in_conn;
+    }
+  }
 
   virtual void *ThreadMain()
   {
@@ -100,7 +115,7 @@ private:
       timeout = PINK_CRON_INTERVAL;
     }
 
-    for (;;) {
+    while (!should_exit_) {
 
       if (cron_interval_ > 0 ) {
         gettimeofday(&now, NULL);
@@ -191,6 +206,8 @@ private:
         }
       }
     }
+
+    cleanup();
     return NULL;
   }
 

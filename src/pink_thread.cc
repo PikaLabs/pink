@@ -3,9 +3,10 @@
 
 namespace pink {
 
-Thread::Thread(int cron_interval) :
-  cron_interval_(cron_interval),
-  thread_id_(0)
+Thread::Thread(int cron_interval)
+  : cron_interval_(cron_interval),
+    should_exit_(false),
+    thread_id_(0)
 {
 }
 

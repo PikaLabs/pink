@@ -64,8 +64,11 @@ public:
     return worker_thread_;
   }
 
-  virtual ~DispatchThread()
-  {
+  virtual ~DispatchThread() {
+    should_exit_ = true;
+
+    pthread_join(thread_id(), NULL);
+
     delete(pink_epoll_);
     server_socket_->Close();
     delete(server_socket_);
@@ -102,7 +105,7 @@ public:
     char port_buf[32];
     char ip_addr[INET_ADDRSTRLEN] = "";
 
-    for (;;) {
+    while (!should_exit_) {
 
       if (cron_interval_ > 0 ) {
         gettimeofday(&now, NULL);

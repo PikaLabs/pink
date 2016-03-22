@@ -1,6 +1,7 @@
 #ifndef PINK_THREAD_H_
 #define PINK_THREAD_H_
 
+#include <atomic>
 #include <pthread.h>
 
 namespace pink {
@@ -13,6 +14,9 @@ public:
   void StartThread();
   virtual void CronHandle();
   int cron_interval_;
+
+  std::atomic<bool> should_exit_;
+
 
   pthread_t thread_id() {
     return thread_id_;

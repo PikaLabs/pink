@@ -85,7 +85,8 @@ Status CliSocket::Connect(const std::string &ip, const int port) {
         } else if (res == 0) {
           close(sockfd_);
           freeaddrinfo(servinfo);
-          return Status::IOError("ETIMEDOUT", "connect host timeout");
+          return Status::Timeout("");
+          //return Status::IOError("ETIMEDOUT", "connect host timeout");
         }
         int val = 0;
         socklen_t lon = sizeof(int);

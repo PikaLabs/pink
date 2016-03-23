@@ -13,6 +13,7 @@
 namespace pink {
 
 enum REDIS_STATUS {
+  REDIS_ETIMEOUT = -2,
   REDIS_ERR = -1,
   REDIS_OK = 0,
   REDIS_HALF,
@@ -54,10 +55,13 @@ Status RedisCli::Send(void *msg) {
         nwritten = 0;
         continue;
         // block will EAGAIN ?
+      } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        s = Status::Timeout("");
+        //s = Status::IOError("ETIMEOUT", "send timeout");
       } else {
-        s = Status::IOError(wbuf, "write context error");
-        return s;
+        s = Status::IOError(strerror(errno));
       }
+      return s;
     }
 
     nleft -= nwritten;
@@ -68,14 +72,19 @@ Status RedisCli::Send(void *msg) {
 }
 
 // The result is useless
-Status RedisCli::Recv(void *result) {
+Status RedisCli::Recv(void *trival) {
   log_info("The Recv function");
 
-  if (GetReply() == REDIS_ERR) {
-    return Status::IOError(std::string(strerror(errno)));
+  int result = GetReply();
+  switch (result) {
+    case REDIS_OK: 
+      return Status::OK();
+    case REDIS_ETIMEOUT:
+      return Status::Timeout("");
+      //return Status::IOError("ETIMEOUT", "recv timeout");
+    default:
+      return Status::IOError(strerror(errno));
   }
-
-  return Status::OK();
 }
 
 ssize_t RedisCli::BufferRead() {
@@ -93,13 +102,14 @@ ssize_t RedisCli::BufferRead() {
     if (nread == -1) {
       if (errno == EINTR) {
         continue;
+      } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        return REDIS_ETIMEOUT;
       } else {
         log_info("read error, %s", strerror(errno));
-        return -1;
+        return REDIS_ERR;
       }
     } else if (nread == 0) {    // we consider read null an error 
-      err_ = REDIS_ERR;
-      return -1;
+      return REDIS_ERR;
     }
 
     rbuf_offset_ += nread;
@@ -110,7 +120,7 @@ ssize_t RedisCli::BufferRead() {
 /* Find pointer to \r\n. */
 static char *seekNewline(char *s, size_t len) {
   int pos = 0;
-  int _len = len-1;
+  int _len = len - 1;
 
   /* Position should be < len-1 because the character at "pos" should be
    * followed by a \n. Note that strchr cannot be used because it doesn't
@@ -155,7 +165,7 @@ int RedisCli::GetReply() {
     // Should read again
     if (rbuf_offset_ == 0 || result == REDIS_HALF) {
       if ((result = BufferRead()) < 0) {
-        return REDIS_ERR;
+        return result;
       }
     }
 
@@ -192,9 +202,9 @@ char *RedisCli::ReadLine(int *_len) {
 }
 
 int RedisCli::GetReplyFromReader() {
-  if (err_) {
-    return REDIS_ERR;
-  }
+ // if (err_) {
+ //   return REDIS_ERR;
+ // }
 
   if (rbuf_offset_ == 0) {
     return REDIS_HALF;

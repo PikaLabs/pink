@@ -45,6 +45,10 @@ public:
     return Status(kEndFile, msg, msg2);
   }
 
+  static Status Timeout(const Slice& msg, const Slice& msg2 = Slice()) {
+    return Status(kTimeout, msg, msg2);
+  }
+
   // Returns true iff the status indicates success.
   bool ok() const { return (state_ == NULL); }
 
@@ -58,6 +62,8 @@ public:
   bool IsIOError() const { return code() == kIOError; }
 
   bool IsEndFile() const { return code() == kEndFile; }
+
+  bool IsTimeout() const { return code() == kTimeout; }
 
   // Return a string representation of this status suitable for printing.
   // Returns the string "OK" for success.
@@ -78,7 +84,8 @@ private:
     kNotSupported = 3,
     kInvalidArgument = 4,
     kIOError = 5,
-    kEndFile = 6
+    kEndFile = 6,
+    kTimeout = 7
   };
 
   Code code() const {

@@ -22,7 +22,7 @@ int main() {
   printf ("2. Serialize by argv return %d, (%s)\n", ret, str.c_str());
 
   RedisCli *rcli = new RedisCli();
-  rcli->set_connect_timeout(8000);
+  rcli->set_connect_timeout(3000);
 
   Status s = rcli->Connect("127.0.0.1", 9824);
 
@@ -35,12 +35,14 @@ int main() {
       exit(-1);
   }
 
-  ret = rcli->set_send_timeout(8000);
-  if (ret < 0) {
-    log_warn("set send timeout 8000 ms, return %d", ret);
-  } else {
-    log_info("set send timeout 8000 ms, return %d", ret);
-  }
+  ret = rcli->set_send_timeout(100);
+  log_info("set send timeout 100 ms, return %d", ret);
+
+  ret = rcli->set_recv_timeout(100);
+  log_info("set recv timeout 100 ms, return %d", ret);
+
+  char ch;
+  scanf ("%c", &ch);
 
   std::string ping = "*1\r\n$4\r\nping\r\n";
   for (int i = 0; i < 10; i++) {
@@ -48,7 +50,10 @@ int main() {
     log_info("Send %d: %s", i, s.ToString().c_str());
 
     s = rcli->Recv(NULL);
-    log_info("Recv %d: return %s, reply is (%s)", i, s.ToString().c_str(), rcli->argv_[0].c_str());
+    log_info("Recv %d: return %s", i, s.ToString().c_str());
+    if (rcli->argv_.size() > 0) {
+      log_info("  argv[0]  is (%s)", rcli->argv_[0].c_str());
+    }
   }
 
   return 0;

@@ -57,6 +57,9 @@ std::string Status::ToString() const {
     case kEndFile:
       type = "End file: ";
       break;
+    case kTimeout:
+      type = "Timeout: ";
+      break;
     default:
       snprintf(tmp, sizeof(tmp), "Unknown code(%d): ",
           static_cast<int>(code()));

@@ -31,7 +31,7 @@ RedisCli::RedisCli()
     rbuf_offset_(0),
     err_(REDIS_OK) {
       rbuf_ = (char *)malloc(sizeof(char) * rbuf_size_);
-    }
+}
 
 RedisCli::~RedisCli() {
   free(rbuf_);
@@ -75,6 +75,7 @@ Status RedisCli::Send(void *msg) {
 Status RedisCli::Recv(void *trival) {
   log_info("The Recv function");
 
+  argv_.clear();
   int result = GetReply();
   switch (result) {
     case REDIS_OK: 
@@ -90,7 +91,9 @@ Status RedisCli::Recv(void *trival) {
 ssize_t RedisCli::BufferRead() {
   // memmove the remain chars to rbuf begin
   if (rbuf_pos_ > 0) {
-    memmove(rbuf_, rbuf_ + rbuf_pos_, rbuf_offset_);
+    if (rbuf_offset_ > 0) {
+      memmove(rbuf_, rbuf_ + rbuf_pos_, rbuf_offset_);
+    }
     rbuf_pos_ = 0;
   }
 
@@ -144,6 +147,35 @@ static char *seekNewline(char *s, size_t len) {
   return NULL;
 }
 
+/* Read a long long value starting at *s, under the assumption that it will be
+ * terminated by \r\n. Ambiguously returns -1 for unexpected input. */
+static long long readLongLong(char *s) {
+  long long v = 0;
+  int dec, mult = 1;
+  char c;
+
+  if (*s == '-') {
+    mult = -1;
+    s++;
+  } else if (*s == '+') {
+    mult = 1;
+    s++;
+  }
+
+  while ((c = *(s++)) != '\r') {
+    dec = c - '0';
+    if (dec >= 0 && dec < 10) {
+      v *= 10;
+      v += dec;
+    } else {
+      /* Should not happen... */
+      return -1;
+    }
+  }
+
+  return mult*v;
+}
+
 int RedisCli::ProcessLineItem() {
   char *p;
   int len;
@@ -154,14 +186,53 @@ int RedisCli::ProcessLineItem() {
 
   std::string arg(p, len);
   argv_.push_back(arg);
+  elements_--;
 
   return REDIS_OK;
+}
+
+int RedisCli::ProcessBulkItem() {
+  char *p, *s;
+  int len;
+  int bytelen;
+
+  p = rbuf_ + rbuf_pos_;
+  s = seekNewline(p, rbuf_offset_);
+  if (s != NULL) {
+    bytelen = s - p + 2; /* include \r\n */
+    len = readLongLong(p);
+
+    if (len < 0 || len + 2 <= rbuf_offset_) {
+      argv_.push_back(std::string(p + bytelen, len));
+      elements_--;
+
+      bytelen += len + 2; /* include \r\n */
+      rbuf_pos_ += bytelen;
+      rbuf_offset_ -= bytelen;
+      return REDIS_OK;
+    }
+  }
+
+  return REDIS_HALF;
+}
+
+int RedisCli::ProcessMultiBulkItem() {
+  char *p;
+  int len;
+
+  if ((p = ReadLine(&len)) != NULL) {
+    elements_ = readLongLong(p);
+    return REDIS_OK;
+  }
+
+  return REDIS_HALF;
 }
 
 int RedisCli::GetReply() {
   int result = REDIS_OK;
 
-  while (true) {
+  elements_ = 1;
+  while (elements_ > 0) {
     // Should read again
     if (rbuf_offset_ == 0 || result == REDIS_HALF) {
       if ((result = BufferRead()) < 0) {
@@ -169,8 +240,8 @@ int RedisCli::GetReply() {
       }
     }
 
-    // REDIS_HALF will read and parse again
-    if ((result = GetReplyFromReader()) != REDIS_HALF)
+    // stop if error occured. 
+    if ((result = GetReplyFromReader()) < REDIS_OK)
       return result;
   }
 }
@@ -190,7 +261,7 @@ char *RedisCli::ReadLine(int *_len) {
   int len;
 
   p = rbuf_ + rbuf_pos_;
-  s = seekNewline(rbuf_ + rbuf_pos_, rbuf_offset_);
+  s = seekNewline(p, rbuf_offset_);
   if (s != NULL) {
     len = s - (rbuf_ + rbuf_pos_); 
     rbuf_pos_ += len + 2; /* skip \r\n */
@@ -202,9 +273,9 @@ char *RedisCli::ReadLine(int *_len) {
 }
 
 int RedisCli::GetReplyFromReader() {
- // if (err_) {
- //   return REDIS_ERR;
- // }
+  // if (err_) {
+  //   return REDIS_ERR;
+  // }
 
   if (rbuf_offset_ == 0) {
     return REDIS_HALF;
@@ -237,15 +308,19 @@ int RedisCli::GetReplyFromReader() {
       return REDIS_ERR;
   }
 
-  switch(type) {
+  switch (type) {
     case REDIS_REPLY_ERROR:
     case REDIS_REPLY_STATUS:
     case REDIS_REPLY_INTEGER:
+      //elements_ = 1;
       return ProcessLineItem();
     case REDIS_REPLY_STRING:
       // need processBulkItem();
+      //elements_ = 1;
+      return ProcessBulkItem();
     case REDIS_REPLY_ARRAY:
       // need processMultiBulkItem();
+      return ProcessMultiBulkItem();
     default:
       return REDIS_ERR; // Avoid warning.
   }

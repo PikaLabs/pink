@@ -44,6 +44,7 @@ class RedisCli : public PinkCli {
   int32_t rbuf_size_;
   int32_t rbuf_pos_;
   int32_t rbuf_offset_;
+  int elements_;    // the elements number of this current reply
   int err_;
 
 //  char *wbuf_;
@@ -54,6 +55,9 @@ class RedisCli : public PinkCli {
   int GetReplyFromReader();
 
   int ProcessLineItem();
+  int ProcessBulkItem();
+  int ProcessMultiBulkItem();
+
   ssize_t BufferRead();
   char* ReadBytes(unsigned int bytes);
   char* ReadLine(int *_len);

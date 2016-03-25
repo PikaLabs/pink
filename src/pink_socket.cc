@@ -47,7 +47,7 @@ void ServerSocket::Listen()
 
   int ret = bind(sockfd_, (struct sockaddr *) &servaddr_, sizeof(servaddr_));
   if (ret < 0) {
-    fprintf(stderr, "bind port error");
+    fprintf(stderr, "\nbind port error!\n");
     exit(-1);
   }
   listen(sockfd_, accept_backlog_);

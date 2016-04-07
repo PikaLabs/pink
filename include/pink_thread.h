@@ -12,6 +12,7 @@ public:
   explicit Thread(int cron_interval = 0);
   virtual ~Thread();
   void StartThread();
+  void JoinThread();
   virtual void CronHandle();
   int cron_interval_;
 

@@ -133,7 +133,8 @@ RedisConn::RedisConn(const int fd, const std::string &ip_port) :
   is_find_sep_(true),
   is_overtake_(false),
   wbuf_pos_(0),
-  wbuf_len_(0)
+  wbuf_len_(0),
+  wbuf_size_(REDIS_MAX_MESSAGE)
 {
   rbuf_ = (char *)malloc(sizeof(char) * REDIS_MAX_MESSAGE);
   wbuf_ = (char *)malloc(sizeof(char) * REDIS_MAX_MESSAGE);
@@ -280,6 +281,15 @@ void RedisConn::ResetClient() {
     req_type_ = 0;
     multibulk_len_ = 0;
     bulk_len_ = -1;
+}
+
+bool RedisConn::ExpandWbuf() {
+  if (wbuf_size_ >= REDIS_MAX_MESSAGE * 32) {
+    return false;
+  }
+  wbuf_size_ *= 2;
+  wbuf_ = (char*)realloc(wbuf_, wbuf_size_);
+  return true;
 }
 
 ReadStatus RedisConn::ProcessInputBuffer() {

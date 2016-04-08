@@ -356,7 +356,7 @@ static size_t bulklen(size_t len) {
 int redisvFormatCommand(std::string *cmd, const char *format, va_list ap) {
   const char *c = format;
   std::string curarg;
-  char buf[REDIS_MAX_MESSAGE];
+  char buf[1048576];
   std::vector<std::string> args;
   int touched = 0; /* was the current argument touched? */
   size_t totlen = 0;

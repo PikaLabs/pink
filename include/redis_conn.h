@@ -24,6 +24,9 @@ public:
   bool SetNonblock();
   void ResetClient();
 
+  bool ExpandWbuf();
+  uint32_t wbuf_size_;
+
   int flags() const {
     return flags_;
   };

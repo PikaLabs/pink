@@ -55,7 +55,7 @@ private:
 
   int flags_;
 
-  Status BuildObuf();
+  virtual Status BuildObuf();
 };
 
 }

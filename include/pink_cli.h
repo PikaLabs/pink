@@ -14,7 +14,7 @@ class PinkCli {
 
 public:
   PinkCli();
-  ~PinkCli();
+  virtual ~PinkCli();
 
   Status Connect(const std::string &peer_ip, const int peer_port);
 

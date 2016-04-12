@@ -102,7 +102,7 @@ private:
     PinkFiredEvent *pfe = NULL;
     char bb[1];
     PinkItem ti;
-    Conn *in_conn;
+    Conn *in_conn = NULL;
 
     struct timeval when;
     gettimeofday(&when, NULL);
@@ -200,6 +200,8 @@ private:
             RWLock l(&rwlock_, true);
             close(pfe->fd_);
             delete(in_conn);
+            in_conn = NULL;
+
             conns_.erase(pfe->fd_);
             }
           }

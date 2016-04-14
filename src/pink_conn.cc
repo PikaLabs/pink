@@ -17,7 +17,7 @@ PinkConn::PinkConn(const int fd, const std::string &ip_port):
 
 PinkConn::~PinkConn()
 {
-  close(fd_);
+//  close(fd_);
 }
 
 bool PinkConn::SetNonblock()

@@ -61,7 +61,7 @@ enum WriteStatus {
 /*
  * define the redis protocol
  */
-#define REDIS_MAX_MESSAGE 1048576
+#define REDIS_MAX_MESSAGE 2097152
 #define REDIS_IOBUF_LEN 16384
 #define REDIS_REQ_INLINE 1
 #define REDIS_REQ_MULTIBULK 2

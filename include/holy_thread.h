@@ -84,7 +84,7 @@ public:
     struct sockaddr_in cliaddr;
     socklen_t clilen=sizeof(struct sockaddr);
     int fd, connfd;
-    Conn *in_conn;
+    Conn *in_conn = NULL;
 
     struct timeval when;
     gettimeofday(&when, NULL);
@@ -200,6 +200,7 @@ public:
             RWLock l(&rwlock_, true);
             close(pfe->fd_);
             delete(in_conn);
+            in_conn = NULL;
             conns_.erase(pfe->fd_);
             }
           }

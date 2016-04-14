@@ -20,6 +20,9 @@ public:
   virtual ~RedisConn();
   void ResetClient();
 
+  bool ExpandWbuf();
+  uint32_t wbuf_size_;
+
   virtual ReadStatus GetRequest();
   virtual WriteStatus SendReply();
 

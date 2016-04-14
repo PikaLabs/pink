@@ -11,7 +11,8 @@ PbConn::PbConn(const int fd, const std::string &ip_port) :
   PinkConn(fd, ip_port),
   header_len_(-1),
   cur_pos_(0),
-  rbuf_len_(0)
+  rbuf_len_(0),
+  connStatus_(kHeader)
 {
   rbuf_ = (char *)malloc(sizeof(char) * PB_MAX_MESSAGE);
   wbuf_ = (char *)malloc(sizeof(char) * PB_MAX_MESSAGE);

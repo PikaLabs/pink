@@ -19,6 +19,7 @@ PinkEpoll::PinkEpoll()
 
 PinkEpoll::~PinkEpoll()
 {
+  free(firedevent_);
   free(events_);
   close(epfd_);
 }

@@ -45,7 +45,7 @@ public:
 
 private:
 
-  Status BuildObuf();
+  virtual Status BuildObuf();
 };
 
 }

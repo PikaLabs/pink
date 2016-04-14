@@ -236,19 +236,23 @@ int RedisCli::GetReply() {
     // Should read again
     if (rbuf_offset_ == 0 || result == REDIS_HALF) {
       if ((result = BufferRead()) < 0) {
+        break;
         return result;
       }
     }
 
     // stop if error occured. 
-    if ((result = GetReplyFromReader()) < REDIS_OK)
-      return result;
+    if ((result = GetReplyFromReader()) < REDIS_OK) {
+      break;
+    }
   }
+
+  return result;
 }
 
 char* RedisCli::ReadBytes(unsigned int bytes) {
   char *p = NULL;
-  if (rbuf_offset_ >= bytes) {
+  if ((unsigned int)rbuf_offset_ >= bytes) {
     p = rbuf_ + rbuf_pos_;
     rbuf_pos_ += bytes;
     rbuf_offset_ -= bytes;
@@ -352,7 +356,7 @@ static size_t bulklen(size_t len) {
 int redisvFormatCommand(std::string *cmd, const char *format, va_list ap) {
   const char *c = format;
   std::string curarg;
-  char buf[REDIS_MAX_MESSAGE];
+  char buf[1048576];
   std::vector<std::string> args;
   int touched = 0; /* was the current argument touched? */
   size_t totlen = 0;

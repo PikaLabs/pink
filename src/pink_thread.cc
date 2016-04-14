@@ -23,6 +23,12 @@ void Thread::StartThread()
   pthread_create(&thread_id_, NULL, RunThread, (void *)this);
 }
 
+void Thread::JoinThread()
+{
+  if (thread_id_ != 0)
+    pthread_join(thread_id_, NULL);
+}
+
 void *Thread::RunThread(void *arg)
 {
   reinterpret_cast<Thread*>(arg)->ThreadMain();

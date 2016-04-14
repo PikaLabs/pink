@@ -93,7 +93,7 @@ int PbCli::ReadHeader()
   size_t nleft = COMMAND_HEADER_LENGTH;
   log_info("nleft %d", nleft);
   while (nleft > 0) {
-    nread = read(fd(), (void*)rbuf_ + rbuf_pos_, nleft);
+    nread = read(fd(), rbuf_ + rbuf_pos_, nleft);
     log_info("nread %d", nread);
     if (nread == -1) {
       if (errno == EINTR) {
@@ -126,7 +126,7 @@ int PbCli::ReadPacket()
   rbuf_pos_ = 0;
   size_t nleft = packet_len_;
   while (nleft > 0) {
-    nread = read(fd(), (void*)rbuf_ + rbuf_pos_, nleft);
+    nread = read(fd(), rbuf_ + rbuf_pos_, nleft);
     if (nread == -1) {
       if (errno == EINTR) {
         continue;

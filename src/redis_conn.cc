@@ -2,7 +2,6 @@
 #include <limits.h>
 #include "redis_conn.h"
 #include "pink_define.h"
-#include "pink_util.h"
 #include "worker_thread.h"
 #include "xdebug.h"
 
@@ -143,15 +142,6 @@ RedisConn::~RedisConn()
 {
   free(wbuf_);
   free(rbuf_);
-}
-
-bool RedisConn::SetNonblock()
-{
-  flags_ = Setnonblocking(fd());
-  if (flags_ == -1) {
-    return false;
-  }
-  return true;
 }
 
 ReadStatus RedisConn::ProcessInlineBuffer() {

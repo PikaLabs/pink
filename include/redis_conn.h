@@ -18,15 +18,7 @@ class RedisConn: public PinkConn
 public:
   RedisConn(const int fd, const std::string &ip_port);
   virtual ~RedisConn();
-  /*
-   * Set the fd to nonblock && set the flag_ the the fd flag
-   */
-  bool SetNonblock();
   void ResetClient();
-
-  int flags() const {
-    return flags_;
-  };
 
   virtual ReadStatus GetRequest();
   virtual WriteStatus SendReply();
@@ -37,7 +29,6 @@ public:
 
 private:
   
-  int flags_;
   int32_t last_read_pos_;
   int32_t next_parse_pos_;
   int32_t req_type_;

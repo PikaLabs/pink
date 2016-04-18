@@ -157,6 +157,7 @@ public:
             continue;
           }
         } else {
+          in_conn = NULL;
           int should_close = 0;
           std::map<int, void *>::iterator iter = conns_.begin();
           if (pfe == NULL) {

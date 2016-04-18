@@ -275,6 +275,7 @@ void RedisConn::ResetClient() {
 
 bool RedisConn::ExpandWbuf() {
   if (wbuf_size_ >= REDIS_MAX_MESSAGE * 32) {
+    wbuf_pos_ = 0;
     return false;
   }
   wbuf_size_ *= 2;

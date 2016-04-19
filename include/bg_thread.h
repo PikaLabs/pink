@@ -28,6 +28,14 @@ class BGThread : public Thread {
       return running_;
     }
 
+    void StartIfNeed() {
+      bool expect = false;
+      if (!running_.compare_exchange_strong(expect, true)) {
+        return;
+      }
+      StartThread();
+    }
+
     void Schedule(void (*function)(void*), void* arg);
 
   private:

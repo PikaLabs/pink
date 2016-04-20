@@ -64,6 +64,9 @@ public:
   int notify_send_fd() { 
     return notify_send_fd_; 
   }
+  PinkEpoll* pink_epoll() {
+    return pink_epoll_;
+  }
   Mutex mutex_;
 
   pthread_rwlock_t rwlock_;

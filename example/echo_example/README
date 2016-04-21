@@ -1,0 +1,6 @@
+This simple example is to demonstrate how to use Dispatch thread and Worker thread to build a server framework, and the message transfering server and client is under protobuf protocal
+Steps:
+  a.Make the server and client(e.g. make all);
+  b.start the server(e.g. ./server server_port worker_num, default is ./server 8221 1);
+  b.lauch a client(e.g. ./client server_host server_port, default is ./client 127.0.0.1 8221), and enter a random string;
+Enjoy it.

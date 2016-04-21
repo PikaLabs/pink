@@ -18,19 +18,11 @@ class PbConn: public PinkConn
 public:
   PbConn(const int fd, const std::string &ip_port);
   ~PbConn();
-  /*
-   * Set the fd to nonblock && set the flag_ the the fd flag
-   */
-  bool SetNonblock();
   void InitPara();
 
 
   ReadStatus GetRequest();
   WriteStatus SendReply();
-
-  int flags() { 
-    return flags_; 
-  };
 
   virtual int DealMessage() = 0;
 
@@ -52,8 +44,6 @@ public:
   uint32_t wbuf_pos_;
 
 private:
-
-  int flags_;
 
   virtual Status BuildObuf();
 };

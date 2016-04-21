@@ -8,7 +8,6 @@ void BGThread::Schedule(void (*function)(void*), void* arg) {
 }
 
 void *BGThread::ThreadMain() {
-  running_ = true;
   while (!should_exit_) {
     pthread_mutex_lock(&mu_);
     while (queue_.empty() && !should_exit_) {

@@ -17,6 +17,9 @@ int PinkCli::fd() {
   return cli_socket_->sockfd();
 }
 
+Status PinkCli::Close(){
+  cli_socket_->Close();
+}
 
 Status PinkCli::Connect(const std::string &peer_ip, const int peer_port)
 {

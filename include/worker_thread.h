@@ -64,6 +64,9 @@ public:
   int notify_send_fd() { 
     return notify_send_fd_; 
   }
+  PinkEpoll* pink_epoll() {
+    return pink_epoll_;
+  }
   Mutex mutex_;
 
   pthread_rwlock_t rwlock_;
@@ -154,6 +157,7 @@ private:
             continue;
           }
         } else {
+          in_conn = NULL;
           int should_close = 0;
           std::map<int, void *>::iterator iter = conns_.begin();
           if (pfe == NULL) {

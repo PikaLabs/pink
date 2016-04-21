@@ -4,6 +4,7 @@
 #include "status.h"
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 namespace pink {
 
@@ -13,6 +14,9 @@ public:
   CliSocket();
   Status Connect(const std::string &ip, const int port);
 
+  void Close() {
+    close(sockfd_);
+  }
 
   int sockfd() {
     return sockfd_;

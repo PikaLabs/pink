@@ -12,11 +12,18 @@ class PinkConn
 public:
   PinkConn(const int fd, const std::string &ip_port);
   virtual ~PinkConn();
+  
+  /*
+   * Set the fd to nonblock && set the flag_ the the fd flag
+   */
+  bool SetNonblock();
+
+  int flags() { 
+    return flags_; 
+  };
 
   virtual ReadStatus GetRequest() = 0;
   virtual WriteStatus SendReply() = 0;
-
-  virtual int DealMessage() = 0;
 
   void set_fd(const int fd) { 
     fd_ = fd; 
@@ -51,6 +58,8 @@ private:
   std::string ip_port_;
   bool is_reply_;
   struct timeval last_interaction_;
+  int flags_;
+
 
   /*
    * No allowed copy and copy assign operator

@@ -1,6 +1,5 @@
 #include "pb_conn.h"
 #include "pink_define.h"
-#include "pink_util.h"
 #include "worker_thread.h"
 #include "xdebug.h"
 
@@ -23,15 +22,6 @@ PbConn::~PbConn()
 {
   free(rbuf_);
   free(wbuf_);
-}
-
-bool PbConn::SetNonblock()
-{
-  flags_ = Setnonblocking(fd());
-  if (flags_ == -1) {
-    return false;
-  }
-  return true;
 }
 
 ReadStatus PbConn::GetRequest()

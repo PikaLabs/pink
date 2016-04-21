@@ -2,7 +2,6 @@
 #include <limits.h>
 #include "redis_conn.h"
 #include "pink_define.h"
-#include "pink_util.h"
 #include "worker_thread.h"
 #include "xdebug.h"
 
@@ -146,15 +145,6 @@ RedisConn::~RedisConn()
   free(rbuf_);
 }
 
-bool RedisConn::SetNonblock()
-{
-  flags_ = Setnonblocking(fd());
-  if (flags_ == -1) {
-    return false;
-  }
-  return true;
-}
-
 ReadStatus RedisConn::ProcessInlineBuffer() {
   int32_t pos, ret;
   pos = FindNextSeparators();
@@ -285,6 +275,7 @@ void RedisConn::ResetClient() {
 
 bool RedisConn::ExpandWbuf() {
   if (wbuf_size_ >= REDIS_MAX_MESSAGE * 32) {
+    wbuf_pos_ = 0;
     return false;
   }
   wbuf_size_ *= 2;

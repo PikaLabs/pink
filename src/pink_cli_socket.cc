@@ -3,7 +3,6 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <poll.h>
-#include <unistd.h>
 #include <fcntl.h>
 
 namespace pink {

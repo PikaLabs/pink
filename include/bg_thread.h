@@ -16,16 +16,21 @@ class BGThread : public Thread {
       }
 
     virtual ~BGThread() {
-      should_exit_ = true;
-      if (running_) {
-        pthread_cond_signal(&signal_);
-        pthread_join(thread_id(), NULL);
-      }
+      Stop();
       pthread_cond_destroy(&signal_);
       pthread_mutex_destroy(&mu_);
     }
     bool is_running() {
       return running_;
+    }
+
+    void Stop() {
+      should_exit_ = true;
+      if (running_) {
+        pthread_cond_signal(&signal_);
+        pthread_join(thread_id(), NULL);
+        running_ = false;
+      }
     }
 
     void StartIfNeed() {

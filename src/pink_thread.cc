@@ -20,6 +20,7 @@ void Thread::CronHandle() {
 
 void Thread::StartThread()
 {
+  should_exit_ = false;
   pthread_create(&thread_id_, NULL, RunThread, (void *)this);
 }
 

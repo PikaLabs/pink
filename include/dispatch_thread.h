@@ -136,6 +136,7 @@ public:
                 continue;
               }
             }
+            fcntl(connfd, F_SETFD, fcntl(connfd, F_GETFD) | FD_CLOEXEC);
 
             ip_port = inet_ntop(AF_INET, &cliaddr.sin_addr, ip_addr, sizeof(ip_addr));
             if (!AccessHandle(ip_port)) {

@@ -133,6 +133,7 @@ public:
                   continue;
               }
             }
+            fcntl(connfd, F_SETFD, fcntl(connfd, F_GETFD) | FD_CLOEXEC);
 
             ip_port = inet_ntop(AF_INET, &cliaddr.sin_addr, ip_addr, sizeof(ip_addr));
 
@@ -165,6 +166,7 @@ public:
           }
           iter = conns_.find(pfe->fd_);
           if (iter == conns_.end()) {
+            pink_epoll_->PinkDelEvent(pfe->fd_);
             continue;
           }
 
@@ -199,6 +201,7 @@ public:
             log_info("close pfe fd here");
             {
             RWLock l(&rwlock_, true);
+            pink_epoll_->PinkDelEvent(pfe->fd_);
             close(pfe->fd_);
             delete(in_conn);
             in_conn = NULL;

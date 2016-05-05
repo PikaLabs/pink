@@ -78,7 +78,9 @@ Status PbCli::Recv(void *msg_res)
 {
   log_info("The Recv function");
   msg_res_ = reinterpret_cast<google::protobuf::Message *>(msg_res);
-  ReadHeader();
+  int ret = ReadHeader();
+  if(ret == 0 || ret == -1)
+    return Status::Corruption("network error");
   log_info("packet_len_ %d", packet_len_);
   ReadPacket();
   msg_res_->ParseFromString(rbuf_);
@@ -96,6 +98,7 @@ int PbCli::ReadHeader()
     nread = read(fd(), rbuf_ + rbuf_pos_, nleft);
     log_info("nread %d", nread);
     if (nread == -1) {
+      log_err("nread %d", nread);
       if (errno == EINTR) {
         continue;
       } else {

@@ -9,23 +9,31 @@ namespace pink {
 
 class BGThread : public Thread {
   public:
-    BGThread() :
-      Thread::Thread(), running_(false) {
+    BGThread(int full = 1000) :
+      Thread::Thread(), full_(full), running_(false) {
         pthread_mutex_init(&mu_, NULL);
-        pthread_cond_init(&signal_, NULL);
+        pthread_cond_init(&rsignal_, NULL);
+        pthread_cond_init(&wsignal_, NULL);
       }
 
     virtual ~BGThread() {
-      should_exit_ = true;
-      if (running_) {
-        pthread_cond_signal(&signal_);
-        pthread_join(thread_id(), NULL);
-      }
-      pthread_cond_destroy(&signal_);
+      Stop();
+      pthread_cond_destroy(&rsignal_);
+      pthread_cond_destroy(&wsignal_);
       pthread_mutex_destroy(&mu_);
     }
     bool is_running() {
       return running_;
+    }
+
+    void Stop() {
+      should_exit_ = true;
+      if (running_) {
+        pthread_cond_signal(&rsignal_);
+        pthread_cond_signal(&wsignal_);
+        pthread_join(thread_id(), NULL);
+        running_ = false;
+      }
     }
 
     void StartIfNeed() {
@@ -47,8 +55,10 @@ class BGThread : public Thread {
     };
     typedef std::deque<BGItem> BGQueue;
     pthread_mutex_t mu_;
-    pthread_cond_t signal_;
+    pthread_cond_t rsignal_;
+    pthread_cond_t wsignal_;
     BGQueue queue_;
+    int full_;
     //std::atomic<bool> exit_;
     std::atomic<bool> running_;
     virtual void *ThreadMain(); 

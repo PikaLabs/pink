@@ -2,12 +2,14 @@
 #include "pink_define.h"
 #include "xdebug.h"
 #include "status.h"
+#include <fcntl.h>
 
 namespace pink {
 
 PinkEpoll::PinkEpoll()
 {
   epfd_ = epoll_create(1024); 
+  fcntl(epfd_, F_SETFD, fcntl(epfd_, F_GETFD) | FD_CLOEXEC);
   events_ = (struct epoll_event *)malloc(sizeof(struct epoll_event) * PINK_MAX_CLIENTS);
   if (!events_) {
     log_err("init epoll_event error");

@@ -80,10 +80,12 @@ Status PbCli::Recv(void *msg_res)
   msg_res_ = reinterpret_cast<google::protobuf::Message *>(msg_res);
   int ret = ReadHeader();
   if(ret == 0 || ret == -1)
-    return Status::Corruption("network error");
+    return Status::Corruption("read header error");
   log_info("packet_len_ %d", packet_len_);
-  ReadPacket();
-  msg_res_->ParseFromString(rbuf_);
+  ret = ReadPacket();
+  if(ret == 0 )
+    return Status::Corruption("read packet error");
+  msg_res_->ParseFromArray(rbuf_, packet_len_);
 
   return Status::OK();
 }

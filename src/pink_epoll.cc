@@ -8,8 +8,11 @@ namespace pink {
 
 PinkEpoll::PinkEpoll()
 {
-  epfd_ = epoll_create(1024); 
-  fcntl(epfd_, F_SETFD, fcntl(epfd_, F_GETFD) | FD_CLOEXEC);
+  epfd_ = epoll_create1(EPOLL_CLOEXEC);
+  if (epfd_ < 0) {
+    log_err("epoll create fail")
+    exit(1)
+  }
   events_ = (struct epoll_event *)malloc(sizeof(struct epoll_event) * PINK_MAX_CLIENTS);
   if (!events_) {
     log_err("init epoll_event error");

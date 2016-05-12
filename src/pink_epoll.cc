@@ -10,8 +10,8 @@ PinkEpoll::PinkEpoll()
 {
   epfd_ = epoll_create1(EPOLL_CLOEXEC);
   if (epfd_ < 0) {
-    log_err("epoll create fail")
-    exit(1)
+    log_err("epoll create fail");
+    exit(1);
   }
   events_ = (struct epoll_event *)malloc(sizeof(struct epoll_event) * PINK_MAX_CLIENTS);
   if (!events_) {

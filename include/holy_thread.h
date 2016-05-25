@@ -193,7 +193,6 @@ public:
             } else if (write_status == kWriteHalf) {
               continue;
             } else if (write_status == kWriteError) {
-              delete(in_conn);
               should_close = 1;
             }
           }

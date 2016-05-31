@@ -91,11 +91,13 @@ Status CliSocket::Connect(const std::string &ip, const int port) {
         socklen_t lon = sizeof(int);
 
         if (getsockopt(sockfd_, SOL_SOCKET, SO_ERROR, &val, &lon) == -1) {
+          close(sockfd_);
           freeaddrinfo(servinfo);
           return Status::IOError("EHOSTUNREACH", "connect host getsockopt error");
         }
 
         if (val) {
+          close(sockfd_);
           freeaddrinfo(servinfo);
           return Status::IOError("EHOSTUNREACH", "connect host error");
         }

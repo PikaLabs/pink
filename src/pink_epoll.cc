@@ -2,13 +2,22 @@
 #include "pink_define.h"
 #include "xdebug.h"
 #include "status.h"
+#include <linux/version.h>
 #include <fcntl.h>
 
 namespace pink {
 
 PinkEpoll::PinkEpoll()
 {
-  epfd_ = epoll_create1(EPOLL_CLOEXEC);
+#if defined(RHEL_MAJOR)
+  #if RHEL_MAJOR == 6
+    epfd_ = epoll_create1(EPOLL_CLOEXEC);
+  #else
+    epfd_ = epoll_create(1024);
+    fcntl(epfd_, F_SETFD, fcntl(epfd_, F_GETFD) | FD_CLOEXEC);
+  #endif
+#endif
+
   if (epfd_ < 0) {
     log_err("epoll create fail");
     exit(1);

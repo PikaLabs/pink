@@ -9,13 +9,11 @@ namespace pink {
 
 PinkEpoll::PinkEpoll()
 {
-#if defined(RHEL_MAJOR)
-  #if RHEL_MAJOR == 6
+#if defined(EPOLL_CLOEXEC)
     epfd_ = epoll_create1(EPOLL_CLOEXEC);
-  #else
+#else
     epfd_ = epoll_create(1024);
     fcntl(epfd_, F_SETFD, fcntl(epfd_, F_GETFD) | FD_CLOEXEC);
-  #endif
 #endif
 
   if (epfd_ < 0) {

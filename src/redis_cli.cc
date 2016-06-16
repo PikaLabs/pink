@@ -13,7 +13,9 @@
 namespace pink {
 
 enum REDIS_STATUS {
-  REDIS_ETIMEOUT = -2,
+  REDIS_ETIMEOUT = -4,
+  REDIS_EREAD = -3,
+  REDIS_EPARSE_TYPE = -2,
   REDIS_ERR = -1,
   REDIS_OK = 0,
   REDIS_HALF,
@@ -56,10 +58,12 @@ Status RedisCli::Send(void *msg) {
         continue;
         // block will EAGAIN ?
       } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
-        s = Status::Timeout("");
+        s = Status::Timeout("Send timeout");
         //s = Status::IOError("ETIMEOUT", "send timeout");
       } else {
         s = Status::IOError(strerror(errno));
+        // TEST
+        //fprintf (stderr, "[Error] RedisCli::Send  %s, wbuf_pos_=%d, nleft=%u\n", strerror(errno), wbuf_pos, nleft);
       }
       return s;
     }
@@ -82,6 +86,10 @@ Status RedisCli::Recv(void *trival) {
       return Status::OK();
     case REDIS_ETIMEOUT:
       return Status::Timeout("");
+    case REDIS_EREAD:
+      return Status::IOError("read failed caz " + std::string(strerror(errno)));
+    case REDIS_EPARSE_TYPE:
+      return Status::IOError("parse type failed");
       //return Status::IOError("ETIMEOUT", "recv timeout");
     default:
       return Status::IOError(strerror(errno));
@@ -109,7 +117,9 @@ ssize_t RedisCli::BufferRead() {
         return REDIS_ETIMEOUT;
       } else {
         log_info("read error, %s", strerror(errno));
-        return REDIS_ERR;
+        // TEST
+        //fprintf (stderr, "[Error] RedisCli::BufferRead  %s, rbuf_offset_=%d, rub_size_=%d\n", strerror(errno), rbuf_offset_, rbuf_size_);
+        return REDIS_EREAD;
       }
     } else if (nread == 0) {    // we consider read null an error 
       return REDIS_ERR;
@@ -236,7 +246,6 @@ int RedisCli::GetReply() {
     // Should read again
     if (rbuf_offset_ == 0 || result == REDIS_HALF) {
       if ((result = BufferRead()) < 0) {
-        break;
         return result;
       }
     }
@@ -309,7 +318,7 @@ int RedisCli::GetReplyFromReader() {
       type = REDIS_REPLY_ARRAY;
       break;
     default:
-      return REDIS_ERR;
+      return REDIS_EPARSE_TYPE;
   }
 
   switch (type) {

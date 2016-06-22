@@ -13,8 +13,9 @@
 namespace pink {
 
 enum REDIS_STATUS {
-  REDIS_ETIMEOUT = -4,
-  REDIS_EREAD = -3,
+  REDIS_ETIMEOUT = -5,
+  REDIS_EREAD_NULL = -4,
+  REDIS_EREAD = -3,     // errno is set
   REDIS_EPARSE_TYPE = -2,
   REDIS_ERR = -1,
   REDIS_OK = 0,
@@ -61,9 +62,7 @@ Status RedisCli::Send(void *msg) {
         s = Status::Timeout("Send timeout");
         //s = Status::IOError("ETIMEOUT", "send timeout");
       } else {
-        s = Status::IOError(strerror(errno));
-        // TEST
-        //fprintf (stderr, "[Error] RedisCli::Send  %s, wbuf_pos_=%d, nleft=%u\n", strerror(errno), wbuf_pos, nleft);
+        s = Status::IOError("write error " + std::string(strerror(errno)));
       }
       return s;
     }
@@ -86,13 +85,14 @@ Status RedisCli::Recv(void *trival) {
       return Status::OK();
     case REDIS_ETIMEOUT:
       return Status::Timeout("");
+    case REDIS_EREAD_NULL:
+      return Status::IOError("Read null");
     case REDIS_EREAD:
       return Status::IOError("read failed caz " + std::string(strerror(errno)));
     case REDIS_EPARSE_TYPE:
-      return Status::IOError("parse type failed");
-      //return Status::IOError("ETIMEOUT", "recv timeout");
-    default:
-      return Status::IOError(strerror(errno));
+      return Status::IOError("invalid type");
+    default: // other error
+      return Status::IOError("other error, maybe " + std::string(strerror(errno)));
   }
 }
 
@@ -117,12 +117,10 @@ ssize_t RedisCli::BufferRead() {
         return REDIS_ETIMEOUT;
       } else {
         log_info("read error, %s", strerror(errno));
-        // TEST
-        //fprintf (stderr, "[Error] RedisCli::BufferRead  %s, rbuf_offset_=%d, rub_size_=%d\n", strerror(errno), rbuf_offset_, rbuf_size_);
         return REDIS_EREAD;
       }
     } else if (nread == 0) {    // we consider read null an error 
-      return REDIS_ERR;
+      return REDIS_EREAD_NULL;
     }
 
     rbuf_offset_ += nread;
@@ -335,7 +333,7 @@ int RedisCli::GetReplyFromReader() {
       // need processMultiBulkItem();
       return ProcessMultiBulkItem();
     default:
-      return REDIS_ERR; // Avoid warning.
+      return REDIS_EPARSE_TYPE; // Avoid warning.
   }
 }
 

@@ -46,6 +46,7 @@ Status PbCli::Send(void *msg)
 
   BuildWbuf();
 
+  // TODO already serialize 
   msg_->SerializeToArray(wbuf_ + sizeof(uint32_t), sizeof(wbuf_));
 
   Status s;
@@ -104,6 +105,7 @@ int PbCli::ReadHeader()
       if (errno == EINTR) {
         continue;
       } else {
+        log_info ("ReadHeader nread is -1 and error isnot EINTR, nleft=%d\n", nleft);
         return -1;
       }
     } else if (nread == 0) {
@@ -111,6 +113,7 @@ int PbCli::ReadHeader()
        * we read end of file here, but in our protocol we need more data
        * so this must be an incomplete packet
        */
+      log_info ("ReadHeader nread is 0, nleft=%d\n", nleft);
       return 0;
     } else {
       break;

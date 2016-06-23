@@ -20,9 +20,9 @@ public:
   virtual Status Send(void *msg);
   virtual Status Recv(void *msg_res);
 
-private:
+protected:
 
-  void BuildWbuf();
+  virtual void BuildWbuf();
 
   int ReadHeader();
   int ReadPacket();
@@ -41,6 +41,7 @@ private:
   google::protobuf::Message *msg_;
   google::protobuf::Message *msg_res_;
 
+private:
   PbCli(const PbCli&);
   void operator=(const PbCli&);
 };

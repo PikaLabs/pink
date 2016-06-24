@@ -13,8 +13,9 @@ PinkEpoll::PinkEpoll()
     epfd_ = epoll_create1(EPOLL_CLOEXEC);
 #else
     epfd_ = epoll_create(1024);
-    fcntl(epfd_, F_SETFD, fcntl(epfd_, F_GETFD) | FD_CLOEXEC);
 #endif
+
+  fcntl(epfd_, F_SETFD, fcntl(epfd_, F_GETFD) | FD_CLOEXEC);
 
   if (epfd_ < 0) {
     log_err("epoll create fail");

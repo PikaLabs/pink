@@ -45,6 +45,8 @@ void ServerSocket::Listen()
   servaddr_.sin_addr.s_addr = htonl(INADDR_ANY);
   servaddr_.sin_port = htons(port_);
 
+  fcntl(sockfd_, F_SETFD, fcntl(sockfd_, F_GETFD) | FD_CLOEXEC);
+
   int ret = bind(sockfd_, (struct sockaddr *) &servaddr_, sizeof(servaddr_));
   if (ret < 0) {
     fprintf(stderr, "\nbind port error!\n");

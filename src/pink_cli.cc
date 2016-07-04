@@ -22,9 +22,9 @@ Status PinkCli::Close(){
   return Status::OK();
 }
 
-Status PinkCli::Connect(const std::string &peer_ip, const int peer_port)
+Status PinkCli::Connect(const std::string &peer_ip, const int peer_port, const std::string &bind_ip)
 {
-  return cli_socket_->Connect(peer_ip, peer_port);
+  return cli_socket_->Connect(peer_ip, peer_port, bind_ip);
 }
 
 };

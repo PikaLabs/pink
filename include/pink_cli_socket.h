@@ -12,7 +12,7 @@ class CliSocket {
 
 public:
   CliSocket();
-  Status Connect(const std::string &ip, const int port);
+  Status Connect(const std::string &ip, const int port, const std::string &bind_ip = "");
 
   void Close() {
     close(sockfd_);

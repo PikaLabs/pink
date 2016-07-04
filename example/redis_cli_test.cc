@@ -25,7 +25,8 @@ int main() {
   RedisCli *rcli = new RedisCli();
   rcli->set_connect_timeout(3000);
 
-  Status s = rcli->Connect("127.0.0.1", 9824);
+  printf ("  Connect with bind_ip(101.199.114.205)\n");
+  Status s = rcli->Connect("127.0.0.1", 7221, "101.199.114.205");
 
   // Test connect timeout with a non-routable IP
   //Status s = rcli->Connect("10.255.255.1", 9824);
@@ -103,6 +104,9 @@ int main() {
       printf ("  argv[%d] = (%s)\n", i, rcli->argv_[i].c_str());
     }
   }
+
+  char ch;
+  scanf ("%c", &ch);
 
   return 0;
 }

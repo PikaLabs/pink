@@ -1,6 +1,8 @@
 #include "pink_cli_socket.h"
 
 #include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 #include <poll.h>
 #include <fcntl.h>
@@ -37,7 +39,7 @@ int CliSocket::set_recv_timeout(int recv_timeout) {
   return ret;
 }
 
-Status CliSocket::Connect(const std::string &ip, const int port) {
+Status CliSocket::Connect(const std::string &ip, const int port, const std::string &bind_ip) {
   Status s;
   int rv;
 
@@ -59,6 +61,16 @@ Status CliSocket::Connect(const std::string &ip, const int port) {
     if ((sockfd_ = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
       continue;
     }
+
+    // bind if needed
+    if (!bind_ip.empty()) {
+      struct sockaddr_in localaddr;
+      localaddr.sin_family = AF_INET;
+      localaddr.sin_addr.s_addr = inet_addr(bind_ip.c_str());
+      localaddr.sin_port = 0;  // Any local port will do
+      bind(sockfd_, (struct sockaddr *)&localaddr, sizeof(localaddr));
+    }
+
 
     /*
      * we support connect timeout

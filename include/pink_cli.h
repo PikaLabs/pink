@@ -16,7 +16,7 @@ public:
   PinkCli();
   virtual ~PinkCli();
 
-  Status Connect(const std::string &peer_ip, const int peer_port);
+  Status Connect(const std::string &peer_ip, const int peer_port, const std::string& bind_ip = "");
   Status Close();
   virtual Status Send(void *msg) = 0;
   virtual Status Recv(void *msg_res) = 0;

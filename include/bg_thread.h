@@ -9,7 +9,7 @@ namespace pink {
 
 class BGThread : public Thread {
   public:
-    BGThread(int full = 1000) :
+    BGThread(int full = 100000) :
       Thread::Thread(), full_(full), running_(false) {
         pthread_mutex_init(&mu_, NULL);
         pthread_cond_init(&rsignal_, NULL);

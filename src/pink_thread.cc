@@ -1,4 +1,5 @@
 #include "pink_thread.h"
+#include "pink_thread_name.h"
 #include "xdebug.h"
 
 namespace pink {
@@ -32,7 +33,17 @@ void Thread::JoinThread()
 
 void *Thread::RunThread(void *arg)
 {
-  reinterpret_cast<Thread*>(arg)->ThreadMain();
+  Thread* thread = reinterpret_cast<Thread*>(arg);
+  if (!(thread->thread_name().empty()))
+  {
+    bool result = SetThreadName(pthread_self(), thread->thread_name());
+    //if (!result) {
+    //  printf ("SetName failed\n");
+    //} else {
+    //  printf ("SetName OK\n");
+    //}
+  }
+  thread->ThreadMain();
   return NULL;
 }
 

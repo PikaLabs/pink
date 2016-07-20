@@ -9,7 +9,8 @@ using namespace pink;
 
 int main()
 {
-  Thread *t = new PinkThread(9211, 1000);
+  Thread *t = new PinkThread(9211, 3000);
+  t->set_thread_name("new_thread_name");
 
   t->StartThread();
 

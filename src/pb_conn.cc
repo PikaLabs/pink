@@ -12,7 +12,9 @@ PbConn::PbConn(const int fd, const std::string &ip_port) :
   header_len_(-1),
   cur_pos_(0),
   rbuf_len_(0),
-  connStatus_(kHeader)
+  connStatus_(kHeader),
+  wbuf_len_(0),
+  wbuf_pos_(0)
 {
   rbuf_ = (char *)malloc(sizeof(char) * PB_MAX_MESSAGE);
   wbuf_ = (char *)malloc(sizeof(char) * PB_MAX_MESSAGE);

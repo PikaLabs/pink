@@ -180,7 +180,7 @@ private:
               // kReadError kReadClose kFullError kParseError
               should_close = 1;
             } else if (in_conn->is_reply()) {
-              pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLOUT);
+              pink_epoll_->PinkModEvent(pfe->fd_, EPOLLIN, EPOLLOUT);
             } else {
               continue;
             }

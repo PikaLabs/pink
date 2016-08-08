@@ -1,6 +1,6 @@
 ## Pink
 
-[![Build Status](https://travis-ci.org/Qihoo360/pink)](https://travis-ci.org/Qihoo360/pink)
+[![Build Status](https://travis-ci.org/Qihoo360/pink.svg?branch=master)](https://travis-ci.org/Qihoo360/pink)
 
 Pink is a wrapper of pthread. why you need it?
 When you use pthread, you always define many type of thread, such as:

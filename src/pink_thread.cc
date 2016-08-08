@@ -36,7 +36,8 @@ void *Thread::RunThread(void *arg)
   Thread* thread = reinterpret_cast<Thread*>(arg);
   if (!(thread->thread_name().empty()))
   {
-    bool result = SetThreadName(pthread_self(), thread->thread_name());
+    SetThreadName(pthread_self(), thread->thread_name());
+    //bool result = SetThreadName(pthread_self(), thread->thread_name());
     //if (!result) {
     //  printf ("SetName failed\n");
     //} else {

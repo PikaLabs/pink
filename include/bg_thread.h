@@ -58,7 +58,7 @@ class BGThread : public Thread {
     pthread_cond_t rsignal_;
     pthread_cond_t wsignal_;
     BGQueue queue_;
-    int full_;
+    size_t full_;
     //std::atomic<bool> exit_;
     std::atomic<bool> running_;
     virtual void *ThreadMain(); 

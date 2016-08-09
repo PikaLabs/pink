@@ -40,20 +40,7 @@ public:
     Thread::Thread(cron_interval),
     work_num_(work_num)
   {
-
-    worker_thread_ = worker_thread;
-    server_socket_ = new ServerSocket(port);
-
-    server_socket_->Listen();
-    // init epoll
-    pink_epoll_ = new PinkEpoll();
-    pink_epoll_->PinkAddEvent(server_socket_->sockfd(), EPOLLIN | EPOLLERR | EPOLLHUP);
-
-
-    last_thread_ = 0;
-    for (int i = 0; i < work_num_; i++) {
-      worker_thread_[i]->StartThread();
-    }
+    InitParam(port, work_num, worker_thread);
   }
 
   /**
@@ -66,19 +53,26 @@ public:
    * @param cron_interval the cron job interval
    */
 
-  DispatchThread(std::string &ip, int port, int work_num, WorkerThread<T> **worker_thread, int cron_interval = 0) :
+  DispatchThread(const std::string &ip, int port, int work_num, WorkerThread<T> **worker_thread, int cron_interval = 0) :
     Thread::Thread(cron_interval),
     work_num_(work_num)
   {
+    InitParam(port, work_num, worker_thread, ip);
+  }
 
+  void InitParam(int port, int work_num, WorkerThread<T> **worker_thread, const std::string ip = std::string()) {
     worker_thread_ = worker_thread;
     server_socket_ = new ServerSocket(port);
 
-    server_socket_->Listen(ip);
+    if (ip.empty()) {
+      server_socket_->Listen();
+    } else {
+      server_socket_->Listen(ip);
+    }
+
     // init epoll
     pink_epoll_ = new PinkEpoll();
     pink_epoll_->PinkAddEvent(server_socket_->sockfd(), EPOLLIN | EPOLLERR | EPOLLHUP);
-
 
     last_thread_ = 0;
     for (int i = 0; i < work_num_; i++) {

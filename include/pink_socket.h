@@ -16,9 +16,9 @@ public:
 
   ~ServerSocket();
 
-  void Listen();
 
-  void Listen(std::string& bind_ip);
+  void Listen(const std::string bind_ip = std::string());
+
 
   void Close();
 

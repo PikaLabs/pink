@@ -32,10 +32,11 @@ ServerSocket::~ServerSocket()
   Close();
 }
 
+
 /*
  * Listen to a specific ip addr on a multi eth machine
  */
-void ServerSocket::Listen(std::string& bind_ip)
+void ServerSocket::Listen(const std::string bind_ip)
 {
   sockfd_ = socket(AF_INET, SOCK_STREAM, 0);
   memset(&servaddr_, 0, sizeof(servaddr_));
@@ -45,7 +46,11 @@ void ServerSocket::Listen(std::string& bind_ip)
   }
 
   servaddr_.sin_family = AF_INET;
-  servaddr_.sin_addr.s_addr = inet_addr(bind_ip.c_str());
+  if (bind_ip.empty()) {
+    servaddr_.sin_addr.s_addr = htonl(INADDR_ANY);
+  } else {
+    servaddr_.sin_addr.s_addr = inet_addr(bind_ip.c_str());
+  }
   servaddr_.sin_port = htons(port_);
 
   fcntl(sockfd_, F_SETFD, fcntl(sockfd_, F_GETFD) | FD_CLOEXEC);
@@ -64,34 +69,7 @@ void ServerSocket::Listen(std::string& bind_ip)
 
 }
 
-void ServerSocket::Listen()
-{
-  sockfd_ = socket(AF_INET, SOCK_STREAM, 0);
-  memset(&servaddr_, 0, sizeof(servaddr_));
 
-  int yes = 1;
-  if (setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1) {
-  }
-
-  servaddr_.sin_family = AF_INET;
-  servaddr_.sin_addr.s_addr = htonl(INADDR_ANY);
-  servaddr_.sin_port = htons(port_);
-
-  fcntl(sockfd_, F_SETFD, fcntl(sockfd_, F_GETFD) | FD_CLOEXEC);
-
-  int ret = bind(sockfd_, (struct sockaddr *) &servaddr_, sizeof(servaddr_));
-  if (ret < 0) {
-    fprintf(stderr, "\nbind port error!\n");
-    exit(-1);
-  }
-  listen(sockfd_, accept_backlog_);
-  listening_ = true;
-
-  if (is_block_ == false) {
-    SetNonBlock();
-  }
-
-}
 
 int ServerSocket::SetNonBlock()
 {

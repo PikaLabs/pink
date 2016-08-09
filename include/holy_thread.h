@@ -42,6 +42,19 @@ public:
 
   }
 
+  HolyThread(std::string& bind_ip, int port, int cron_interval = 0) :
+    Thread::Thread(cron_interval)
+  {
+    server_socket_ = new ServerSocket(port);
+
+    server_socket_->Listen(bind_ip);
+    pthread_rwlock_init(&rwlock_, NULL);
+    // init epoll
+    pink_epoll_ = new PinkEpoll();
+    pink_epoll_->PinkAddEvent(server_socket_->sockfd(), EPOLLIN | EPOLLERR | EPOLLHUP);
+
+  }
+
   virtual ~HolyThread() {
     should_exit_ = true;
     pthread_join(thread_id(), NULL);

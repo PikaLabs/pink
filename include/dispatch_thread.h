@@ -29,7 +29,7 @@ public:
   // This type Dispatch thread just get Connection and then Dispatch the fd to
   // worker thead
   /**
-   * @brief 
+   * @brief
    *
    * @param port the port number
    * @param work_num
@@ -45,6 +45,36 @@ public:
     server_socket_ = new ServerSocket(port);
 
     server_socket_->Listen();
+    // init epoll
+    pink_epoll_ = new PinkEpoll();
+    pink_epoll_->PinkAddEvent(server_socket_->sockfd(), EPOLLIN | EPOLLERR | EPOLLHUP);
+
+
+    last_thread_ = 0;
+    for (int i = 0; i < work_num_; i++) {
+      worker_thread_[i]->StartThread();
+    }
+  }
+
+  /**
+   * @brief
+   *
+   * @param ip the ip string
+   * @param port the port number
+   * @param work_num
+   * @param worker_thread the worker thred we define
+   * @param cron_interval the cron job interval
+   */
+
+  DispatchThread(std::string &ip, int port, int work_num, WorkerThread<T> **worker_thread, int cron_interval = 0) :
+    Thread::Thread(cron_interval),
+    work_num_(work_num)
+  {
+
+    worker_thread_ = worker_thread;
+    server_socket_ = new ServerSocket(port);
+
+    server_socket_->Listen(ip);
     // init epoll
     pink_epoll_ = new PinkEpoll();
     pink_epoll_->PinkAddEvent(server_socket_->sockfd(), EPOLLIN | EPOLLERR | EPOLLHUP);

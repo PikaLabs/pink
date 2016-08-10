@@ -5,7 +5,6 @@
 #include <sys/epoll.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <event.h>
 #include <unistd.h>
 #include <netinet/in.h>
 #include <sys/socket.h>

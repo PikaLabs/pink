@@ -41,6 +41,9 @@ void PbCli::BuildWbuf()
 
 Status PbCli::Send(void *msg)
 {
+  if (!Available()) {
+    return Status::IOError("unavailable connection");
+  }
   log_info("The Send function");
   msg_ = reinterpret_cast<google::protobuf::Message *>(msg);
 
@@ -77,6 +80,9 @@ Status PbCli::Send(void *msg)
 
 Status PbCli::Recv(void *msg_res)
 {
+  if (!Available()) {
+    return Status::IOError("unavailable connection");
+  }
   log_info("The Recv function");
   msg_res_ = reinterpret_cast<google::protobuf::Message *>(msg_res);
   int ret = ReadHeader();

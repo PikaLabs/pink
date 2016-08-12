@@ -120,6 +120,16 @@ Status CliSocket::Connect(const std::string &ip, const int port, const std::stri
       }
     }
 
+    struct sockaddr_in laddr;
+    socklen_t llen = sizeof(laddr);
+    getsockname(sockfd_, (struct sockaddr*) &laddr, &llen);
+    std::string lip(inet_ntoa(laddr.sin_addr));
+    int lport = ntohs(laddr.sin_port);
+    if (ip == lip && port == lport) 
+    {
+      return Status::IOError("EHOSTUNREACH", "same ip port");
+    }
+
     flags = fcntl(sockfd_, F_GETFL, 0);
     fcntl(sockfd_, F_SETFL, flags & ~O_NONBLOCK);
     freeaddrinfo(servinfo);

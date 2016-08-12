@@ -5,7 +5,6 @@
 #include <sys/epoll.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <event.h>
 #include <unistd.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -32,15 +31,28 @@ public:
   HolyThread(int port, int cron_interval = 0) :
     Thread::Thread(cron_interval)
   {
-    server_socket_ = new ServerSocket(port);
+    InitParam(port);
+  }
 
-    server_socket_->Listen();
+  HolyThread(const std::string& bind_ip, int port, int cron_interval = 0) :
+    Thread::Thread(cron_interval)
+  {
+    InitParam(port, bind_ip);
+  }
+
+  void InitParam(int port, const std::string ip = std::string()) {
+    server_socket_ = new ServerSocket(port);
+    if (ip.empty()) {
+      server_socket_->Listen();
+    } else {
+      server_socket_->Listen(ip);
+    }
     pthread_rwlock_init(&rwlock_, NULL);
     // init epoll
     pink_epoll_ = new PinkEpoll();
     pink_epoll_->PinkAddEvent(server_socket_->sockfd(), EPOLLIN | EPOLLERR | EPOLLHUP);
-
   }
+
 
   virtual ~HolyThread() {
     should_exit_ = true;

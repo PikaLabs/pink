@@ -2,12 +2,11 @@
 #include <sys/epoll.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <event.h>
 #include <unistd.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <sys/socket.h>
 #include <fcntl.h>
-#include <string.h>
 
 #include "pink_socket.h"
 #include "pink_util.h"
@@ -32,7 +31,11 @@ ServerSocket::~ServerSocket()
   Close();
 }
 
-void ServerSocket::Listen()
+
+/*
+ * Listen to a specific ip addr on a multi eth machine
+ */
+void ServerSocket::Listen(const std::string bind_ip)
 {
   sockfd_ = socket(AF_INET, SOCK_STREAM, 0);
   memset(&servaddr_, 0, sizeof(servaddr_));
@@ -42,7 +45,11 @@ void ServerSocket::Listen()
   }
 
   servaddr_.sin_family = AF_INET;
-  servaddr_.sin_addr.s_addr = htonl(INADDR_ANY);
+  if (bind_ip.empty()) {
+    servaddr_.sin_addr.s_addr = htonl(INADDR_ANY);
+  } else {
+    servaddr_.sin_addr.s_addr = inet_addr(bind_ip.c_str());
+  }
   servaddr_.sin_port = htons(port_);
 
   fcntl(sockfd_, F_SETFD, fcntl(sockfd_, F_GETFD) | FD_CLOEXEC);
@@ -60,6 +67,8 @@ void ServerSocket::Listen()
   }
 
 }
+
+
 
 int ServerSocket::SetNonBlock()
 {

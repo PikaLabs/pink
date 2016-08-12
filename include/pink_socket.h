@@ -3,6 +3,9 @@
 
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <string.h>
+#include <string.h>
+#include <iostream>
 
 namespace pink {
 
@@ -13,7 +16,9 @@ public:
 
   ~ServerSocket();
 
-  void Listen();
+
+  void Listen(const std::string bind_ip = std::string());
+
 
   void Close();
 

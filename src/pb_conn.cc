@@ -12,6 +12,7 @@ PbConn::PbConn(const int fd, const std::string &ip_port) :
   header_len_(-1),
   cur_pos_(0),
   rbuf_len_(0),
+  remain_packet_len_(0),
   connStatus_(kHeader),
   wbuf_len_(0),
   wbuf_pos_(0)
@@ -31,10 +32,8 @@ PbConn::~PbConn()
 //   step 2. kPacket, we read header_len bytes;
 ReadStatus PbConn::GetRequest()
 {
-  bool flag = true;
-
   // TODO  cur_pos_ can be omitted
-  while (flag) {
+  while (true) {
     switch (connStatus_) {
       case kHeader: {
         ssize_t nread = read(fd(), rbuf_ + rbuf_len_, COMMAND_HEADER_LENGTH - rbuf_len_);
@@ -48,15 +47,15 @@ ReadStatus PbConn::GetRequest()
           return kReadClose;
         } else {
           rbuf_len_ += nread;
-          if (rbuf_len_ - cur_pos_ >= COMMAND_HEADER_LENGTH) {
+          if (rbuf_len_ - cur_pos_ == COMMAND_HEADER_LENGTH) {
             uint32_t integer = 0;
             memcpy((char *)(&integer), rbuf_ + cur_pos_, sizeof(uint32_t));
             header_len_ = ntohl(integer);
-            log_info("Header_len %u", header_len_);
+            remain_packet_len_ = header_len_;
             cur_pos_ += COMMAND_HEADER_LENGTH;
             connStatus_ = kPacket;
           }
-          flag = false;
+          log_info ("GetRequest kHeader header_len=%u cur_pos=%u rbuf_len=%u remain_packet_len_=%d nread=%d\n", header_len_, cur_pos_, rbuf_len_, remain_packet_len_, nread);
         }
         break;
       }
@@ -65,7 +64,7 @@ ReadStatus PbConn::GetRequest()
           return kFullError;
         } else {
           // read msg body
-          ssize_t nread = read(fd(), rbuf_ + rbuf_len_, header_len_);
+          ssize_t nread = read(fd(), rbuf_ + rbuf_len_, remain_packet_len_);
           if (nread == -1) {
             if (errno == EAGAIN) {
               return kReadHalf;
@@ -77,18 +76,18 @@ ReadStatus PbConn::GetRequest()
           }
 
           rbuf_len_ += nread;
-          if (rbuf_len_ - cur_pos_ == header_len_) {
-            cur_pos_ += header_len_;
-            log_info("k Packet cur_pos_ %d rbuf_len_ %d", cur_pos_, rbuf_len_);
+          remain_packet_len_ -= nread;
+          if (remain_packet_len_ == 0) {
+            cur_pos_ = rbuf_len_;
             connStatus_ = kComplete;
           }
+          log_info ("GetRequest kPacket header_len=%u cur_pos=%u rbuf_len=%u remain_packet_len_=%d nread=%d\n", header_len_, cur_pos_, rbuf_len_, remain_packet_len_, nread);
         }
         break;
       }
       case kComplete: {
         DealMessage();
         connStatus_ = kHeader;
-        log_info("%d %d", cur_pos_, rbuf_len_);
 
         cur_pos_ = 0;
         rbuf_len_ = 0;

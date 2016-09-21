@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <sys/epoll.h>
 #include <map>
+#include <set>
 
 #include "csapp.h"
 #include "xdebug.h"
@@ -31,26 +32,42 @@ public:
   HolyThread(int port, int cron_interval = 0) :
     Thread::Thread(cron_interval)
   {
-    InitParam(port);
+    std::set<std::string> bind_ips;
+    bind_ips.insert("0.0.0.0");
+    InitParam(port, bind_ips);
   }
 
   HolyThread(const std::string& bind_ip, int port, int cron_interval = 0) :
     Thread::Thread(cron_interval)
   {
-    InitParam(port, bind_ip);
+    std::set<std::string> bind_ips;
+    bind_ips.insert(bind_ip);
+    InitParam(port, bind_ips);
   }
 
-  void InitParam(int port, const std::string ip = std::string()) {
-    server_socket_ = new ServerSocket(port);
-    if (ip.empty()) {
-      server_socket_->Listen();
-    } else {
-      server_socket_->Listen(ip);
+  HolyThread(const std::set<std::string>& bind_ips, int port, int cron_interval = 0) :
+    Thread::Thread(cron_interval)
+  {
+    InitParam(port, bind_ips); 
+  }
+
+  void InitParam(int port, std::set<std::string> bind_ips) {
+    ServerSocket* socket_p;
+    pink_epoll_ = new PinkEpoll();
+    if (bind_ips.find("0.0.0.0") != bind_ips.end()) {
+      bind_ips.clear();
+      bind_ips.insert("0.0.0.0");
+    }
+    for (std::set<std::string>::iterator iter = bind_ips.begin();
+        iter != bind_ips.end();
+        ++iter) {
+      socket_p = new ServerSocket(port);
+      socket_p->Listen(*iter);
+      pink_epoll_->PinkAddEvent(socket_p->sockfd(), EPOLLIN | EPOLLERR | EPOLLHUP);
+      server_sockets_.push_back(socket_p);
+      server_fds_.insert(socket_p->sockfd());
     }
     pthread_rwlock_init(&rwlock_, NULL);
-    // init epoll
-    pink_epoll_ = new PinkEpoll();
-    pink_epoll_->PinkAddEvent(server_socket_->sockfd(), EPOLLIN | EPOLLERR | EPOLLHUP);
   }
 
 
@@ -59,8 +76,11 @@ public:
     pthread_join(thread_id(), NULL);
 
     delete(pink_epoll_);
-    server_socket_->Close();
-    delete(server_socket_);
+    for (std::vector<ServerSocket*>::iterator iter = server_sockets_.begin();
+        iter != server_sockets_.end();
+        ++iter) {
+      delete *iter;
+    }
   }
 
   virtual void CronHandle() {
@@ -80,7 +100,8 @@ private:
    * The tcp server port and address
    */
 
-  ServerSocket *server_socket_;
+  std::vector<ServerSocket*> server_sockets_;
+  std::set<int32_t> server_fds_;
 
   /*
    * The Epoll event handler
@@ -131,7 +152,7 @@ public:
         pfe = (pink_epoll_->firedevent()) + i;
         log_info("tfe->fd_ %d tfe->mask_ %d", pfe->fd_, pfe->mask_);
         fd = pfe->fd_;
-        if (fd == server_socket_->sockfd()) {
+        if (server_fds_.find(fd) != server_fds_.end()) {
           /*
            * this branch means the listen fd is error
            */
@@ -139,7 +160,7 @@ public:
             close(pfe->fd_);
             continue;
           } else if (pfe->mask_ & EPOLLIN) {
-            connfd = accept(server_socket_->sockfd(), (struct sockaddr *) &cliaddr, &clilen);
+            connfd = accept(fd, (struct sockaddr *) &cliaddr, &clilen);
             if (connfd == -1) {
               if (errno != EWOULDBLOCK) {
                   continue;

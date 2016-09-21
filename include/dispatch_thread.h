@@ -12,6 +12,8 @@
 #include <sys/epoll.h>
 #include <sys/time.h>
 
+#include <set>
+
 #include "csapp.h"
 #include "xdebug.h"
 #include "pink_thread.h"
@@ -39,7 +41,9 @@ public:
     Thread::Thread(cron_interval),
     work_num_(work_num)
   {
-    InitParam(port, work_num, worker_thread);
+    std::set<std::string> ips;
+    ips.insert("0.0.0.0");
+    InitParam(port, work_num, worker_thread, ips);
   }
 
   /**
@@ -56,23 +60,36 @@ public:
     Thread::Thread(cron_interval),
     work_num_(work_num)
   {
-    InitParam(port, work_num, worker_thread, ip);
+    std::set<std::string> ips;
+    ips.insert(ip);
+    InitParam(port, work_num, worker_thread, ips);
+  }
+  
+  DispatchThread(const std::set<std::string>& ips, int port, int work_num, WorkerThread<T> **worker_thread, int cron_interval = 0) :
+      Thread::Thread(cron_interval),
+      work_num_(work_num)
+  {
+    InitParam(port, work_num, worker_thread, ips); 
   }
 
-  void InitParam(int port, int work_num, WorkerThread<T> **worker_thread, const std::string ip = std::string()) {
+  void InitParam(int port, int work_num, WorkerThread<T> **worker_thread, std::set<std::string> ips) {
+    ServerSocket* socket_p;
     worker_thread_ = worker_thread;
-    server_socket_ = new ServerSocket(port);
-
-    if (ip.empty()) {
-      server_socket_->Listen();
-    } else {
-      server_socket_->Listen(ip);
-    }
-
-    // init epoll
     pink_epoll_ = new PinkEpoll();
-    pink_epoll_->PinkAddEvent(server_socket_->sockfd(), EPOLLIN | EPOLLERR | EPOLLHUP);
-
+    if (ips.find("0.0.0.0") != ips.end()) {
+      ips.clear();
+      ips.insert("0.0.0.0");  
+    }
+    for (std::set<std::string>::iterator iter = ips.begin();
+        iter != ips.end();
+        ++iter) {
+      socket_p = new ServerSocket(port);
+      socket_p->Listen(*iter);
+      // init epoll
+      pink_epoll_->PinkAddEvent(socket_p->sockfd(), EPOLLIN | EPOLLERR | EPOLLHUP);
+      server_sockets_.push_back(socket_p);
+      server_fds_.insert(socket_p->sockfd());
+    }
     last_thread_ = 0;
     for (int i = 0; i < work_num_; i++) {
       worker_thread_[i]->StartThread();
@@ -93,8 +110,11 @@ public:
     pthread_join(thread_id(), NULL);
 
     delete(pink_epoll_);
-    server_socket_->Close();
-    delete(server_socket_);
+    for (std::vector<ServerSocket*>::iterator iter = server_sockets_.begin();
+        iter != server_sockets_.end();
+        ++iter) {
+      delete *iter;
+    }
   }
 
   virtual void CronHandle() {
@@ -150,9 +170,9 @@ public:
         pfe = (pink_epoll_->firedevent()) + i;
         fd = pfe->fd_;
         log_info("come fd is %d\n", fd);
-        if (fd == server_socket_->sockfd()) {
+        if (server_fds_.find(fd) != server_fds_.end()) {
           if (pfe->mask_ & EPOLLIN) {
-            connfd = accept(server_socket_->sockfd(), (struct sockaddr *) &cliaddr, &clilen);
+            connfd = accept(fd, (struct sockaddr *) &cliaddr, &clilen);
             log_info("Connect fd %d", connfd);
             if (connfd == -1) {
               if (errno != EWOULDBLOCK) {
@@ -200,8 +220,8 @@ private:
    * The tcp server port and address
    */
 
-  ServerSocket *server_socket_;
-  
+  std::vector<ServerSocket*> server_sockets_;
+  std::set<int32_t> server_fds_; 
   /*
    * The Epoll event handler
    */

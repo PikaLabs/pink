@@ -42,6 +42,9 @@ RedisCli::~RedisCli() {
 
 // We use passed-in send buffer here
 Status RedisCli::Send(void *msg) {
+  if (!Available()) {
+    return Status::IOError("unavailable connection");
+  }
   log_info("The Send function");
   Status s;
 
@@ -76,6 +79,9 @@ Status RedisCli::Send(void *msg) {
 
 // The result is useless
 Status RedisCli::Recv(void *trival) {
+  if (!Available()) {
+    return Status::IOError("unavailable connection");
+  }
   log_info("The Recv function");
 
   argv_.clear();

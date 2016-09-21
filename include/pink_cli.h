@@ -35,7 +35,12 @@ public:
     cli_socket_->set_connect_timeout(connect_timeout);
   }
 
+  bool Available() {
+    return available_;
+  }
+
 private:
+  bool available_;
 
   std::string peer_ip_;
   int peer_port_;

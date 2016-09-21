@@ -12,6 +12,7 @@ PbConn::PbConn(const int fd, const std::string &ip_port) :
   header_len_(-1),
   cur_pos_(0),
   rbuf_len_(0),
+  remain_packet_len_(0),
   connStatus_(kHeader),
   wbuf_len_(0),
   wbuf_pos_(0)
@@ -26,69 +27,81 @@ PbConn::~PbConn()
   free(wbuf_);
 }
 
+// Msg is [ length(COMMAND_HEADER_LENGTH) | body(length bytes) ]
+//   step 1. kHeader, we read COMMAND_HEADER_LENGTH bytes;
+//   step 2. kPacket, we read header_len bytes;
 ReadStatus PbConn::GetRequest()
 {
-  ssize_t nread = 0;
-  nread = read(fd(), rbuf_ + rbuf_len_, PB_MAX_MESSAGE);
-
-  if (nread == -1) {
-    if (errno == EAGAIN) {
-      return kReadHalf;
-    } else {
-      return kReadError;
-    }
-  } else if (nread == 0) {
-    return kReadClose;
-  }
-
-  uint32_t integer = 0;
-  bool flag = true;
-
-
-  if (nread) {
-    rbuf_len_ += nread;
-    while (flag) {
-      switch (connStatus_) {
-      case kHeader:
-        if (rbuf_len_ - cur_pos_ >= COMMAND_HEADER_LENGTH) {
-          memcpy((char *)(&integer), rbuf_ + cur_pos_, sizeof(uint32_t));
-          header_len_ = ntohl(integer);
-          log_info("Header_len %u", header_len_);
-          connStatus_ = kPacket;
-          cur_pos_ += COMMAND_HEADER_LENGTH;
+  // TODO  cur_pos_ can be omitted
+  while (true) {
+    switch (connStatus_) {
+      case kHeader: {
+        ssize_t nread = read(fd(), rbuf_ + rbuf_len_, COMMAND_HEADER_LENGTH - rbuf_len_);
+        if (nread == -1) {
+          if (errno == EAGAIN) {
+            return kReadHalf;
+          } else {
+            return kReadError;
+          }
+        } else if (nread == 0) {
+          return kReadClose;
         } else {
-          flag = false;
+          rbuf_len_ += nread;
+          if (rbuf_len_ - cur_pos_ == COMMAND_HEADER_LENGTH) {
+            uint32_t integer = 0;
+            memcpy((char *)(&integer), rbuf_ + cur_pos_, sizeof(uint32_t));
+            header_len_ = ntohl(integer);
+            remain_packet_len_ = header_len_;
+            cur_pos_ += COMMAND_HEADER_LENGTH;
+            connStatus_ = kPacket;
+          }
+          log_info ("GetRequest kHeader header_len=%u cur_pos=%u rbuf_len=%u remain_packet_len_=%d nread=%d\n", header_len_, cur_pos_, rbuf_len_, remain_packet_len_, nread);
         }
         break;
-      case kPacket:
-        if (rbuf_len_ >= header_len_ + COMMAND_HEADER_LENGTH) {
-          cur_pos_ += header_len_;
-          log_info("k Packet cur_pos_ %d rbuf_len_ %d", cur_pos_, rbuf_len_);
-          connStatus_ = kComplete;
+      }
+      case kPacket: {
+        if (header_len_ >= PB_MAX_MESSAGE - COMMAND_HEADER_LENGTH) {
+          return kFullError;
         } else {
-          flag = false;
+          // read msg body
+          ssize_t nread = read(fd(), rbuf_ + rbuf_len_, remain_packet_len_);
+          if (nread == -1) {
+            if (errno == EAGAIN) {
+              return kReadHalf;
+            } else {
+              return kReadError;
+            }
+          } else if (nread == 0) {
+            return kReadClose;
+          }
+
+          rbuf_len_ += nread;
+          remain_packet_len_ -= nread;
+          if (remain_packet_len_ == 0) {
+            cur_pos_ = rbuf_len_;
+            connStatus_ = kComplete;
+          }
+          log_info ("GetRequest kPacket header_len=%u cur_pos=%u rbuf_len=%u remain_packet_len_=%d nread=%d\n", header_len_, cur_pos_, rbuf_len_, remain_packet_len_, nread);
         }
         break;
-      case kComplete:
+      }
+      case kComplete: {
         DealMessage();
         connStatus_ = kHeader;
-        log_info("%d %d", cur_pos_, rbuf_len_);
-        if (cur_pos_ == rbuf_len_) {
-          cur_pos_ = 0;
-          rbuf_len_ = 0;
-        }
+
+        cur_pos_ = 0;
+        rbuf_len_ = 0;
         return kReadAll;
-        /*
-         * Add this switch case just for delete compile warning
-         */
+      }
+      // Add this switch case just for delete compile warning
       case kBuildObuf:
         break;
 
       case kWriteObuf:
         break;
-      }
     }
   }
+
   return kReadHalf;
 }
 

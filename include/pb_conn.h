@@ -34,6 +34,7 @@ public:
   char* rbuf_;
   uint32_t cur_pos_;
   uint32_t rbuf_len_;
+  int32_t remain_packet_len_;
 
   ConnStatus connStatus_;
 

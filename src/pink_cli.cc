@@ -4,7 +4,7 @@
 
 namespace pink {
 
-PinkCli::PinkCli() {
+PinkCli::PinkCli(): available_(false){
 
   cli_socket_ = new CliSocket();
 }
@@ -18,13 +18,18 @@ int PinkCli::fd() {
 }
 
 Status PinkCli::Close(){
-  cli_socket_->Close();
+  if (available_) {
+    cli_socket_->Close();
+    available_ = false;
+  }
   return Status::OK();
 }
 
 Status PinkCli::Connect(const std::string &peer_ip, const int peer_port, const std::string &bind_ip)
 {
-  return cli_socket_->Connect(peer_ip, peer_port, bind_ip);
+  Status s = cli_socket_->Connect(peer_ip, peer_port, bind_ip);
+  available_ = s.ok() ? true : false;
+  return s;
 }
 
 };

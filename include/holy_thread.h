@@ -73,7 +73,7 @@ public:
 
   virtual ~HolyThread() {
     should_exit_ = true;
-    pthread_join(thread_id(), NULL);
+    JoinThread();
 
     delete(pink_epoll_);
     for (std::vector<ServerSocket*>::iterator iter = server_sockets_.begin();

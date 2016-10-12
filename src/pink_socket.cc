@@ -61,8 +61,14 @@ int ServerSocket::Listen(const std::string bind_ip)
   if (err < 0) {
     return -1;
   }
-  listen(sockfd_, accept_backlog_);
-  listening_ = true;
+  
+  ret = listen(sockfd_, accept_backlog_);
+  if (ret < 0) {
+    fprintf(stderr, "\nlisten port error!\n");
+    exit(-1);
+  }
+  else
+    listening_ = true;
 
   if (is_block_ == false) {
     SetNonBlock();

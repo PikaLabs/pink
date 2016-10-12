@@ -12,6 +12,7 @@
 #include <sys/epoll.h>
 #include <map>
 #include <set>
+#include <vector>
 
 #include "csapp.h"
 #include "xdebug.h"

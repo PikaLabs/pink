@@ -13,6 +13,7 @@
 #include <sys/time.h>
 
 #include <set>
+#include <vector>
 
 #include "csapp.h"
 #include "xdebug.h"

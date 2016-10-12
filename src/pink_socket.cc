@@ -34,14 +34,17 @@ ServerSocket::~ServerSocket()
 
 /*
  * Listen to a specific ip addr on a multi eth machine
+ * Return -1 if Listen failed, 1 other wise
  */
-void ServerSocket::Listen(const std::string bind_ip)
+int ServerSocket::Listen(const std::string bind_ip)
 {
   sockfd_ = socket(AF_INET, SOCK_STREAM, 0);
   memset(&servaddr_, 0, sizeof(servaddr_));
 
   int yes = 1;
-  if (setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1) {
+  int err = setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+  if (err < 0) {
+    return -1;
   }
 
   servaddr_.sin_family = AF_INET;
@@ -54,10 +57,9 @@ void ServerSocket::Listen(const std::string bind_ip)
 
   fcntl(sockfd_, F_SETFD, fcntl(sockfd_, F_GETFD) | FD_CLOEXEC);
 
-  int ret = bind(sockfd_, (struct sockaddr *) &servaddr_, sizeof(servaddr_));
-  if (ret < 0) {
-    fprintf(stderr, "\nbind port error!\n");
-    exit(-1);
+  err = bind(sockfd_, (struct sockaddr *) &servaddr_, sizeof(servaddr_));
+  if (err < 0) {
+    return -1;
   }
   listen(sockfd_, accept_backlog_);
   listening_ = true;
@@ -65,7 +67,7 @@ void ServerSocket::Listen(const std::string bind_ip)
   if (is_block_ == false) {
     SetNonBlock();
   }
-
+  return 1;
 }
 
 

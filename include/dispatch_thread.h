@@ -90,7 +90,7 @@ public:
   virtual ~DispatchThread() {
     should_exit_ = true;
 
-    pthread_join(thread_id(), NULL);
+    JoinThread();
 
     delete(pink_epoll_);
     server_socket_->Close();

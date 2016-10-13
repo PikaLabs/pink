@@ -1,9 +1,10 @@
-#include "pb_conn.h"
-#include "pink_define.h"
-#include "worker_thread.h"
-#include "xdebug.h"
+#include "./pb_conn.h"
 
 #include <string>
+
+#include "./pink_define.h"
+#include "./worker_thread.h"
+#include "./xdebug.h"
 
 namespace pink {
 
@@ -15,10 +16,9 @@ PbConn::PbConn(const int fd, const std::string &ip_port) :
   remain_packet_len_(0),
   connStatus_(kHeader),
   wbuf_len_(0),
-  wbuf_pos_(0)
-{
-  rbuf_ = (char *)malloc(sizeof(char) * PB_MAX_MESSAGE);
-  wbuf_ = (char *)malloc(sizeof(char) * PB_MAX_MESSAGE);
+  wbuf_pos_(0) {
+  rbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * PB_MAX_MESSAGE));
+  wbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * PB_MAX_MESSAGE));
 }
 
 PbConn::~PbConn()
@@ -55,7 +55,7 @@ ReadStatus PbConn::GetRequest()
             cur_pos_ += COMMAND_HEADER_LENGTH;
             connStatus_ = kPacket;
           }
-          log_info ("GetRequest kHeader header_len=%u cur_pos=%u rbuf_len=%u remain_packet_len_=%d nread=%d\n", header_len_, cur_pos_, rbuf_len_, remain_packet_len_, nread);
+          log_info("GetRequest kHeader header_len=%u cur_pos=%u rbuf_len=%u remain_packet_len_=%d nread=%d\n", header_len_, cur_pos_, rbuf_len_, remain_packet_len_, nread);
         }
         break;
       }
@@ -81,7 +81,7 @@ ReadStatus PbConn::GetRequest()
             cur_pos_ = rbuf_len_;
             connStatus_ = kComplete;
           }
-          log_info ("GetRequest kPacket header_len=%u cur_pos=%u rbuf_len=%u remain_packet_len_=%d nread=%d\n", header_len_, cur_pos_, rbuf_len_, remain_packet_len_, nread);
+          log_info("GetRequest kPacket header_len=%u cur_pos=%u rbuf_len=%u remain_packet_len_=%d nread=%d\n", header_len_, cur_pos_, rbuf_len_, remain_packet_len_, nread);
         }
         break;
       }
@@ -135,7 +135,6 @@ WriteStatus PbConn::SendReply()
   }
 }
 
-
 Status PbConn::BuildObuf()
 {
   wbuf_len_ = res_->ByteSize();
@@ -148,4 +147,4 @@ Status PbConn::BuildObuf()
   return Status::OK();
 }
 
-}
+} // namespace pink

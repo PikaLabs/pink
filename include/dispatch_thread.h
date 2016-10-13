@@ -74,6 +74,7 @@ public:
   }
 
   int InitParam(int port, int work_num, WorkerThread<T> **worker_thread, std::set<std::string> ips) {
+    int ret = 0;
     ServerSocket* socket_p;
     worker_thread_ = worker_thread;
     pink_epoll_ = new PinkEpoll();
@@ -81,14 +82,13 @@ public:
       ips.clear();
       ips.insert("0.0.0.0");  
     }
-    int err = 0;
     for (std::set<std::string>::iterator iter = ips.begin();
         iter != ips.end();
         ++iter) {
       socket_p = new ServerSocket(port);
-      err = socket_p->Listen(*iter);
-      if (err < 0) {
-        return -1;
+      ret = socket_p->Listen(*iter);
+      if (ret < 0) {
+        return ret;
       }
       // init epoll
       pink_epoll_->PinkAddEvent(socket_p->sockfd(), EPOLLIN | EPOLLERR | EPOLLHUP);
@@ -99,7 +99,7 @@ public:
     for (int i = 0; i < work_num_; i++) {
       worker_thread_[i]->StartThread();
     }
-    return 1;
+    return ret;
   }
 
   int work_num() {

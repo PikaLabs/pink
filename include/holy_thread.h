@@ -57,27 +57,27 @@ public:
    * @TODO: move initParam out of construct func, resulting API change
    */
   int InitParam(int port, std::set<std::string> bind_ips) {
+    int ret = 0;
     ServerSocket* socket_p;
     pink_epoll_ = new PinkEpoll();
     if (bind_ips.find("0.0.0.0") != bind_ips.end()) {
       bind_ips.clear();
       bind_ips.insert("0.0.0.0");
     }
-    int err = 0;
     for (std::set<std::string>::iterator iter = bind_ips.begin();
         iter != bind_ips.end();
         ++iter) {
       socket_p = new ServerSocket(port);
-      err = socket_p->Listen(*iter);
-      if (err < 0) {
-        return -1;
+      ret = socket_p->Listen(*iter);
+      if (ret < 0) {
+        return ret;
       }
       pink_epoll_->PinkAddEvent(socket_p->sockfd(), EPOLLIN | EPOLLERR | EPOLLHUP);
       server_sockets_.push_back(socket_p);
       server_fds_.insert(socket_p->sockfd());
     }
     pthread_rwlock_init(&rwlock_, NULL);
-    return 1;
+    return ret;
   }
 
 

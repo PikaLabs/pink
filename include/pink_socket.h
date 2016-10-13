@@ -19,7 +19,7 @@ public:
 
   /*
    * Listen to a specific ip addr on a multi eth machine
-   * Return -1 if Listen failed, 1 other wise
+   * Return 0 if Listen success, <0 other wise
    */
   int Listen(const std::string bind_ip = std::string());
 

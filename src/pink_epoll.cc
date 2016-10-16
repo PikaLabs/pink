@@ -1,14 +1,19 @@
-#include "pink_epoll.h"
-#include "pink_define.h"
-#include "xdebug.h"
-#include "status.h"
+// Copyright (c) 2015-present, Qihoo, Inc.  All rights reserved.
+// This source code is licensed under the BSD-style license found in the
+// LICENSE file in the root directory of this source tree. An additional grant
+// of patent rights can be found in the PATENTS file in the same directory.
+
 #include <linux/version.h>
 #include <fcntl.h>
 
+#include "include/pink_epoll.h"
+#include "include/pink_define.h"
+#include "include/xdebug.h"
+#include "include/status.h"
+
 namespace pink {
 
-PinkEpoll::PinkEpoll()
-{
+PinkEpoll::PinkEpoll() {
 #if defined(EPOLL_CLOEXEC)
     epfd_ = epoll_create1(EPOLL_CLOEXEC);
 #else
@@ -30,15 +35,13 @@ PinkEpoll::PinkEpoll()
   firedevent_ = (PinkFiredEvent *)malloc(sizeof(PinkFiredEvent) * PINK_MAX_CLIENTS);
 }
 
-PinkEpoll::~PinkEpoll()
-{
+PinkEpoll::~PinkEpoll() {
   free(firedevent_);
   free(events_);
   close(epfd_);
 }
 
-Status PinkEpoll::PinkAddEvent(int fd, int mask)
-{
+Status PinkEpoll::PinkAddEvent(int fd, int mask) {
   struct epoll_event ee;
   ee.data.fd = fd;
   ee.events = mask;
@@ -48,9 +51,7 @@ Status PinkEpoll::PinkAddEvent(int fd, int mask)
   return Status::OK();
 }
 
-
-Status PinkEpoll::PinkModEvent(int fd, int oMask, int mask)
-{
+Status PinkEpoll::PinkModEvent(int fd, int oMask, int mask) {
   struct epoll_event ee;
   ee.data.fd = fd;
   ee.events = (oMask | mask);
@@ -60,8 +61,7 @@ Status PinkEpoll::PinkModEvent(int fd, int oMask, int mask)
   return Status::OK();
 }
 
-void PinkEpoll::PinkDelEvent(int fd)
-{
+void PinkEpoll::PinkDelEvent(int fd) {
   /*
    * Kernel < 2.6.9 need a non null event point to EPOLL_CTL_DEL
    */
@@ -70,8 +70,7 @@ void PinkEpoll::PinkDelEvent(int fd)
   epoll_ctl(epfd_, EPOLL_CTL_DEL, fd, &ee);
 }
 
-int PinkEpoll::PinkPoll(int timeout)
-{
+int PinkEpoll::PinkPoll(int timeout) {
   int retval, numevents = 0;
   retval = epoll_wait(epfd_, events_, PINK_MAX_CLIENTS, timeout);
   if (retval > 0) {

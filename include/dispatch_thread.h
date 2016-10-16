@@ -1,5 +1,5 @@
-#ifndef DISPATCH_THREAD_H_
-#define DISPATCH_THREAD_H_
+#ifndef INCLUDE_DISPATCH_THREAD_H_
+#define INCLUDE_DISPATCH_THREAD_H_
 
 #include <stdio.h>
 #include <sys/epoll.h>
@@ -8,20 +8,19 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
-#include <fcntl.h>
-#include <sys/epoll.h>
 #include <sys/time.h>
 
 #include <set>
 #include <vector>
+#include <queue>
 
-#include "csapp.h"
-#include "xdebug.h"
-#include "pink_thread.h"
-#include "worker_thread.h"
-#include "pink_util.h"
-#include "pink_socket.h"
-#include "pink_epoll.h"
+#include "include/csapp.h"
+#include "include/xdebug.h"
+#include "include/pink_thread.h"
+#include "include/worker_thread.h"
+#include "include/pink_util.h"
+#include "include/pink_socket.h"
+#include "include/pink_epoll.h"
 
 namespace pink {
 template <typename T>
@@ -65,12 +64,12 @@ public:
     ips.insert(ip);
     InitParam(port, work_num, worker_thread, ips);
   }
-  
+
   DispatchThread(const std::set<std::string>& ips, int port, int work_num, WorkerThread<T> **worker_thread, int cron_interval = 0) :
       Thread::Thread(cron_interval),
       work_num_(work_num)
   {
-    InitParam(port, work_num, worker_thread, ips); 
+    InitParam(port, work_num, worker_thread, ips);
   }
 
   int InitParam(int port, int work_num, WorkerThread<T> **worker_thread, std::set<std::string> ips) {
@@ -80,7 +79,7 @@ public:
     pink_epoll_ = new PinkEpoll();
     if (ips.find("0.0.0.0") != ips.end()) {
       ips.clear();
-      ips.insert("0.0.0.0");  
+      ips.insert("0.0.0.0");
     }
     for (std::set<std::string>::iterator iter = ips.begin();
         iter != ips.end();
@@ -126,7 +125,7 @@ public:
   virtual void CronHandle() {
   }
 
-  virtual bool AccessHandle(std::string& ip) {
+  virtual bool AccessHandle(const std::string& ip) {
     return true;
   }
 
@@ -144,7 +143,7 @@ public:
     gettimeofday(&when, NULL);
 
     when.tv_sec += (cron_interval_ / 1000);
-    when.tv_usec += ((cron_interval_ % 1000 ) * 1000);
+    when.tv_usec += ((cron_interval_ % 1000) * 1000);
     int timeout = cron_interval_;
     if (timeout <= 0) {
       timeout = PINK_CRON_INTERVAL;
@@ -156,7 +155,7 @@ public:
 
     while (!should_exit_) {
 
-      if (cron_interval_ > 0 ) {
+      if (cron_interval_ > 0) {
         gettimeofday(&now, NULL);
         if (when.tv_sec > now.tv_sec || (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
           timeout = (when.tv_sec - now.tv_sec) * 1000 + (when.tv_usec - now.tv_usec) / 1000;
@@ -170,7 +169,7 @@ public:
 
       nfds = pink_epoll_->PinkPoll(timeout);
       /*
-       * we just have the listen socket fd in the epoll 
+       * we just have the listen socket fd in the epoll
        */
       for (int i = 0; i < nfds; i++) {
         pfe = (pink_epoll_->firedevent()) + i;
@@ -194,7 +193,7 @@ public:
             }
 
             ip_port.append(":");
-            sprintf(port_buf, "%d", ntohs(cliaddr.sin_port));
+            snprintf(port_buf, sizeof(port_buf), "%d", ntohs(cliaddr.sin_port));
             ip_port.append(port_buf);
             std::queue<PinkItem> *q = &(worker_thread_[last_thread_]->conn_queue_);
             PinkItem ti(connfd, ip_port);
@@ -220,14 +219,13 @@ public:
     return NULL;
   }
 
-private:
-
+ private:
   /*
    * The tcp server port and address
    */
 
   std::vector<ServerSocket*> server_sockets_;
-  std::set<int32_t> server_fds_; 
+  std::set<int32_t> server_fds_;
   /*
    * The Epoll event handler
    */
@@ -250,6 +248,7 @@ private:
   DispatchThread(const DispatchThread&);
   void operator=(const DispatchThread&);
 };
-}
 
-#endif
+}// namespace pink
+
+#endif // INCLUDE_DISPATCH_THREAD_H_

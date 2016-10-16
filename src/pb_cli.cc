@@ -1,10 +1,10 @@
-#include "pb_cli.h"
-#include "pink_define.h"
-#include "xdebug.h"
-
 #include <netinet/in.h>
 #include <fcntl.h>
 #include <unistd.h>
+
+#include "include/pb_cli.h"
+#include "include/pink_define.h"
+#include "include/xdebug.h"
 
 namespace pink {
 
@@ -13,23 +13,20 @@ PbCli::PbCli() :
   rbuf_len_(0),
   rbuf_pos_(0),
   wbuf_len_(0),
-  wbuf_pos_(0)
-{
-  rbuf_ = (char *)malloc(sizeof(char) * PB_MAX_MESSAGE);
-  wbuf_ = (char *)malloc(sizeof(char) * PB_MAX_MESSAGE);
-  scratch_ = (char *)malloc(sizeof(char) * PB_MAX_MESSAGE);
+  wbuf_pos_(0) {
+  rbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * PB_MAX_MESSAGE));
+  wbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * PB_MAX_MESSAGE));
+  scratch_ = reinterpret_cast<char *>(malloc(sizeof(char) * PB_MAX_MESSAGE));
 }
 
-PbCli::~PbCli()
-{
+PbCli::~PbCli() {
   free(scratch_);
   free(wbuf_);
   free(rbuf_);
 }
 
 
-void PbCli::BuildWbuf()
-{
+void PbCli::BuildWbuf() {
   wbuf_len_ = msg_->ByteSize();
   msg_->SerializeToArray(wbuf_ + COMMAND_HEADER_LENGTH, wbuf_len_);
   uint32_t len;
@@ -39,8 +36,7 @@ void PbCli::BuildWbuf()
 
 }
 
-Status PbCli::Send(void *msg)
-{
+Status PbCli::Send(void *msg) {
   if (!Available()) {
     return Status::IOError("unavailable connection");
   }
@@ -49,7 +45,7 @@ Status PbCli::Send(void *msg)
 
   BuildWbuf();
 
-  // TODO already serialize 
+  // TODO(chenzongzhi) already serialize 
   msg_->SerializeToArray(wbuf_ + sizeof(uint32_t), sizeof(wbuf_));
 
   Status s;
@@ -78,8 +74,7 @@ Status PbCli::Send(void *msg)
   return s;
 }
 
-Status PbCli::Recv(void *msg_res)
-{
+Status PbCli::Recv(void *msg_res) {
   if (!Available()) {
     return Status::IOError("unavailable connection");
   }
@@ -97,8 +92,7 @@ Status PbCli::Recv(void *msg_res)
   return Status::OK();
 }
 
-int PbCli::ReadHeader()
-{
+int PbCli::ReadHeader() {
   int nread = 0;
   rbuf_pos_ = 0;
   size_t nleft = COMMAND_HEADER_LENGTH;
@@ -134,8 +128,7 @@ int PbCli::ReadHeader()
   return COMMAND_HEADER_LENGTH;
 }
 
-int PbCli::ReadPacket()
-{
+int PbCli::ReadPacket() {
   int nread = 0;
   rbuf_pos_ = 0;
   size_t nleft = packet_len_;

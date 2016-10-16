@@ -12,14 +12,15 @@ THIRD_PATH = ./third/
 OUTPUT = ./output
 
 
-INCLUDE_PATH = -I./include/ \
-			   -I./src/ \
+INCLUDE_PATH = -I./ \
+							 -I./include/ \
+							 -I./src/ \
 
 LIB_PATH = -L./ \
 
 
 LIBS = -lpthread \
-	   -lprotobuf
+			 -lprotobuf
 
 LIBRARY = libpink.a
 

@@ -4,24 +4,23 @@
 #include <stdio.h>
 #include <sys/epoll.h>
 #include <stdlib.h>
-#include <fcntl.h>
 #include <unistd.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <fcntl.h>
-#include <sys/epoll.h>
+
 #include <map>
 #include <set>
 #include <vector>
 
-#include "csapp.h"
-#include "xdebug.h"
-#include "pink_thread.h"
-#include "pink_util.h"
-#include "pink_socket.h"
-#include "pink_epoll.h"
-#include "pink_item.h"
-#include "pink_mutex.h"
+#include "include/csapp.h"
+#include "include/xdebug.h"
+#include "include/pink_thread.h"
+#include "include/pink_util.h"
+#include "include/pink_socket.h"
+#include "include/pink_epoll.h"
+#include "include/pink_item.h"
+#include "include/pink_mutex.h"
 
 namespace pink {
 
@@ -30,26 +29,23 @@ class HolyThread: public Thread
 {
 public:
   // This type thread thread will listen and work self list redis thread
-  HolyThread(int port, int cron_interval = 0) :
-    Thread::Thread(cron_interval)
-  {
+  explicit HolyThread(int port, int cron_interval = 0) :
+    Thread::Thread(cron_interval) {
     std::set<std::string> bind_ips;
     bind_ips.insert("0.0.0.0");
     InitParam(port, bind_ips);
   }
 
   HolyThread(const std::string& bind_ip, int port, int cron_interval = 0) :
-    Thread::Thread(cron_interval)
-  {
+    Thread::Thread(cron_interval) {
     std::set<std::string> bind_ips;
     bind_ips.insert(bind_ip);
     InitParam(port, bind_ips);
   }
 
   HolyThread(const std::set<std::string>& bind_ips, int port, int cron_interval = 0) :
-    Thread::Thread(cron_interval)
-  {
-    InitParam(port, bind_ips); 
+    Thread::Thread(cron_interval) {
+    InitParam(port, bind_ips);
   }
 
   /*
@@ -80,7 +76,6 @@ public:
     return ret;
   }
 
-
   virtual ~HolyThread() {
     should_exit_ = true;
     JoinThread();
@@ -96,16 +91,14 @@ public:
   virtual void CronHandle() {
   }
 
-  virtual bool AccessHandle(std::string& ip) {
+  virtual bool AccessHandle(const std::string& ip) {
     return true;
   }
 
   pthread_rwlock_t rwlock_;
   std::map<int, void *> conns_;
 
-private:
-
-
+ private:
   /*
    * The tcp server port and address
    */
@@ -118,14 +111,13 @@ private:
    */
   PinkEpoll *pink_epoll_;
 
-public:
-  virtual void *ThreadMain()
-  {
+ public:
+  virtual void *ThreadMain() {
     int nfds;
     PinkFiredEvent *pfe;
     Status s;
     struct sockaddr_in cliaddr;
-    socklen_t clilen=sizeof(struct sockaddr);
+    socklen_t clilen = sizeof(struct sockaddr);
     int fd, connfd;
     Conn *in_conn = NULL;
 
@@ -145,14 +137,14 @@ public:
     char ip_addr[INET_ADDRSTRLEN] = "";
 
     while (!should_exit_) {
-      if(cron_interval_ > 0) {
+      if (cron_interval_ > 0) {
         gettimeofday(&now, NULL);
         if (when.tv_sec > now.tv_sec || (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
           timeout = (when.tv_sec - now.tv_sec) * 1000 + (when.tv_usec - now.tv_usec) / 1000;
         } else {
           when.tv_sec = now.tv_sec + (cron_interval_ / 1000);
           when.tv_usec = now.tv_usec + ((cron_interval_ % 1000 ) * 1000);
-          CronHandle();
+          when.tv_sec = now.tv_sec + (cron_interval_ / 1000);
           timeout = cron_interval_;
         }
       }
@@ -186,7 +178,7 @@ public:
             }
 
             ip_port.append(":");
-            sprintf(port_buf, "%d", ntohs(cliaddr.sin_port));
+            snprintf(port_buf, sizeof(port_buf), "%d", ntohs(cliaddr.sin_port));
             ip_port.append(port_buf);
 
             Conn *tc = new Conn(connfd, ip_port, this);
@@ -272,6 +264,6 @@ public:
   }
 
 };
-}
+}// namespace pink
 
 #endif

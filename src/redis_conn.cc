@@ -1,11 +1,12 @@
 #include <stdlib.h>
 #include <limits.h>
+
+#include <string>
+
 #include "redis_conn.h"
 #include "pink_define.h"
 #include "worker_thread.h"
 #include "xdebug.h"
-
-#include <string>
 
 namespace pink {
 static bool IsHexDigit(char ch) {
@@ -27,7 +28,7 @@ static int split2args(const std::string& req_buf, RedisCmdArgsType& argv) {
   const char *p = req_buf.data();
   std::string arg;
 
-  while(1) {
+  while (1) {
     /* skip blanks */
     while(*p && isspace(*p)) p++;
     if (*p) {
@@ -37,7 +38,7 @@ static int split2args(const std::string& req_buf, RedisCmdArgsType& argv) {
       int done=0;
 
       arg.clear();
-      while(!done) {
+      while (!done) {
         if (inq) {
           if (*p == '\\' && *(p+1) == 'x' &&
               IsHexDigit(*(p+2)) &&
@@ -49,7 +50,7 @@ static int split2args(const std::string& req_buf, RedisCmdArgsType& argv) {
             char c;
 
             p++;
-            switch(*p) {
+            switch (*p) {
               case 'n': c = '\n'; break;
               case 'r': c = '\r'; break;
               case 't': c = '\t'; break;
@@ -93,7 +94,7 @@ static int split2args(const std::string& req_buf, RedisCmdArgsType& argv) {
             arg.append(1, *p);
           }
         } else {
-          switch(*p) {
+          switch (*p) {
             case ' ':
             case '\n':
             case '\r':
@@ -133,14 +134,12 @@ RedisConn::RedisConn(const int fd, const std::string &ip_port) :
   is_find_sep_(true),
   is_overtake_(false),
   wbuf_pos_(0),
-  wbuf_len_(0)
-{
+  wbuf_len_(0) {
   rbuf_ = (char *)malloc(sizeof(char) * REDIS_MAX_MESSAGE);
   wbuf_ = (char *)malloc(sizeof(char) * REDIS_MAX_MESSAGE);
 }
 
-RedisConn::~RedisConn()
-{
+RedisConn::~RedisConn() {
   free(wbuf_);
   free(rbuf_);
 }
@@ -431,4 +430,5 @@ int32_t RedisConn::GetNextNum(int32_t pos, int32_t *value) {
   if (value) *value = static_cast<int32_t>(num);
   return 0;
 }
-}
+
+}  // namespace pink

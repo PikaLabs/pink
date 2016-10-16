@@ -1,22 +1,27 @@
-#ifndef PINK_CLI_H_
-#define PINK_CLI_H_
+// Copyright (c) 2015-present, Qihoo, Inc.  All rights reserved.
+// This source code is licensed under the BSD-style license found in the
+// LICENSE file in the root directory of this source tree. An additional grant
+// of patent rights can be found in the PATENTS file in the same directory.
+
+#ifndef INCLUDE_PINK_CLI_H_
+#define INCLUDE_PINK_CLI_H_
 
 #include <string>
 
-#include "pink_cli_socket.h"
-#include "status.h"
+#include "include/pink_cli_socket.h"
+#include "include/status.h"
 
 namespace pink {
 
 class CliSocket;
 
 class PinkCli {
-
-public:
+ public:
   PinkCli();
   virtual ~PinkCli();
 
-  Status Connect(const std::string &peer_ip, const int peer_port, const std::string& bind_ip = "");
+  Status Connect(const std::string &peer_ip, const int peer_port,
+      const std::string& bind_ip = "");
   Status Close();
   virtual Status Send(void *msg) = 0;
   virtual Status Recv(void *msg_res) = 0;
@@ -39,16 +44,15 @@ public:
     return available_;
   }
 
-private:
+ private:
   bool available_;
 
   std::string peer_ip_;
   int peer_port_;
 
   CliSocket *cli_socket_;
-
 };
 
-};
+};  // namespace pink
 
-#endif
+#endif  // INCLUDE_PINK_CLI_H_

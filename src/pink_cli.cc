@@ -17,7 +17,7 @@ PinkCli::~PinkCli() {
   delete cli_socket_;
 }
 
-inline int PinkCli::fd() {
+int PinkCli::fd() {
   return cli_socket_->sockfd();
 }
 

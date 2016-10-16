@@ -13,13 +13,14 @@ SRC_DIR = ./
 OUTPUT = ./output
 
 LIB_PATH = -L../ \
-		   -L../output/lib/
+					 -L../output/lib/
 
 LIBS = -lpink \
 			 -lprotobuf \
 			 -lpthread
 
-INCLUDE_PATH = -I../output/include/
+INCLUDE_PATH = -I ../output/ \
+							 -I../output/include/
 
 .PHONY: all clean version pcli redis_cli
 

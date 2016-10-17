@@ -1,25 +1,30 @@
-#ifndef PINK_PB_CONN_H_
-#define PINK_PB_CONN_H_
+// Copyright (c) 2015-present, Qihoo, Inc.  All rights reserved.
+// This source code is licensed under the BSD-style license found in the
+// LICENSE file in the root directory of this source tree. An additional grant
+// of patent rights can be found in the PATENTS file in the same directory.
 
-#include "status.h"
-#include "csapp.h"
-#include "pink_define.h"
-#include "pink_util.h"
-#include "pink_conn.h"
-#include "xdebug.h"
-#include <google/protobuf/message.h>
+#ifndef INCLUDE_PB_CONN_H_
+#define INCLUDE_PB_CONN_H_
+
 #include <string>
 #include <map>
 
+
+#include <google/protobuf/message.h>
+#include "include/csapp.h"
+#include "include/pink_conn.h"
+#include "include/pink_define.h"
+#include "include/pink_util.h"
+#include "include/xdebug.h"
+#include "include/status.h"
+
 namespace pink {
 
-class PbConn: public PinkConn
-{
-public:
+class PbConn: public PinkConn {
+ public:
   PbConn(const int fd, const std::string &ip_port);
   ~PbConn();
   void InitPara();
-
 
   ReadStatus GetRequest();
   WriteStatus SendReply();
@@ -44,11 +49,10 @@ public:
   uint32_t wbuf_len_;
   uint32_t wbuf_pos_;
 
-private:
-
+ private:
   virtual Status BuildObuf();
 };
 
-}
+}  // namespace pink
 
-#endif
+#endif  // INCLUDE_PB_CONN_H_

@@ -1,3 +1,8 @@
+// Copyright (c) 2015-present, Qihoo, Inc.  All rights reserved.
+// This source code is licensed under the BSD-style license found in the
+// LICENSE file in the root directory of this source tree. An additional grant
+// of patent rights can be found in the PATENTS file in the same directory.
+
 #include "./pb_conn.h"
 
 #include <string>
@@ -21,8 +26,7 @@ PbConn::PbConn(const int fd, const std::string &ip_port) :
   wbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * PB_MAX_MESSAGE));
 }
 
-PbConn::~PbConn()
-{
+PbConn::~PbConn() {
   free(rbuf_);
   free(wbuf_);
 }
@@ -30,8 +34,7 @@ PbConn::~PbConn()
 // Msg is [ length(COMMAND_HEADER_LENGTH) | body(length bytes) ]
 //   step 1. kHeader, we read COMMAND_HEADER_LENGTH bytes;
 //   step 2. kPacket, we read header_len bytes;
-ReadStatus PbConn::GetRequest()
-{
+ReadStatus PbConn::GetRequest() {
   // TODO  cur_pos_ can be omitted
   while (true) {
     switch (connStatus_) {
@@ -105,8 +108,7 @@ ReadStatus PbConn::GetRequest()
   return kReadHalf;
 }
 
-WriteStatus PbConn::SendReply()
-{
+WriteStatus PbConn::SendReply() {
   BuildObuf();
   ssize_t nwritten = 0;
   while (wbuf_len_ > 0) {
@@ -135,8 +137,7 @@ WriteStatus PbConn::SendReply()
   }
 }
 
-Status PbConn::BuildObuf()
-{
+Status PbConn::BuildObuf() {
   wbuf_len_ = res_->ByteSize();
   res_->SerializeToArray(wbuf_ + 4, wbuf_len_);
   uint32_t u;

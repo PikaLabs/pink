@@ -9,7 +9,6 @@
 #include <string>
 #include <map>
 
-
 #include <google/protobuf/message.h>
 #include "include/csapp.h"
 #include "include/pink_conn.h"
@@ -26,8 +25,8 @@ class PbConn: public PinkConn {
   ~PbConn();
   void InitPara();
 
-  ReadStatus GetRequest();
-  WriteStatus SendReply();
+  ReadStatus GetRequest() override;
+  WriteStatus SendReply() override;
 
   virtual int DealMessage() = 0;
 

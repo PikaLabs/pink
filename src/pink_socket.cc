@@ -1,15 +1,19 @@
+// Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
+// This source code is licensed under the BSD-style license found in the
+// LICENSE file in the root directory of this source tree. An additional grant
+// of patent rights can be found in the PATENTS file in the same directory.
+
 #include <stdio.h>
 #include <sys/epoll.h>
 #include <stdlib.h>
-#include <fcntl.h>
 #include <unistd.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <fcntl.h>
 
-#include "pink_socket.h"
-#include "pink_util.h"
+#include "include/pink_socket.h"
+#include "include/pink_util.h"
 
 namespace pink {
 
@@ -26,18 +30,15 @@ ServerSocket::ServerSocket(int port, bool is_block) :
   is_block_(is_block) {
   }
 
-ServerSocket::~ServerSocket()
-{
+virtual ServerSocket::~ServerSocket() {
   Close();
 }
-
 
 /*
  * Listen to a specific ip addr on a multi eth machine
  * Return 0 if Listen success, < 0 other wise
  */
-int ServerSocket::Listen(const std::string bind_ip)
-{
+int ServerSocket::Listen(const std::string bind_ip) {
   int ret = 0;
   sockfd_ = socket(AF_INET, SOCK_STREAM, 0);
   memset(&servaddr_, 0, sizeof(servaddr_));
@@ -74,10 +75,7 @@ int ServerSocket::Listen(const std::string bind_ip)
   return ret;
 }
 
-
-
-int ServerSocket::SetNonBlock()
-{
+int ServerSocket::SetNonBlock() {
   flags_ = Setnonblocking(sockfd());
   if (flags_ == -1) {
     return -1;
@@ -85,8 +83,7 @@ int ServerSocket::SetNonBlock()
   return 0;
 }
 
-void ServerSocket::Close()
-{
+void ServerSocket::Close() {
   close(sockfd_);
 }
-}
+}  // namespace pink

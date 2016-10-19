@@ -1,28 +1,30 @@
-#ifndef PINK_SOCKET_H_
-#define PINK_SOCKET_H_
+// Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
+// This source code is licensed under the BSD-style license found in the
+// LICENSE file in the root directory of this source tree. An additional grant
+// of patent rights can be found in the PATENTS file in the same directory.
+
+#ifndef INCLUDE_PINK_SOCKET_H_
+#define INCLUDE_PINK_SOCKET_H_
 
 #include <netinet/in.h>
 #include <sys/socket.h>
-#include <string.h>
-#include <string.h>
+
+#include <string>
 #include <iostream>
 
 namespace pink {
 
-class ServerSocket
-{
-public:
-  ServerSocket(int port, bool is_block = false);
+class ServerSocket {
+ public:
+  explicit ServerSocket(int port, bool is_block = false);
 
-  ~ServerSocket();
-
+  virtual ~ServerSocket();
 
   /*
    * Listen to a specific ip addr on a multi eth machine
    * Return 0 if Listen success, <0 other wise
    */
   int Listen(const std::string bind_ip = std::string());
-
 
   void Close();
 
@@ -36,7 +38,7 @@ public:
   int port() {
     return port_;
   }
-  
+
   void set_keep_alive(bool keep_alive) {
     keep_alive_ = keep_alive;
   }
@@ -65,8 +67,7 @@ public:
     sockfd_ = sockfd;
   }
 
-private:
-
+ private:
   int SetNonBlock();
 
   /*
@@ -83,7 +84,7 @@ private:
   bool keep_alive_;
   bool listening_;
   bool is_block_;
-  
+
   struct sockaddr_in servaddr_;
   int sockfd_;
 
@@ -93,9 +94,8 @@ private:
 
   ServerSocket(const ServerSocket&);
   void operator=(const ServerSocket&);
-
 };
 
-};
+}  // namespace pink
 
-#endif
+#endif  // INCLUDE_PINK_SOCKET_H_

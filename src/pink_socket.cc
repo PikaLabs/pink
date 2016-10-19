@@ -11,6 +11,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <fcntl.h>
+#include <string.h>
 
 #include "include/pink_socket.h"
 #include "include/pink_util.h"
@@ -30,7 +31,7 @@ ServerSocket::ServerSocket(int port, bool is_block) :
   is_block_(is_block) {
   }
 
-virtual ServerSocket::~ServerSocket() {
+ServerSocket::~ServerSocket() {
   Close();
 }
 
@@ -38,7 +39,7 @@ virtual ServerSocket::~ServerSocket() {
  * Listen to a specific ip addr on a multi eth machine
  * Return 0 if Listen success, < 0 other wise
  */
-int ServerSocket::Listen(const std::string bind_ip) {
+int ServerSocket::Listen(const std::string &bind_ip) {
   int ret = 0;
   sockfd_ = socket(AF_INET, SOCK_STREAM, 0);
   memset(&servaddr_, 0, sizeof(servaddr_));

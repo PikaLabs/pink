@@ -1,3 +1,8 @@
+// Copyright (c) 2015-present, Qihoo, Inc.  All rights reserved.
+// This source code is licensed under the BSD-style license found in the
+// LICENSE file in the root directory of this source tree. An additional grant
+// of patent rights can be found in the PATENTS file in the same directory.
+
 #ifndef PINK_REDIS_CONN_H_
 #define PINK_REDIS_CONN_H_
 
@@ -13,9 +18,9 @@
 namespace pink {
 
 typedef std::vector<std::string> RedisCmdArgsType;
-class RedisConn: public PinkConn
-{
-public:
+
+class RedisConn: public PinkConn {
+ public:
   RedisConn(const int fd, const std::string &ip_port);
   virtual ~RedisConn();
   void ResetClient();
@@ -30,8 +35,17 @@ public:
 
   ConnStatus connStatus_;
 
-private:
-  
+ protected:
+  char* wbuf_;
+  uint32_t wbuf_len_;
+  RedisCmdArgsType argv_;
+
+ private:
+  ReadStatus ProcessInputBuffer();
+  ReadStatus ProcessMultibulkBuffer();
+  ReadStatus ProcessInlineBuffer();
+  int32_t FindNextSeparators();
+  int32_t GetNextNum(int32_t pos, int32_t *value);
   int32_t last_read_pos_;
   int32_t next_parse_pos_;
   int32_t req_type_;
@@ -47,18 +61,8 @@ private:
   char* rbuf_;
   uint32_t wbuf_pos_;
 
-  ReadStatus ProcessInputBuffer();
-  ReadStatus ProcessMultibulkBuffer();
-  ReadStatus ProcessInlineBuffer();
-  int32_t FindNextSeparators();
-  int32_t GetNextNum(int32_t pos, int32_t *value);
-
-protected:
-  char* wbuf_;
-  uint32_t wbuf_len_;
-  RedisCmdArgsType argv_;
 
 };
-}
+}  // namespace pink
 
-#endif
+#endif  // INCLUDE_REDIS_CONN_H_

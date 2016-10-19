@@ -24,7 +24,7 @@ class ServerSocket {
    * Listen to a specific ip addr on a multi eth machine
    * Return 0 if Listen success, <0 other wise
    */
-  int Listen(const std::string bind_ip = std::string());
+  int Listen(const std::string &bind_ip = std::string());
 
   void Close();
 

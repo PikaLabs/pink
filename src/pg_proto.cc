@@ -14,10 +14,10 @@ static inline void ReadByte(const char* data, uint8_t *byte) {
 }
 
 static inline void ReadU32be(const char* data, uint32_t *val) {
-  uint32_t a = data[0];
-  uint32_t b = data[1];
-  uint32_t c = data[2];
-  uint32_t d = data[3];
+  uint32_t a = data[0] & 0x000000ff;
+  uint32_t b = data[1] & 0x000000ff;
+  uint32_t c = data[2] & 0x000000ff;
+  uint32_t d = data[3] & 0x000000ff;
 
   *val = (a << 24) | (b << 16) | (c << 8) | d;
 }
@@ -29,13 +29,26 @@ static inline void ReadU16be(const char* data, uint16_t *val) {
   *val = (a << 8) | b;
 }
 
+void GetRandomBytes(char *s, const int len) {
+  static const char alphanum[] =
+      "0123456789"
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+      "abcdefghijklmnopqrstuvwxyz";
+
+  for (int i = 0; i < len; ++i) {
+    s[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+  }
+
+  s[len] = 0;
+}
+
 bool PacketHeader::ParseFromArray(const char* data, int *size) {
   if (*size < V3_HEADER_LEN) {
     log_warn("Parse header: less than 5 bytes available");
     return false;
   }
 
-  int p = 0;
+  //int p = 0;
   type = (uint8_t)data[0];
   if (type != 0) {
     ReadU32be(data + 1, &len);
@@ -44,7 +57,7 @@ bool PacketHeader::ParseFromArray(const char* data, int *size) {
     *size = V3_HEADER_LEN;
 
     version = 3;
-    log_info ("Parse header: v3 type=%u, len=%u\n", type, len);
+    log_info ("Parse header: v3 type=%u/%c, len=%u\n", type, (char)type, len);
   } else { // old v2 header
     if ((uint8_t)data[1] != 0) {
       log_warn("Parse header: unknown special packet");
@@ -71,9 +84,9 @@ bool PacketHeader::ParseFromArray(const char* data, int *size) {
     *size = V2_HEADER_LEN;
   }
 
-  if (len < *size || len >= LONG_MAX) {
-    return false;
-  }
+ // if (len < *size || len >= LONG_MAX) {
+ //   return false;
+ // }
 
   return true;
 }
@@ -222,7 +235,7 @@ PacketBuf* NewWelcomeMsg() {
   PacketBuf* packet = new PacketBuf();
   packet->WriteAuthenticationOk();
   packet->WriteParameterStatus("server_version", "pgstall" PS_VERSION);
-  packet->WriteParameterStatus("client_encoding", "UNICODE");
+  //packet->WriteParameterStatus("client_encoding", "UNICODE");
   packet->WriteParameterStatus("server_encoding", "SQL_ASCII");
   packet->WriteParameterStatus("DateStyle", "ISO");
   packet->WriteParameterStatus("TimeZone", "GMT");
@@ -236,10 +249,22 @@ PacketBuf* NewWelcomeMsg() {
 // 
 // InsertParser
 //
+InsertParser::InsertParser()
+  : parse_pos_(0),
+    len_(0) {
+}
+
 InsertParser::InsertParser(const std::string &str)
   : statement_(str),
     parse_pos_(0),
     len_(str.size()) {
+}
+
+void InsertParser::Init(const std::string &str) {
+  statement_ = str;
+  parse_pos_ = 0;
+  len_ = str.size();
+  rows_.clear();
 }
 
 //static void Tokenize(const std::string& str, std::vector<std::string>& tokens, const char& delimiter = ' ') {
@@ -260,40 +285,46 @@ InsertParser::InsertParser(const std::string &str)
 //  we consider "()" as one token while ',' not;
 //  we handle quotes;
 std::string InsertParser::NextToken() {
-  size_t begin_pos = -1;
+  ssize_t begin_pos = -1;
   bool bracket = false;
 
   while (parse_pos_ < len_) {
     if (statement_[parse_pos_] == ' ') {
-      if (begin_pos >= 0) {
+      if (!bracket && begin_pos >= 0) {
         parse_pos_++;
-        return statement_.substr(begin_pos_, parse_pos_ - begin_pos - 2);
+        return statement_.substr(begin_pos, parse_pos_ - begin_pos - 1);
       }
     } else  if (statement_[parse_pos_] == '(') {
       if (begin_pos >= 0) {
-        return statement_.substr(begin_pos_, parse_pos_ - begin_pos - 1);
+        return statement_.substr(begin_pos, parse_pos_ - begin_pos);
       } else {  // the first '('
-        begin_pos = parse_pos_ + 1;
+        begin_pos = parse_pos_;
         bracket = true;
       }
     } else if (statement_[parse_pos_] == ')') {
       if (bracket) {
         parse_pos_++;
-        return statement_.substr(begin_pos_, parse_pos_ - begin_pos - 1);
+        return statement_.substr(begin_pos, parse_pos_ - begin_pos);
       } else {
         return "";
       }
     } else if (statement_[parse_pos_] == ',') {
       if (!bracket && begin_pos >= 0) {
         parse_pos_++;
-        return statement_.substr(begin_pos_, parse_pos_ - begin_pos - 2);
+        return statement_.substr(begin_pos, parse_pos_ - begin_pos - 2);
       }
-    } else {
-      begin_pos_ = parse_pos_;
+    } else if (statement_[parse_pos_] == '\0') {
+      // don't handle \0
+    } else if (begin_pos < 0) {
+      begin_pos = parse_pos_;
     }
     parse_pos_++;
   }
-  return statement_.substr(begin_pos_, parse_pos_ - begin_pos - 2);
+  if (begin_pos < 0) {
+    return "";
+  }
+
+  return statement_.substr(begin_pos, parse_pos_ - begin_pos - 1);
 }
 
 // brute force match Insert statement
@@ -305,16 +336,38 @@ bool InsertParser::Parse() {
 
   // Insert
   token = NextToken();
+  log_info ("InsertParse: 1st token=(%s)", token.c_str());
   if (strcasecmp(token.c_str(), "insert") == 0) {
     token = NextToken();
+    log_info ("InsertParse: 2nd token=(%s)", token.c_str());
     if (strcasecmp(token.c_str(), "into") == 0) {
       // handle table_name;
       token = NextToken();
       if (isalnum(token[0])) {
         table_ = token;
+        log_info ("InsertParse: 3rd token table=%s\n", table_.c_str());
 
         token = NextToken();
-        //if (
+        if (token[0] == '(' && (token.size() > 1 && token[token.size() - 1] == ')')) {
+          log_info ("InsertParse: 4rd token attribute=(%s)\n", token.c_str());
+          token = NextToken();
+        }
+        if (strcasecmp(token.c_str(), "values") == 0) {
+          log_info ("InsertParse: 4rd token values=(%s)\n", token.c_str());
+          while (parse_pos_ < statement_.size()) {
+            token = NextToken();
+            if (token == ";") {
+              break;
+            } else if (token[0] == '(' && (token.size() > 1 && token[token.size() - 1] == ')')) {
+              rows_.push_back(token.substr(1, token.size() - 2));
+            } else if (token.size() > 0) {
+              return false;
+            }
+          }
+        } else {
+          log_info ("InsertParse failed: 4rd token unsupported (%s)\n", token.c_str());
+          return false;
+        }
       }
     }
   }

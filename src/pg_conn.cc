@@ -23,7 +23,8 @@ PGConn::PGConn(const int fd, const std::string &ip_port) :
   conn_status_(PGStatus::kPGLogin),
   wbuf_size_(PG_MAX_MESSAGE),
   wbuf_offset_(0),
-  write_offset_(0) {
+  write_offset_(0),
+  parse_error_(false) {
   rbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * rbuf_size_));
   wbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * wbuf_size_));
 }
@@ -34,7 +35,6 @@ PGConn::~PGConn() {
 }
 
 ReadStatus PGConn::Recv(size_t count) {
-//ReadStatus PGConn::Recv(size_t count, ssize_t *nread) {
   ssize_t nread = read(fd(), rbuf_ + rbuf_offset_, count);
 
   if (nread == -1) {
@@ -93,9 +93,11 @@ bool PGConn::HandleStartupParameters() {
     } else if (strcmp(key, "application_name") == 0) {
       log_info("got param: %s=%s", key, val);
       appname_ = val;
+    } else if (strcmp(key, "client_encoding") == 0) {
+      log_info("got param: %s=%s", key, val);
+      client_encoding_ = val;
     } else {
       log_warn("unsupported startup param: %s=%s", key, val);
-      return false;
     }
   }
 
@@ -118,6 +120,9 @@ bool PGConn::HandleStartup() {
       conn_status_ = PGStatus::kPGActive; 
       break;
     case PKT_SSLREQ:
+      AppendObuf("N", 1);
+      set_is_reply(true);
+      return true;
     case PKT_STARTUP_V2:
     case 'p':    //PasswordMessage
     case PKT_CANCEL:
@@ -128,16 +133,39 @@ bool PGConn::HandleStartup() {
   return true;
 }
 
-bool PGConn::HandleNormal() {
-  log_info("Handle packet type: %d/0x%x", packet_header_.type, packet_header_.type);
+ReadStatus PGConn::HandleNormal() {
+  log_info("Handle packet type: %d/0x%x/%c", packet_header_.type, packet_header_.type, packet_header_.type);
   switch (packet_header_.type) {
     // one-packet queries
-    case 'Q':		// Query
+    case 'Q':	{ // Query
+      parse_error_ = false;
+      set_is_reply(true);
+      //statement_ = std::string(rbuf_ + parse_offset_, rbuf_offset_ - parse_offset_);
+      statement_ = std::string(rbuf_ + parse_offset_,  packet_header_.len - parse_offset_);
+      parse_offset_ = packet_header_.len;
+      parser_.Init(statement_);
+      if (parser_.Parse()) {
+        DealMessage();
+        AppendCommandComplete();
+        return kReadAll;
+      } else {
+        //
+        //AppendErrorResponse();
+        return kParseError;
+      }
+    }
+
     case 'F':		// FunctionCall
-    case 'S':		// Sync
-      break;
     case 'H':		// Flush
-      break;
+    case 'S': {	// Sync
+      set_is_reply(true);
+      parse_offset_ = packet_header_.len;
+      if (!parse_error_) {
+        return kReadAll;
+      } else {
+        return kParseError;
+      }
+    }
 
     // copy end markers
     case 'c':		// CopyDone(F/B)
@@ -148,27 +176,55 @@ bool PGConn::HandleNormal() {
     // extended protocol allows server (and thus pooler)
     // to buffer packets until sync or flush is sent by client
     //	
-    case 'P':		// Parse
-    case 'E':		// Execute
-    case 'C':		// Close
-    case 'B':		// Bind
-    case 'D':		// Describe
+    case 'P':	{	// Parse
+      parse_error_ = false;
+      statement_ = std::string(rbuf_ + parse_offset_,  packet_header_.len - parse_offset_);
+      parse_offset_ = packet_header_.len;
+      parser_.Init(statement_);
+      if (parser_.Parse()) {
+        AppendSingleResponse('1'); // ParseComplete
+      } else {
+        AppendErrorResponse();
+      }
+      return kReadHalf;
+    }
+    case 'B':	{	// Bind
+      parse_offset_ = packet_header_.len;
+      if (!parse_error_) {
+        AppendSingleResponse('2'); // BindComplete
+      }
+      return kReadHalf;
+    }
+    case 'D':	{	// Describe
+      parse_offset_ = packet_header_.len;
+      if (!parse_error_) {
+        AppendSingleResponse('n'); // NoData
+      }
+      return kReadHalf;
+    }
+    case 'E':	{	// Execute
+      parse_offset_ = packet_header_.len;
+      if (!parse_error_) {
+        DealMessage();
+        AppendCommandComplete();
+      }
+      return kReadHalf;
+    }
+    case 'C':		// CommandComplete
     case 'd':		// CopyData(F/B)
       break;
 
     case 'X': // Terminate
+      log_warn("client close request");
       //disconnect_client(client, false, "client close request");
-      return false;
+      return kReadClose;
       // client wants to go away
     default:
+      parse_offset_ = packet_header_.len;
       log_warn("unknown packet type: %d/0x%x", packet_header_.type, packet_header_.type);
       //disconnect_client(client, true, "unknown pkt");
-      return false;
+      return kParseError;
   }
-
-  statements_ = std::string(rbuf_ + parse_offset_, rbuf_offset_ - parse_offset_);
-
-  return true;
 }
 
 // trival implementation
@@ -181,13 +237,66 @@ Status PGConn::AppendWelcome() {
   return AppendObuf(packet->buf, packet->write_pos);
 }
 
-Status PGConn::AppendReadyForQuery() {
+Status PGConn::AppendCommandComplete() {
+  char buf[128];
+  snprintf (buf, 128, "INSERT 0 %lu", parser_.rows_.size());
+
   PacketBuf *packet = new PacketBuf;
-  //packet.WriteReadyForQuery();
-  packet->WriteGeneric('Z', "c", 'I');
+  packet->WriteCommandComplete(buf);
+  //packet->WriteGeneric('Z', "c", 'I');
   AppendObuf(packet->buf, packet->write_pos);
 
   delete packet;
+
+  return Status::OK();
+}
+
+Status PGConn::AppendReadyForQuery() {
+ // PacketBuf *packet = new PacketBuf;
+ // packet->WriteGeneric('Z', "c", 'I');
+ // AppendObuf(packet->buf, packet->write_pos);
+ // delete packet;
+
+  PacketBuf packet;
+  packet.WriteGeneric('Z', "c", 'I');
+  //packet.WriteReadyForQuery();
+  AppendObuf(packet.buf, packet.write_pos);
+
+  return Status::OK();
+}
+
+Status PGConn::AppendErrorResponse() {
+  char buf[128];
+  snprintf (buf, 128, "syntax error at or near.");
+
+  PacketBuf *packet = new PacketBuf;
+  packet->WriteErrorResponse(buf);
+  //packet->WriteGeneric('Z', "c", 'I');
+  AppendObuf(packet->buf, packet->write_pos);
+
+  delete packet;
+
+  return Status::OK();
+}
+
+Status PGConn::AppendSingleResponse(char type) {
+  PacketBuf packet;
+  packet.WriteGeneric(type, "");
+  //packet->WriteGeneric('Z', "c", 'I');
+  AppendObuf(packet.buf, packet.write_pos);
+
+  return Status::OK();
+}
+
+Status PGConn::AppendSpecialParameter() {
+  PacketBuf packet;
+  packet.WriteParameterStatus("session_authorization", username_.c_str());
+  packet.WriteParameterStatus("client_encoding", client_encoding_.c_str());
+  //packet.WriteParameterStatus("server_encoding", client_encoding_.c_str());
+  GetRandomBytes(cancel_key_, 8);
+  packet.WriteBackendKeyData(cancel_key_);
+  //packet->WriteGeneric('Z', "c", 'I');
+  AppendObuf(packet.buf, packet.write_pos);
 
   return Status::OK();
 }
@@ -203,11 +312,15 @@ Status PGConn::AppendObuf(const char* data, int size) {
   return Status::OK();
 }
 
+// TODO: fix bug
+//   we need to distinguish the header or the body when read partial happens;
 ReadStatus PGConn::ClientProto() {
   // we read 8 bytes to store both v2 and v3 header
-  ReadStatus read_status = Recv(V2_HEADER_LEN - rbuf_offset_);
-  if (read_status != kReadAll) {
-    return read_status;
+  if (V2_HEADER_LEN > rbuf_offset_) {
+    ReadStatus read_status = Recv(V2_HEADER_LEN - rbuf_offset_);
+    if (read_status != kReadAll) {
+      return read_status;
+    }
   }
 
   if (!IsCompleteHeader(rbuf_, rbuf_offset_)) {
@@ -216,15 +329,21 @@ ReadStatus PGConn::ClientProto() {
 
   int len = rbuf_offset_;
   if (!packet_header_.ParseFromArray(rbuf_, &len)) {
+    log_warn ("ClientProto P1: parse header failed");
     return kParseError;
   }
   parse_offset_ = len;
 
   log_info ("ClientProto parse header:");
-  packet_header_.Dump();
+  //packet_header_.Dump();
 
   // we read the len 
-  read_status = Recv(packet_header_.len - rbuf_offset_);
+  int remain = packet_header_.len - rbuf_offset_;
+  if (remain <= 0) {
+    log_warn ("ClientProto P2: remain=%d packet_header_.len=%d rbuf_offset_=%d", remain, packet_header_.len, rbuf_offset_);
+    return kReadAll;
+  }
+  ReadStatus read_status = Recv(remain);
   if (read_status != kReadAll) {
     return read_status;
   }
@@ -234,6 +353,14 @@ ReadStatus PGConn::ClientProto() {
   
   log_info ("ClientProto recv msg ok");
   return kReadAll;
+}
+
+void PGConn::ResetRbuf() {
+  if (rbuf_offset_ > parse_offset_) {
+    memmove(rbuf_, rbuf_ + parse_offset_, rbuf_offset_ - parse_offset_);
+  }
+  rbuf_offset_ -= parse_offset_;
+  parse_offset_ = 0;
 }
 
 // FrontEnd/BackEnd proto has 2 phases: startup and normal;
@@ -251,52 +378,24 @@ ReadStatus PGConn::GetRequest() {
           return kReadHalf;
         }
 
-        /*
-        // we read 8 bytes to store both v2 and v3 header
-        ReadStatus read_status = Recv(V2_HEADER_LEN - rbuf_offset_);
-        if (read_status != kReadAll) {
-          return read_status;
-        }
-
-        if (!IsCompleteHeader(rbuf_, rbuf_offset_)) {
-          return kReadHalf;
-        }
-
-        int len = rbuf_offset_;
-        if (!packet_header_.ParseFromArray(rbuf_, &len)) {
-          return kParseError;
-        }
-        parse_offset_ = len;
-
-        packet_header_.Dump();
-
-        // we read the len 
-        read_status = Recv(packet_header_.len - rbuf_offset_);
-        if (read_status != kReadAll) {
-          return read_status;
-        }
-        if (rbuf_offset_ < packet_header_.len) {
-          return kReadHalf;
-        }
-        */
-
         if (!HandleStartup()) {
           return kParseError;
         }
 
-        log_info ("kPGLogin ok");
+        ResetRbuf();
+
+        log_info ("kPGLogin end");
         break;
       }
       case kPGActive: {
         AppendWelcome();
+        AppendSpecialParameter();
         AppendReadyForQuery();
 
         conn_status_ = kPGHeader;
         set_is_reply(true);
         
-        // clean rbuf_
-        rbuf_offset_ = 0;
-        parse_offset_ = 0;
+        ResetRbuf();
 
         log_info ("kPGActive: send welcome msg(%d)", wbuf_offset_);
         return ReadStatus::kReadAll;
@@ -311,80 +410,23 @@ ReadStatus PGConn::GetRequest() {
           return kReadHalf;
         }
 
-        if (!HandleNormal()) {
+        result = HandleNormal();
+        if (result == kParseError) {
           return kParseError;
+        } else if (result == kReadHalf) {
+          ResetRbuf();
+        } else {    // kReadAll
+          //set_is_reply(true);
+          ResetRbuf();
+          AppendReadyForQuery();
+          return kReadAll;
         }
-
-        // clean rbuf_
-        rbuf_offset_ = 0;
-        parse_offset_ = 0;
-
-        DealMessage();
-
-        return ReadStatus::kReadAll;
-    //    ssize_t nread = read(fd(), rbuf_ + rbuf_len_, V3_HEADER_LENGTH - rbuf_len_);
-    //    if (nread == -1) {
-    //      if (errno == EAGAIN) {
-    //        return kReadHalf;
-    //      } else {
-    //        return kReadError;
-    //      }
-    //    } else if (nread == 0) {
-    //      return kReadClose;
-    //    } else {
-    //      rbuf_len_ += nread;
-    //      if (rbuf_len_ - cur_pos_ == COMMAND_HEADER_LENGTH) {
-    //        uint32_t integer = 0;
-    //        memcpy((char *)(&integer), rbuf_ + cur_pos_, sizeof(uint32_t));
-    //        header_len_ = ntohl(integer);
-    //        remain_packet_len_ = header_len_;
-    //        cur_pos_ += COMMAND_HEADER_LENGTH;
-    //        connStatus_ = kPacket;
-    //      }
-    //      log_info("GetRequest kHeader header_len=%u cur_pos=%u rbuf_len=%u remain_packet_len_=%d nread=%d\n", header_len_, cur_pos_, rbuf_len_, remain_packet_len_, nread);
-    //    }
         break;
       }
-    //  case kPGPacket: {
-    //    if (header_len_ >= PB_MAX_MESSAGE - COMMAND_HEADER_LENGTH) {
-    //      return kFullError;
-    //    } else {
-    //      // read msg body
-    //      ssize_t nread = read(fd(), rbuf_ + rbuf_len_, remain_packet_len_);
-    //      if (nread == -1) {
-    //        if (errno == EAGAIN) {
-    //          return kReadHalf;
-    //        } else {
-    //          return kReadError;
-    //        }
-    //      } else if (nread == 0) {
-    //        return kReadClose;
-    //      }
-
-    //      rbuf_len_ += nread;
-    //      remain_packet_len_ -= nread;
-    //      if (remain_packet_len_ == 0) {
-    //        cur_pos_ = rbuf_len_;
-    //        connStatus_ = kComplete;
-    //      }
-    //      log_info("GetRequest kPacket header_len=%u cur_pos=%u rbuf_len=%u remain_packet_len_=%d nread=%d\n", header_len_, cur_pos_, rbuf_len_, remain_packet_len_, nread);
-    //    }
-    //    break;
-    //  }
-    //  case kComplete: {
-    //    DealMessage();
-    //    connStatus_ = kHeader;
-
-    //    cur_pos_ = 0;
-    //    rbuf_len_ = 0;
-    //    return kReadAll;
-    //  }
-    //  // Add this switch case just for delete compile warning
-    //  case kBuildObuf:
-    //    break;
-
-    //  case kWriteObuf:
-    //    break;
+      default:
+        log_warn ("unknown conn status");
+        return kParseError;
+        break;
     }
   }
 

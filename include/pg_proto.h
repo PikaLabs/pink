@@ -6,6 +6,8 @@
 #ifndef INCLUDE_PG_PROTO_H_
 #define INCLUDE_PG_PROTO_H_
 
+#include <vector>
+
 #include <slice.h>
 
 namespace pink {
@@ -99,6 +101,9 @@ struct PacketBuf {
   void WriteGeneric(int type, const char *format, ...);
 };
 
+
+void GetRandomBytes(char *s, const int len);
+
 //
 // Shortcuts for actual packets.
 //
@@ -132,17 +137,23 @@ struct PacketBuf {
 #define WriteSSLRequest() \
       WriteGeneric(PKT_SSLREQ, "")
 
+#define WriteErrorResponse(msg) \
+      WriteGeneric('E', "sscss", "SERROR", "C42601", 'M', msg, "")
+
 PacketBuf* NewWelcomeMsg();
 
 class InsertParser {
  public:
+  InsertParser();
   InsertParser(const std::string &str);
+  void Init(const std::string &str);
 
   std::string statement_;
   std::string table_;
   std::vector<std::string> rows_;
 
   bool Parse();
+  std::string NextToken();
 
  private:
   size_t parse_pos_;

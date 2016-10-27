@@ -51,24 +51,35 @@ class PGConn: public PinkConn {
   std::string dbname_;
   std::string username_;
   std::string appname_;
+  std::string client_encoding_;
 
   std::string statement_;
- private:
+  InsertParser parser_;
 
+ private:
   PacketHeader packet_header_;
+
+  bool parse_error_;
+  char cancel_key_[32];
 
   ReadStatus Recv(size_t count);
   //ReadStatus Recv(size_t count, ssize_t *nread);
   const char* ReadLine();
+  void ResetRbuf();
 
   ReadStatus ClientProto();
 
   bool HandleStartupParameters();
   bool HandleStartup();
+  ReadStatus HandleNormal();
 
   //virtual Status BuildObuf();
   virtual Status AppendWelcome();
+  Status AppendSingleResponse(char type);
+  Status AppendSpecialParameter();
   Status AppendReadyForQuery();
+  Status AppendCommandComplete();
+  Status AppendErrorResponse();
 
  protected:
   Status AppendObuf(const char* data, int size);

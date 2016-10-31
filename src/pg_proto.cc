@@ -250,7 +250,8 @@ PacketBuf* NewWelcomeMsg() {
 // InsertParser
 //
 InsertParser::InsertParser()
-  : parse_pos_(0),
+  : cnt_(0),
+    parse_pos_(0),
     len_(0) {
 }
 
@@ -284,47 +285,67 @@ void InsertParser::Init(const std::string &str) {
 // delimiters are " (),"
 //  we consider "()" as one token while ',' not;
 //  we handle quotes;
-std::string InsertParser::NextToken() {
+bool InsertParser::NextToken(std::string& token) {
+  token.clear();
   ssize_t begin_pos = -1;
   bool bracket = false;
+  bool single_quote = false;
+  bool double_quote = false;
 
+  // we handle quotes simply;
   while (parse_pos_ < len_) {
     if (statement_[parse_pos_] == ' ') {
-      if (!bracket && begin_pos >= 0) {
+      if (!single_quote && !double_quote && !bracket && begin_pos >= 0) {
         parse_pos_++;
-        return statement_.substr(begin_pos, parse_pos_ - begin_pos - 1);
+        token = statement_.substr(begin_pos, parse_pos_ - begin_pos - 1);
+        return true;
       }
-    } else  if (statement_[parse_pos_] == '(') {
-      if (begin_pos >= 0) {
-        return statement_.substr(begin_pos, parse_pos_ - begin_pos);
-      } else {  // the first '('
-        begin_pos = parse_pos_;
-        bracket = true;
+    } else if (statement_[parse_pos_] == '(') {
+      if (!single_quote && !double_quote) {
+        if (begin_pos >= 0) {
+          token = statement_.substr(begin_pos, parse_pos_ - begin_pos);
+          return true;
+        } else {  // the first '('
+          begin_pos = parse_pos_;
+          bracket = true;
+        }
       }
     } else if (statement_[parse_pos_] == ')') {
-      if (bracket) {
-        parse_pos_++;
-        return statement_.substr(begin_pos, parse_pos_ - begin_pos);
-      } else {
-        return "";
+      if (!single_quote && !double_quote) {
+        if (bracket) {
+          parse_pos_++;
+          token = statement_.substr(begin_pos, parse_pos_ - begin_pos);
+          return true;
+        } else {
+          return false;
+        }
       }
     } else if (statement_[parse_pos_] == ',') {
-      if (!bracket && begin_pos >= 0) {
+      if (!single_quote && !double_quote && !bracket && begin_pos >= 0) {
         parse_pos_++;
-        return statement_.substr(begin_pos, parse_pos_ - begin_pos - 2);
+        token = statement_.substr(begin_pos, parse_pos_ - begin_pos - 2);
+        return true;
       }
     } else if (statement_[parse_pos_] == '\0') {
       // don't handle \0
     } else if (begin_pos < 0) {
       begin_pos = parse_pos_;
+      if (statement_[parse_pos_] == '\'') { // single quote
+        single_quote = !single_quote;
+      } else if (statement_[parse_pos_] == '"') {
+        double_quote = !double_quote;
+      }
     }
+
     parse_pos_++;
   }
+
   if (begin_pos < 0) {
-    return "";
+    return false;
   }
 
-  return statement_.substr(begin_pos, parse_pos_ - begin_pos - 1);
+  token = statement_.substr(begin_pos, parse_pos_ - begin_pos - 1);
+  return true;
 }
 
 // we pass parse_pos by reference
@@ -390,7 +411,7 @@ std::string InsertParser::EscapeValues(const std::string& str) {
     }
   }
 
-  log_info ("After escape [%s] size=%d", res.data(), res.size());
+  log_info ("After escape [%s] size=%u", res.data(), res.size());
   return res;
 }
 
@@ -402,41 +423,43 @@ bool InsertParser::Parse() {
   std::string token;
 
   // Insert
-  token = NextToken();
-  log_info ("InsertParse: 1st token=(%s)", token.c_str());
-  if (strcasecmp(token.c_str(), "insert") == 0) {
-    token = NextToken();
-    log_info ("InsertParse: 2nd token=(%s)", token.c_str());
-    if (strcasecmp(token.c_str(), "into") == 0) {
-      // handle table_name;
-      token = NextToken();
-      if (isalnum(token[0])) {
+  if (NextToken(token) && strcasecmp(token.c_str(), "insert") == 0) {
+    log_info ("InsertParse: 1st token=(%s)", token.c_str());
+    if (NextToken(token) && strcasecmp(token.c_str(), "into") == 0) {
+      log_info ("InsertParse: 2nd token=(%s)", token.c_str());
+      // table_name;
+      if (NextToken(token) && isalnum(token[0])) {
         table_ = token;
         log_info ("InsertParse: 3rd token table=%s\n", table_.c_str());
 
-        token = NextToken();
-        if (token[0] == '(' && (token.size() > 1 && token[token.size() - 1] == ')')) {
-          log_info ("InsertParse: 4rd token attribute=(%s)\n", token.c_str());
-          //GetAttribute(token.substr(1, token.size() - 2));
+        if (NextToken(token)) {
+          if (token[0] == '(' && (token.size() > 1 && token[token.size() - 1] == ')')) {
+            log_info ("InsertParse: 4rd token attribute=(%s)\n", token.c_str());
+            //GetAttribute(token.substr(1, token.size() - 2));
 
-          token = NextToken();
-        }
-        if (strcasecmp(token.c_str(), "values") == 0) {
-          log_info ("InsertParse: 4rd token values=(%s)\n", token.c_str());
-          while (parse_pos_ < statement_.size()) {
-            token = NextToken();
-            if (token == ";") {
-              break;
-            } else if (token[0] == '(' && (token.size() > 1 && token[token.size() - 1] == ')')) {
-              //rows_.push_back(Escape(token));
-              rows_.push_back(EscapeValues(token.substr(1, token.size() - 2)));
-            } else if (token.size() > 0) {
-              return false;
-            }
+            NextToken(token);
           }
-        } else {
-          log_info ("InsertParse failed: 4rd token unsupported (%s)\n", token.c_str());
-          return false;
+
+          if (strcasecmp(token.c_str(), "values") == 0) {
+            log_info ("InsertParse: 4rd token values=(%s)\n", token.c_str());
+            while (parse_pos_ < statement_.size()) {
+              if (!NextToken(token)) {
+                return false;
+              }
+
+              if (token == ";") {
+                break;
+              } else if (token[0] == '(' && (token.size() > 1 && token[token.size() - 1] == ')')) {
+                //rows_.push_back(Escape(token));
+                rows_.push_back(EscapeValues(token.substr(1, token.size() - 2)));
+              } else if (token.size() > 0) {
+                return false;
+              }
+            }
+          } else {
+            log_info ("InsertParse failed: 4rd token unsupported (%s)\n", token.c_str());
+            return false;
+          }
         }
       }
     }

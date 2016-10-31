@@ -327,6 +327,73 @@ std::string InsertParser::NextToken() {
   return statement_.substr(begin_pos, parse_pos_ - begin_pos - 1);
 }
 
+// we pass parse_pos by reference
+std::string NextAttribute(const std::string& str, int &start_pos) {
+  int len = str.size();
+  int i = start_pos;
+  for (; i < len; i++) {
+    if (str[i] != ' ')
+      break;
+  }
+
+  if (i < len && str[i] != ',') {
+    int j = i + 1;
+    for (; j < len; j++) {
+      if (str[j] == ',')
+        break;
+    }
+
+    start_pos = j + 1;
+
+    int k = j - 1;
+    for (; k > i; k--) {
+      if (str[k] != ' ')
+        break;
+    }
+    return str.substr(i, k - i + 1);
+  }
+  
+  start_pos = i + 1;
+  return "";
+}
+
+// str is like ("asdf  ", 123 , ) or ('asdf ')  without the parenthese;
+std::string InsertParser::EscapeValues(const std::string& str) {
+  int len = str.size();
+  std::string res;
+  res.reserve(2 * len);
+
+  bool first_token = true;
+  int start_pos = 0;
+  while (start_pos < len) {
+    std::string token = NextAttribute(str, start_pos);
+    if (!first_token) {
+      res.append(1, ',');
+    }
+    first_token = false;
+
+    if (token.size() == 0 || token == "\"\"") {
+      res.append("\"\"");
+    } else {
+      size_t i = 0;
+      size_t len = token.size();
+      if (token[0] == '\'' && token.back() == '\'') {
+        i = 1;
+        len--;
+      }
+      for (; i < len; i++) {
+        if (i != 0 && i != len - 1 && token[i] == '"') {
+          res.append(1, '"');
+        }
+        res.append(1, token[i]);
+      }
+    }
+  }
+
+  log_info ("After escape [%s] size=%d", res.data(), res.size());
+  return res;
+}
+
 // brute force match Insert statement
 //    insert into Table values
 //      (attr1, attr...),
@@ -350,6 +417,8 @@ bool InsertParser::Parse() {
         token = NextToken();
         if (token[0] == '(' && (token.size() > 1 && token[token.size() - 1] == ')')) {
           log_info ("InsertParse: 4rd token attribute=(%s)\n", token.c_str());
+          //GetAttribute(token.substr(1, token.size() - 2));
+
           token = NextToken();
         }
         if (strcasecmp(token.c_str(), "values") == 0) {
@@ -359,7 +428,8 @@ bool InsertParser::Parse() {
             if (token == ";") {
               break;
             } else if (token[0] == '(' && (token.size() > 1 && token[token.size() - 1] == ')')) {
-              rows_.push_back(token.substr(1, token.size() - 2));
+              //rows_.push_back(Escape(token));
+              rows_.push_back(EscapeValues(token.substr(1, token.size() - 2)));
             } else if (token.size() > 0) {
               return false;
             }

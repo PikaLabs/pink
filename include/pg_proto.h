@@ -154,6 +154,7 @@ class InsertParser {
 
   bool Parse();
   std::string NextToken();
+  std::string EscapeValues(const std::string& str);
 
  private:
   size_t parse_pos_;

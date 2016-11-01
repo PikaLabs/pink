@@ -154,10 +154,12 @@ class InsertParser {
 
   int64_t cnt_;
   std::vector<std::string> attributes_;
+  std::string header_;
 
   bool Parse();
   bool NextToken(std::string& token);
   std::string EscapeValues(const std::string& str);
+  void EscapeAttribute(const std::string& str);
 
  private:
   size_t parse_pos_;

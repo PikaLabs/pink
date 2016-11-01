@@ -411,8 +411,50 @@ std::string InsertParser::EscapeValues(const std::string& str) {
     }
   }
 
-  log_info ("After escape [%s] size=%u", res.data(), res.size());
+  log_info ("After escape values: [%s] size=%u", res.data(), res.size());
   return res;
+}
+
+// attribute name can only be double qutoted;
+void InsertParser::EscapeAttribute(const std::string& str) {
+  int len = str.size();
+  header_.reserve(2 * len);
+  //res.reserve(2 * len);
+
+  bool first_token = true;
+  int start_pos = 0;
+  while (start_pos < len) {
+    std::string token = NextAttribute(str, start_pos);
+    if (!first_token) {
+      header_.append(1, ',');
+    }
+    first_token = false;
+
+    std::string res;
+    if (token.size() == 0 || token == "\"\"") {
+      res.append("\"\"");
+    } else {
+      size_t i = 0;
+      size_t len = token.size();
+      if (token[0] == '"' && token.back() == '"') {
+        i = 1;
+        len--;
+      }
+      for (; i < len; i++) {
+        if (i != 0 && i != len - 1 && token[i] == '"') {
+          res.append(1, '"');
+        }
+        res.append(1, token[i]);
+      }
+    }
+    
+    attributes_.push_back(res);
+    header_.append(res);
+    //res.clear();
+  }
+
+  log_info ("After escape attribute[%s] size=%u", header_.data(), header_.size());
+  header_.append(1, '\n');
 }
 
 // brute force match Insert statement
@@ -435,8 +477,11 @@ bool InsertParser::Parse() {
         if (NextToken(token)) {
           if (token[0] == '(' && (token.size() > 1 && token[token.size() - 1] == ')')) {
             log_info ("InsertParse: 4rd token attribute=(%s)\n", token.c_str());
-            //GetAttribute(token.substr(1, token.size() - 2));
 
+            // we only parse header once
+            if (header_.empty()) {
+              EscapeAttribute(token.substr(1, token.size() - 2));
+            }
             NextToken(token);
           }
 

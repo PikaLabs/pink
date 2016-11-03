@@ -115,8 +115,6 @@ int PbCli::ReadHeader() {
        */
       log_info ("ReadHeader nread is 0, nleft=%d\n", nleft);
       return 0;
-    } else {
-      break;
     }
     nleft -= nread;
     rbuf_pos_ += nread;
@@ -146,8 +144,6 @@ int PbCli::ReadPacket() {
        * so this must be an incomplete packet, so we return an error
        */
       return 0;
-    } else {
-      break;
     }
     nleft -= nread;
     rbuf_pos_ += nread;

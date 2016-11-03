@@ -261,7 +261,8 @@ InsertParser::InsertParser(const std::string &str)
     len_(str.size()) {
 }
 
-void InsertParser::Init(const std::string &str) {
+void InsertParser::Init(const std::string &str, const uint32_t type) {
+  query_type_ = type;
   statement_ = str;
   parse_pos_ = 0;
   len_ = str.size();
@@ -294,7 +295,8 @@ bool InsertParser::NextToken(std::string& token) {
 
   // we handle quotes simply;
   while (parse_pos_ < len_) {
-    if (statement_[parse_pos_] == ' ') {
+    if (statement_[parse_pos_] == ' ' 
+        || statement_[parse_pos_] == '\0') {
       if (!single_quote && !double_quote && !bracket && begin_pos >= 0) {
         parse_pos_++;
         token = statement_.substr(begin_pos, parse_pos_ - begin_pos - 1);
@@ -326,8 +328,7 @@ bool InsertParser::NextToken(std::string& token) {
         token = statement_.substr(begin_pos, parse_pos_ - begin_pos - 2);
         return true;
       }
-    } else if (statement_[parse_pos_] == '\0') {
-      // don't handle \0
+    //} else if (statement_[parse_pos_] == '\0') {
     } else if (begin_pos < 0) {
       begin_pos = parse_pos_;
       if (statement_[parse_pos_] == '\'') { // single quote
@@ -348,65 +349,100 @@ bool InsertParser::NextToken(std::string& token) {
   return true;
 }
 
+// similar with NextToken
 // we pass parse_pos by reference
 std::string NextAttribute(const std::string& str, int &start_pos) {
   int len = str.size();
   int i = start_pos;
-  for (; i < len; i++) {
-    if (str[i] != ' ')
-      break;
-  }
+  ssize_t begin_pos = -1;
+  ssize_t end_pos = -1;
+  bool single_quote = false;
+  bool double_quote = false;
 
-  if (i < len && str[i] != ',') {
-    int j = i + 1;
-    for (; j < len; j++) {
-      if (str[j] == ',')
+  while (i < len) {
+    if (str[i] == ' ') {
+      if (!single_quote && !double_quote && begin_pos >= 0 && end_pos < 0) {
+        end_pos = i;
+      }
+    } else if (str[i] == ',') {
+      if (!single_quote && !double_quote) {
+        if (end_pos < 0) {
+          end_pos = i;
+        }
         break;
+      }
+    } else {
+      if (begin_pos < 0) {
+        begin_pos = i;
+      }
+      if (!double_quote && str[i] == '\'') { // single quote
+        single_quote = !single_quote;
+      }
+
+      // single quote will escape double quote
+      if (!single_quote && str[i] == '"') {
+        double_quote = !double_quote;
+      }
     }
 
-    start_pos = j + 1;
-
-    int k = j - 1;
-    for (; k > i; k--) {
-      if (str[k] != ' ')
-        break;
-    }
-    return str.substr(i, k - i + 1);
+    i++;
   }
-  
+
   start_pos = i + 1;
-  return "";
+
+  if (end_pos < 0) {
+    end_pos = i;
+  }
+
+  if (begin_pos < 0 || end_pos == begin_pos) {
+    return "";
+  }
+
+  return str.substr(begin_pos, end_pos - begin_pos);
 }
 
+// similar to EscapteAttributes
 // str is like ("asdf  ", 123 , ) or ('asdf ')  without the parenthese;
 std::string InsertParser::EscapeValues(const std::string& str) {
   int len = str.size();
   std::string res;
   res.reserve(2 * len);
 
-  bool first_token = true;
+  int token_cnt = 0;
   int start_pos = 0;
   while (start_pos < len) {
     std::string token = NextAttribute(str, start_pos);
-    if (!first_token) {
+    if (token_cnt > 0) {
       res.append(1, ',');
     }
-    first_token = false;
+    token_cnt++;
 
-    if (token.size() == 0 || token == "\"\"") {
+    if (token.size() == 0) {
       res.append("\"\"");
+    } else if (token.size() == 1) {
+      res.append("\"");
+      res.append(token);
+      res.append("\"");
     } else {
       size_t i = 0;
       size_t len = token.size();
-      if (token[0] == '\'' && token.back() == '\'') {
+
+      if ((token[0] == '\'' && token.back() == '\'')
+          || (token[0] == '"' && token.back() == '"')) {
+        res.append(1, '"');
         i = 1;
         len--;
       }
+
       for (; i < len; i++) {
-        if (i != 0 && i != len - 1 && token[i] == '"') {
+        if (token[i] == '"') {
           res.append(1, '"');
         }
         res.append(1, token[i]);
+      }
+      if ((token[0] == '\'' && token.back() == '\'')
+          || (token[0] == '"' && token.back() == '"')) {
+        res.append(1, '"');
       }
     }
   }
@@ -421,33 +457,46 @@ void InsertParser::EscapeAttribute(const std::string& str) {
   header_.reserve(2 * len);
   //res.reserve(2 * len);
 
-  bool first_token = true;
+  int token_cnt = 0;
   int start_pos = 0;
   while (start_pos < len) {
     std::string token = NextAttribute(str, start_pos);
-    if (!first_token) {
+    if (token_cnt > 0) {
       header_.append(1, ',');
     }
-    first_token = false;
+    token_cnt++;
 
     std::string res;
-    if (token.size() == 0 || token == "\"\"") {
+
+    if (token.size() == 0) {
       res.append("\"\"");
+    } else if (token.size() == 1) {
+      res.append("\"");
+      res.append(token);
+      res.append("\"");
     } else {
       size_t i = 0;
       size_t len = token.size();
-      if (token[0] == '"' && token.back() == '"') {
+
+      if ((token[0] == '\'' && token.back() == '\'')
+          || (token[0] == '"' && token.back() == '"')) {
+        res.append(1, '"');
         i = 1;
         len--;
       }
+
       for (; i < len; i++) {
-        if (i != 0 && i != len - 1 && token[i] == '"') {
+        if (token[i] == '"') {
           res.append(1, '"');
         }
         res.append(1, token[i]);
       }
+      if ((token[0] == '\'' && token.back() == '\'')
+          || (token[0] == '"' && token.back() == '"')) {
+        res.append(1, '"');
+      }
     }
-    
+
     attributes_.push_back(res);
     header_.append(res);
     //res.clear();
@@ -465,7 +514,22 @@ bool InsertParser::Parse() {
   std::string token;
 
   // Insert
-  if (NextToken(token) && strcasecmp(token.c_str(), "insert") == 0) {
+  if (NextToken(token)) {
+    // PDO will use parametered prepared statements and deallocate statement;
+    if (strcasecmp(token.c_str(), "insert") != 0) {
+      log_info ("InsertParse: first token=(%s) not insert", token.c_str());
+      if (!NextToken(token)) {
+        return false;
+      }
+      if (strcasecmp(token.c_str(), "deallocate") == 0) {
+        return true;
+      }
+      if (strcasecmp(token.c_str(), "insert") != 0) {
+        log_info ("InsertParse: first 2 token=(%s) not insert", token.c_str());
+        return false;
+      }
+    }
+
     log_info ("InsertParse: 1st token=(%s)", token.c_str());
     if (NextToken(token) && strcasecmp(token.c_str(), "into") == 0) {
       log_info ("InsertParse: 2nd token=(%s)", token.c_str());

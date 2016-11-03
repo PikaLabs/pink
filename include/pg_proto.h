@@ -146,7 +146,8 @@ class InsertParser {
  public:
   InsertParser();
   InsertParser(const std::string &str);
-  void Init(const std::string &str);
+  void Init(const std::string &str, const uint32_t type);
+  uint32_t query_type_;
 
   std::string statement_;
   std::string table_;

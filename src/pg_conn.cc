@@ -143,7 +143,7 @@ ReadStatus PGConn::HandleNormal() {
       //statement_ = std::string(rbuf_ + parse_offset_, rbuf_offset_ - parse_offset_);
       statement_ = std::string(rbuf_ + parse_offset_,  packet_header_.len - parse_offset_);
       parse_offset_ = packet_header_.len;
-      parser_.Init(statement_);
+      parser_.Init(statement_, packet_header_.type);
       if (parser_.Parse()) {
         DealMessage();
         AppendCommandComplete();
@@ -180,7 +180,7 @@ ReadStatus PGConn::HandleNormal() {
       parse_error_ = false;
       statement_ = std::string(rbuf_ + parse_offset_,  packet_header_.len - parse_offset_);
       parse_offset_ = packet_header_.len;
-      parser_.Init(statement_);
+      parser_.Init(statement_, packet_header_.type);
       if (parser_.Parse()) {
         AppendSingleResponse('1'); // ParseComplete
       } else {

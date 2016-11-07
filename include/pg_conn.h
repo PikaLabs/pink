@@ -50,6 +50,7 @@ class PGConn: public PinkConn {
 
   std::string dbname_;
   std::string username_;
+  std::string passwd_;
   std::string appname_;
   std::string client_encoding_;
 
@@ -73,13 +74,16 @@ class PGConn: public PinkConn {
   bool HandleStartup();
   ReadStatus HandleNormal();
 
-  //virtual Status BuildObuf();
+  virtual bool Login();
   virtual Status AppendWelcome();
+
   Status AppendSingleResponse(char type);
   Status AppendSpecialParameter();
   Status AppendReadyForQuery();
   Status AppendCommandComplete();
-  Status AppendErrorResponse();
+  Status AppendErrorResponse(const char* msg);
+  Status AppendAuthRequest(int type);
+  Status AppendFatalResponse(const char* msg);
 
  protected:
   Status AppendObuf(const char* data, int size);

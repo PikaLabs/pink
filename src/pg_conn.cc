@@ -115,16 +115,35 @@ bool PGConn::HandleStartup() {
       if (!HandleStartupParameters()) {
         return false;
       }
-      
-      log_info("HandleStartupParamesters ok, change to kPGActive");
-      conn_status_ = PGStatus::kPGActive; 
+      set_is_reply(true);
+      log_info("HandleStartupParamesters ok");
+      AppendAuthRequest(AUTH_PLAIN);
+
       break;
     case PKT_SSLREQ:
       AppendObuf("N", 1);
       set_is_reply(true);
       return true;
+    case 'p': {    //PasswordMessage
+      set_is_reply(true);
+      passwd_ = std::string(rbuf_ + parse_offset_, rbuf_offset_ - parse_offset_);
+      if (passwd_.back() == '\0') {
+        passwd_.pop_back();
+      }
+      log_info("HandlePasswordMessage passwd is (%s), size is %u", passwd_.data(), passwd_.size());
+      if (Login()) {
+        AppendAuthRequest(AUTH_OK);
+        conn_status_ = PGStatus::kPGActive;
+        log_info("HandlePasswordMessage ok, change to kPGActive");
+        break;
+      } else {
+        char buf[256];
+        snprintf (buf, 256, "password authentication failed for user \"%s\"", username_.c_str());
+        AppendFatalResponse(buf);
+        return false;
+      }
+    }
     case PKT_STARTUP_V2:
-    case 'p':    //PasswordMessage
     case PKT_CANCEL:
     default:
       log_warn("not supported or bad packet type=%d\n", packet_header_.type);
@@ -184,7 +203,7 @@ ReadStatus PGConn::HandleNormal() {
       if (parser_.Parse()) {
         AppendSingleResponse('1'); // ParseComplete
       } else {
-        AppendErrorResponse();
+        AppendErrorResponse(ERROR_MSG_PARSE);
       }
       return kReadHalf;
     }
@@ -225,6 +244,7 @@ ReadStatus PGConn::HandleNormal() {
       //disconnect_client(client, true, "unknown pkt");
       return kParseError;
   }
+  return kParseError;
 }
 
 // trival implementation
@@ -235,6 +255,10 @@ Status PGConn::AppendWelcome() {
   //packet.WriteParameterStatus("is_superuser", "on");
 
   return AppendObuf(packet->buf, packet->write_pos);
+}
+
+bool PGConn::Login() {
+  return true;
 }
 
 Status PGConn::AppendCommandComplete() {
@@ -265,16 +289,35 @@ Status PGConn::AppendReadyForQuery() {
   return Status::OK();
 }
 
-Status PGConn::AppendErrorResponse() {
-  char buf[128];
-  snprintf (buf, 128, "syntax error at or near.");
+Status PGConn::AppendAuthRequest(int type) {
+  PacketBuf packet;
+  packet.WriteGeneric('R', "i", type);
 
-  PacketBuf *packet = new PacketBuf;
-  packet->WriteErrorResponse(buf);
-  //packet->WriteGeneric('Z', "c", 'I');
-  AppendObuf(packet->buf, packet->write_pos);
+  AppendObuf(packet.buf, packet.write_pos);
 
-  delete packet;
+  return Status::OK();
+}
+
+Status PGConn::AppendErrorResponse(const char* msg) {
+  //char buf[128];
+  //snprintf (buf, 128, "syntax error at or near.");
+
+  //PacketBuf *packet = new PacketBuf;
+  //packet->WriteErrorResponse(msg);
+  //AppendObuf(packet->buf, packet->write_pos);
+  //delete packet;
+
+  PacketBuf packet;
+  packet.WriteErrorResponse(msg);
+  AppendObuf(packet.buf, packet.write_pos);
+
+  return Status::OK();
+}
+
+Status PGConn::AppendFatalResponse(const char* msg) {
+  PacketBuf packet;
+  packet.WriteFatalResponse(msg);
+  AppendObuf(packet.buf, packet.write_pos);
 
   return Status::OK();
 }
@@ -364,7 +407,11 @@ void PGConn::ResetRbuf() {
 }
 
 // FrontEnd/BackEnd proto has 2 phases: startup and normal;
-//   During Startup
+//   Start-Up:
+//      we receive ParameterStatus;
+//      request for plain password;
+//      check password so that change status to Active;
+//      send welcome message and ready for query
 //
 ReadStatus PGConn::GetRequest() {
   while (true) {
@@ -384,21 +431,21 @@ ReadStatus PGConn::GetRequest() {
 
         ResetRbuf();
 
+        if (conn_status_ == kPGActive) {
+          AppendWelcome();
+          AppendSpecialParameter();
+          AppendReadyForQuery();
+
+          conn_status_ = kPGHeader;
+          set_is_reply(true);
+
+          //ResetRbuf();
+
+          log_info ("kPGActive: send welcome msg(%d)", wbuf_offset_);
+        }
         log_info ("kPGLogin end");
-        break;
-      }
-      case kPGActive: {
-        AppendWelcome();
-        AppendSpecialParameter();
-        AppendReadyForQuery();
-
-        conn_status_ = kPGHeader;
-        set_is_reply(true);
-        
-        ResetRbuf();
-
-        log_info ("kPGActive: send welcome msg(%d)", wbuf_offset_);
-        return ReadStatus::kReadAll;
+        return kReadAll;
+        //break;
       }
       case kPGHeader: {
         log_info ("kPGHeader start");

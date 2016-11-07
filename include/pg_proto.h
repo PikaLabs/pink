@@ -35,6 +35,17 @@ namespace pink {
 #define PKT_CANCEL      80877102
 #define PKT_SSLREQ      80877103
 
+// protocol codes
+#define AUTH_OK       0
+#define AUTH_KRB      2
+#define AUTH_PLAIN    3
+#define AUTH_CRYPT    4
+#define AUTH_MD5      5
+#define AUTH_CREDS    6
+
+#define ERROR_MSG_PARSE "syntax error"
+//#define ERROR_MSG_AUTH  "password authentication failed for user"
+
 enum PGStatus {
   // Startup phase
   kPGLogin = 0,
@@ -139,6 +150,9 @@ void GetRandomBytes(char *s, const int len);
 
 #define WriteErrorResponse(msg) \
       WriteGeneric('E', "sscss", "SERROR", "C42601", 'M', msg, "")
+
+#define WriteFatalResponse(msg) \
+      WriteGeneric('E', "sscss", "SFATAL", "C28P01", 'M', msg, "")
 
 PacketBuf* NewWelcomeMsg();
 

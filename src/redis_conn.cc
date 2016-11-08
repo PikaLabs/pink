@@ -308,11 +308,11 @@ ReadStatus RedisConn::ProcessInputBuffer() {
       return kParseError;
     }
 
-    if (argv_.size() == 0) {
-      ResetClient();
-    } else {
+    if (!argv_.empty()) {
       DealMessage();
     }
+    ResetClient();
+
   }
   req_type_ = 0;
   next_parse_pos_ = 0;

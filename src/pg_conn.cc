@@ -204,6 +204,7 @@ ReadStatus PGConn::HandleNormal() {
       if (parser_.Parse()) {
         AppendSingleResponse('1'); // ParseComplete
       } else {
+        parse_error_ = true;
         AppendErrorResponse(ERROR_MSG_PARSE);
       }
       return kReadHalf;

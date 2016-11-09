@@ -552,9 +552,12 @@ bool InsertParser::Parse() {
           if (strcasecmp(token.c_str(), "values") == 0) {
             log_info ("InsertParse: 4rd token values=(%s)\n", token.c_str());
             while (parse_pos_ < statement_.size()) {
-              if (!NextToken(token)) {
-                return false;
-              }
+              // We trick here
+              // jdbc maybe end without semicolon
+              NextToken(token);
+              //if (!NextToken(token)) {
+              //  return false;
+              //}
 
               if (token == ";") {
                 break;

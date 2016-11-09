@@ -60,6 +60,7 @@ int ServerSocket::Listen(const std::string bind_ip)
 
   ret = bind(sockfd_, (struct sockaddr *) &servaddr_, sizeof(servaddr_));
   if (ret < 0) {
+    fprintf (stderr, "Bind port %d failed, %s\n", port_, strerror(errno));
     return ret;
   }
   ret = listen(sockfd_, accept_backlog_);

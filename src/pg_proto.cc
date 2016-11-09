@@ -234,7 +234,7 @@ void PacketBuf::WriteGeneric(int type, const char *format, ...) {
 PacketBuf* NewWelcomeMsg() {
   PacketBuf* packet = new PacketBuf();
   //packet->WriteAuthenticationOk();
-  packet->WriteParameterStatus("server_version", "pgstall" PS_VERSION);
+  packet->WriteParameterStatus("server_version", "gpstall" PS_VERSION);
   //packet->WriteParameterStatus("client_encoding", "UNICODE");
   packet->WriteParameterStatus("server_encoding", "SQL_ASCII");
   packet->WriteParameterStatus("DateStyle", "ISO");

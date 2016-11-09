@@ -126,7 +126,8 @@ bool PGConn::HandleStartup() {
       return true;
     case 'p': {    //PasswordMessage
       set_is_reply(true);
-      passwd_ = std::string(rbuf_ + parse_offset_, rbuf_offset_ - parse_offset_);
+      passwd_ = std::string(rbuf_ + parse_offset_, packet_header_.len - parse_offset_);
+      parse_offset_ = packet_header_.len;
       if (passwd_.back() == '\0') {
         passwd_.pop_back();
       }

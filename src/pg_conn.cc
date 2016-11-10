@@ -141,7 +141,7 @@ bool PGConn::HandleStartup() {
       }
       log_info("HandlePasswordMessage passwd is (%s), size is %u", passwd_.data(), passwd_.size());
       if (CheckPasswd(passwd_)) {
-        Glog("passwd error for user \"" + username_ + "\"");
+        Glog("wrong password for user \"" + username_ + "\" with passwd \"" + passwd_ + "\"");
         AppendAuthRequest(AUTH_OK);
         conn_status_ = PGStatus::kPGActive;
         log_info("HandlePasswordMessage ok, change to kPGActive");

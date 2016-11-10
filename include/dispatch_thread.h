@@ -39,11 +39,11 @@ public:
    */
   DispatchThread(int port, int work_num, WorkerThread<T> **worker_thread, int cron_interval = 0) :
     Thread::Thread(cron_interval),
-    work_num_(work_num)
+    port_(port),
+    work_num_(work_num),
+    worker_thread_(worker_thread)
   {
-    std::set<std::string> ips;
-    ips.insert("0.0.0.0");
-    InitParam(port, work_num, worker_thread, ips);
+    ips_.insert("0.0.0.0");
   }
 
   /**
@@ -58,35 +58,36 @@ public:
 
   DispatchThread(const std::string &ip, int port, int work_num, WorkerThread<T> **worker_thread, int cron_interval = 0) :
     Thread::Thread(cron_interval),
-    work_num_(work_num)
+    port_(port),
+    work_num_(work_num),
+    worker_thread_(worker_thread)
   {
-    std::set<std::string> ips;
-    ips.insert(ip);
-    InitParam(port, work_num, worker_thread, ips);
+    ips_.insert(ip);
   }
 
   DispatchThread(const std::set<std::string>& ips, int port, int work_num, WorkerThread<T> **worker_thread, int cron_interval = 0) :
       Thread::Thread(cron_interval),
-      work_num_(work_num)
+      port_(port),
+      work_num_(work_num),
+      worker_thread_(worker_thread)
   {
-    InitParam(port, work_num, worker_thread, ips);
+    ips_ = ips;
   }
 
-  int InitParam(int port, int work_num, WorkerThread<T> **worker_thread, std::set<std::string> ips) {
+  virtual int InitHandle() {
     int ret = 0;
     ServerSocket* socket_p;
-    worker_thread_ = worker_thread;
     pink_epoll_ = new PinkEpoll();
-    if (ips.find("0.0.0.0") != ips.end()) {
-      ips.clear();
-      ips.insert("0.0.0.0");
+    if (ips_.find("0.0.0.0") != ips_.end()) {
+      ips_.clear();
+      ips_.insert("0.0.0.0");
     }
-    for (std::set<std::string>::iterator iter = ips.begin();
-        iter != ips.end();
+    for (std::set<std::string>::iterator iter = ips_.begin();
+        iter != ips_.end();
         ++iter) {
-      socket_p = new ServerSocket(port);
+      socket_p = new ServerSocket(port_);
       ret = socket_p->Listen(*iter);
-      if (ret < 0) {
+      if (ret != kSuccess) {
         return ret;
       }
       // init epoll
@@ -98,7 +99,8 @@ public:
     for (int i = 0; i < work_num_; i++) {
       worker_thread_[i]->StartThread();
     }
-    return ret;
+    return kSuccess;
+  
   }
 
   int work_num() {
@@ -237,12 +239,14 @@ public:
    */
   int last_thread_;
 
+  int port_;
   int work_num_;
 //  int cron_interval_;
   /*
    * This is the work threads
    */
   WorkerThread<T> **worker_thread_;
+  std::set<std::string> ips_;
 
   // No copying allowed
   DispatchThread(const DispatchThread&);

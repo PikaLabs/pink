@@ -30,50 +30,48 @@ class HolyThread: public Thread
 public:
   // This type thread thread will listen and work self list redis thread
   explicit HolyThread(int port, int cron_interval = 0) :
-    Thread::Thread(cron_interval) {
-    std::set<std::string> bind_ips;
-    bind_ips.insert("0.0.0.0");
-    InitParam(port, bind_ips);
+    Thread::Thread(cron_interval),
+    port_(port) {
+    ips_.insert("0.0.0.0");
+    pthread_rwlock_init(&rwlock_, NULL);
   }
 
   HolyThread(const std::string& bind_ip, int port, int cron_interval = 0) :
-    Thread::Thread(cron_interval) {
-    std::set<std::string> bind_ips;
-    bind_ips.insert(bind_ip);
-    InitParam(port, bind_ips);
+    Thread::Thread(cron_interval),
+    port_(port) {
+    ips_.insert(bind_ip);
+    pthread_rwlock_init(&rwlock_, NULL);
   }
 
   HolyThread(const std::set<std::string>& bind_ips, int port, int cron_interval = 0) :
-    Thread::Thread(cron_interval) {
-    InitParam(port, bind_ips);
+    Thread::Thread(cron_interval),
+    port_(port) {
+    ips_ = bind_ips;
+    pthread_rwlock_init(&rwlock_, NULL);
   }
 
-  /*
-   * return -1 in case initParam fails, 1 other wise.
-   * @TODO: move initParam out of construct func, resulting API change
-   */
-  int InitParam(int port, std::set<std::string> bind_ips) {
+  virtual int InitHandle() {
     int ret = 0;
     ServerSocket* socket_p;
     pink_epoll_ = new PinkEpoll();
-    if (bind_ips.find("0.0.0.0") != bind_ips.end()) {
-      bind_ips.clear();
-      bind_ips.insert("0.0.0.0");
+    if (ips_.find("0.0.0.0") != ips_.end()) {
+      ips_.clear();
+      ips_.insert("0.0.0.0");
     }
-    for (std::set<std::string>::iterator iter = bind_ips.begin();
-        iter != bind_ips.end();
+    for (std::set<std::string>::iterator iter = ips_.begin();
+        iter != ips_.end();
         ++iter) {
-      socket_p = new ServerSocket(port);
+      socket_p = new ServerSocket(port_);
       ret = socket_p->Listen(*iter);
-      if (ret < 0) {
+      if (ret != kSuccess) {
         return ret;
       }
       pink_epoll_->PinkAddEvent(socket_p->sockfd(), EPOLLIN | EPOLLERR | EPOLLHUP);
       server_sockets_.push_back(socket_p);
       server_fds_.insert(socket_p->sockfd());
     }
-    pthread_rwlock_init(&rwlock_, NULL);
-    return ret;
+    return kSuccess;
+  
   }
 
   virtual ~HolyThread() {
@@ -105,6 +103,9 @@ public:
 
   std::vector<ServerSocket*> server_sockets_;
   std::set<int32_t> server_fds_;
+
+  int port_;
+  std::set<std::string> ips_;
 
   /*
    * The Epoll event handler

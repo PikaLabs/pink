@@ -15,6 +15,7 @@
 
 #include "include/pink_socket.h"
 #include "include/pink_util.h"
+#include "include/pink_define.h"
 
 namespace pink {
 
@@ -37,7 +38,7 @@ ServerSocket::~ServerSocket() {
 
 /*
  * Listen to a specific ip addr on a multi eth machine
- * Return 0 if Listen success, < 0 other wise
+ * Return 0 if Listen success, other wise
  */
 int ServerSocket::Listen(const std::string &bind_ip) {
   int ret = 0;
@@ -47,7 +48,7 @@ int ServerSocket::Listen(const std::string &bind_ip) {
   int yes = 1;
   ret = setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
   if (ret < 0) {
-    return ret;
+    return kSetSockOptError;
   }
 
   servaddr_.sin_family = AF_INET;
@@ -62,18 +63,18 @@ int ServerSocket::Listen(const std::string &bind_ip) {
 
   ret = bind(sockfd_, (struct sockaddr *) &servaddr_, sizeof(servaddr_));
   if (ret < 0) {
-    return ret;
+    return kBindError;
   }
   ret = listen(sockfd_, accept_backlog_);
   if (ret < 0) {
-    return ret;
+    return kListenError;
   }
   listening_ = true;
 
   if (is_block_ == false) {
     SetNonBlock();
   }
-  return ret;
+  return kSuccess;
 }
 
 int ServerSocket::SetNonBlock() {

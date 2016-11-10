@@ -126,6 +126,7 @@ static int split2args(const std::string& req_buf, RedisCmdArgsType& argv) {
 RedisConn::RedisConn(const int fd, const std::string &ip_port) :
   PinkConn(fd, ip_port),
   wbuf_size_(REDIS_MAX_MESSAGE),
+  wbuf_len_(0),
   last_read_pos_(-1),
   next_parse_pos_(0),
   req_type_(0),
@@ -133,8 +134,7 @@ RedisConn::RedisConn(const int fd, const std::string &ip_port) :
   bulk_len_(-1),
   is_find_sep_(true),
   is_overtake_(false),
-  wbuf_pos_(0),
-  wbuf_len_(0) {
+  wbuf_pos_(0) {
   rbuf_ = (char *)malloc(sizeof(char) * REDIS_MAX_MESSAGE);
   wbuf_ = (char *)malloc(sizeof(char) * REDIS_MAX_MESSAGE);
 }

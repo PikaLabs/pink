@@ -12,7 +12,7 @@ class Thread
 public:
   explicit Thread(int cron_interval = 0);
   virtual ~Thread();
-  void StartThread();
+  int StartThread();
   void JoinThread();
   virtual void CronHandle();
   int cron_interval_;
@@ -36,6 +36,7 @@ private:
 
   static void *RunThread(void *arg);
   virtual void *ThreadMain() = 0; 
+  virtual int InitHandle();
 
   /*
    * No allowed copy and copy assign

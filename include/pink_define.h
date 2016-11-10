@@ -58,6 +58,14 @@ enum WriteStatus {
   kWriteError = 2,
 };
 
+enum RetCode {
+  kSuccess = 0,
+  kBindError = 1,
+  kCreateThreadError = 2,
+  kListenError = 3,
+  kSetSockOptError = 4,
+};
+
 /*
  * define the redis protocol
  */

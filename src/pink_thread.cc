@@ -1,6 +1,7 @@
 #include "pink_thread.h"
 #include "pink_thread_name.h"
 #include "xdebug.h"
+#include "pink_define.h"
 
 namespace pink {
 
@@ -19,10 +20,18 @@ void Thread::CronHandle() {
 //  log_info("Come in thread cronhandle");
 }
 
-void Thread::StartThread()
+int Thread::StartThread()
 {
   should_exit_ = false;
-  pthread_create(&thread_id_, NULL, RunThread, (void *)this);
+  int ret = InitHandle();
+  if (ret != kSuccess) {
+    return ret;
+  }
+  ret = pthread_create(&thread_id_, NULL, RunThread, (void *)this);
+  if (ret != 0) {
+    return kCreateThreadError;
+  }
+  return kSuccess;
 }
 
 void Thread::JoinThread()
@@ -46,6 +55,10 @@ void *Thread::RunThread(void *arg)
   }
   thread->ThreadMain();
   return NULL;
+}
+
+int Thread::InitHandle() {
+  return kSuccess;
 }
 
 }

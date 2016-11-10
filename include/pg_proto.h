@@ -154,6 +154,9 @@ void GetRandomBytes(char *s, const int len);
 #define WriteFatalResponse(msg) \
       WriteGeneric('E', "sscss", "SFATAL", "C28P01", 'M', msg, "")
 
+#define WriteFatalAuthResponse(msg) \
+      WriteGeneric('E', "sscss", "SFATAL", "C28000", 'M', msg, "")
+
 PacketBuf* NewWelcomeMsg();
 
 class InsertParser {

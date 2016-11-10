@@ -116,6 +116,14 @@ bool PGConn::HandleStartup() {
         return false;
       }
       set_is_reply(true);
+      if (!CheckUser(username_)) {
+        log_info("CheckUser failed");
+        Glog("auth failed, no entry for user \"" + username_ + "\"");
+        char buf[256];
+        snprintf (buf, 256, "no entry for user \"%s\"", username_.c_str());
+        AppendFatalResponse(buf);
+        return false;
+      }
       log_info("HandleStartupParamesters ok");
       AppendAuthRequest(AUTH_PLAIN);
 
@@ -132,7 +140,8 @@ bool PGConn::HandleStartup() {
         passwd_.pop_back();
       }
       log_info("HandlePasswordMessage passwd is (%s), size is %u", passwd_.data(), passwd_.size());
-      if (Login()) {
+      if (CheckPasswd(passwd_)) {
+        Glog("passwd error for user \"" + username_ + "\"");
         AppendAuthRequest(AUTH_OK);
         conn_status_ = PGStatus::kPGActive;
         log_info("HandlePasswordMessage ok, change to kPGActive");
@@ -169,7 +178,7 @@ ReadStatus PGConn::HandleNormal() {
         AppendCommandComplete();
         return kReadAll;
       } else {
-        //
+        Glog("syntax error for Query statement\"" + statement_.substr(0, 30) + "\"");
         //AppendErrorResponse();
         return kParseError;
       }
@@ -204,6 +213,7 @@ ReadStatus PGConn::HandleNormal() {
       if (parser_.Parse()) {
         AppendSingleResponse('1'); // ParseComplete
       } else {
+        Glog("syntax error for Parse statement\"" + statement_.substr(0, 30) + "\"");
         parse_error_ = true;
         AppendErrorResponse(ERROR_MSG_PARSE);
       }
@@ -259,7 +269,14 @@ Status PGConn::AppendWelcome() {
   return AppendObuf(packet->buf, packet->write_pos);
 }
 
-bool PGConn::Login() {
+bool PGConn::CheckUser(const std::string &user) {
+  return true;
+}
+
+bool PGConn::CheckPasswd(const std::string &passwd) {
+  return true;
+}
+bool PGConn::Glog(const std::string &msg) {
   return true;
 }
 

@@ -74,8 +74,10 @@ class PGConn: public PinkConn {
   bool HandleStartup();
   ReadStatus HandleNormal();
 
-  virtual bool Login();
+  virtual bool CheckUser(const std::string &user);
+  virtual bool CheckPasswd(const std::string &passwd);
   virtual Status AppendWelcome();
+  virtual bool Glog(const std::string &msg);
 
   Status AppendSingleResponse(char type);
   Status AppendSpecialParameter();

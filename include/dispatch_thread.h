@@ -127,7 +127,7 @@ public:
   virtual void CronHandle() {
   }
 
-  virtual bool AccessHandle(const std::string& ip) {
+  virtual bool AccessHandle(std::string& ip) {
     return true;
   }
 

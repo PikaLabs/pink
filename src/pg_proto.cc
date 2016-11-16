@@ -512,6 +512,7 @@ void InsertParser::EscapeAttribute(const std::string& str) {
 //      (attr1, att...);
 bool InsertParser::Parse() {
   std::string token;
+  bool need_parse_header = false;
 
   // Insert
   if (NextToken(token)) {
@@ -535,6 +536,9 @@ bool InsertParser::Parse() {
       log_info ("InsertParse: 2nd token=(%s)", token.c_str());
       // table_name;
       if (NextToken(token) && isalnum(token[0])) {
+        // if clinet insert different table, need parse header again.
+        if (token != table_)
+          need_parse_header = true;
         table_ = token;
         log_info ("InsertParse: 3rd token table=%s\n", table_.c_str());
 
@@ -542,8 +546,9 @@ bool InsertParser::Parse() {
           if (token[0] == '(' && (token.size() > 1 && token[token.size() - 1] == ')')) {
             log_info ("InsertParse: 4rd token attribute=(%s)\n", token.c_str());
 
-            // we only parse header once
-            if (header_.empty()) {
+            // We parse header when one connection insert different table
+            if (header_.empty() || need_parse_header) {
+              header_.clear();
               EscapeAttribute(token.substr(1, token.size() - 2));
             }
             NextToken(token);

@@ -254,6 +254,7 @@ bool CodeYield::YieldClientLib() {
 			Replace(client_method_declare, RESPONSE_TYPE_NAME_MARK, response_type_name_content);
 			client_method_declares_content.append(client_method_declare);
 
+			client_method_implement = client_method_implement_template;
 			Replace(client_method_implement, SERVICE_NAME_MARK, service_name_content);
 			Replace(client_method_implement, METHOD_NAME_MARK, method_name_content);
 			Replace(client_method_implement, REQUEST_TYPE_NAME_MARK, request_type_name_content);

@@ -11,6 +11,11 @@ SRC_DIR = ./src
 THIRD_PATH = ./third/
 OUTPUT = ./output
 
+DEPS_DIR = ./deps
+PROTOBUF_DIR = deps/protobuf
+PROTOBUF_LIB = $(PROTOBUF_DIR)/lib/libprotobuf.a
+
+RPC_DIR = ./rpc
 
 INCLUDE_PATH = -I./ \
 							 -I./include/ \
@@ -26,7 +31,7 @@ LIBS = -lpthread \
 LIBRARY = libpink.a
 
 
-.PHONY: all clean
+.PHONY: all clean rpc
 
 
 BASE_OBJS := $(wildcard $(SRC_DIR)/*.cc)
@@ -38,7 +43,13 @@ OBJS = $(patsubst %.cc,%.o,$(BASE_OBJS))
 all: $(LIBRARY)
 	@echo "Success, go, go, go..."
 
-$(LIBRARY): $(OBJS)
+rpc:
+	make -C $(RPC_DIR)/code_gen
+	mkdir -p output/bin/
+	cp $(RPC_DIR)/code_gen/code_gen output/bin/
+
+
+$(LIBRARY): $(PROTOBUF_LIB) $(OBJS)
 	rm -rf $(OUTPUT)
 	mkdir $(OUTPUT)
 	mkdir $(OUTPUT)/include
@@ -51,6 +62,22 @@ $(LIBRARY): $(OBJS)
 	# make -C example __PERF=$(__PERF)
 
 
+$(PROTOBUF_LIB):
+	if test ! -e $(PROTOBUF_DIR); then \
+		rm -rf $(PROTOBUF_DIR) $(DEPS_DIR)/protobuf.tar.gz; \
+		mkdir -p $(DEPS_DIR); \
+		wget https://github.com/google/protobuf/releases/download/v3.0.0/protobuf-cpp-3.0.0.tar.gz -O $(DEPS_DIR)/protobuf.tar.gz; \
+		tar -xf $(DEPS_DIR)/protobuf.tar.gz -C $(DEPS_DIR); \
+		mv $(DEPS_DIR)/protobuf-3.0.0 $(PROTOBUF_DIR); \
+		rm -rf $(DEPS_DIR)/protobuf.tar.gz; \
+	fi
+	if test ! -e $(PROTOBUF_DIR)/Makefile; then \
+		cd $(PROTOBUF_DIR) && ./configure --prefix=`pwd` && cd ../../; \
+	fi
+	make -C $(PROTOBUF_DIR)
+	make -C $(PROTOBUF_DIR) install
+	@echo "Build libprotobuf.a success"
+
 $(OBJECT): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) -Wl,-Bdynamic $(LIBS)
 
@@ -59,6 +86,7 @@ $(OBJS): %.o : %.cc
 
 clean: 
 	make clean -C example
+	make clean -C $(RPC_DIR)/code_gen
 	rm -rf $(SRC_DIR)/*.o
 	rm -rf $(OUTPUT)/*
 	rm -rf $(OUTPUT)

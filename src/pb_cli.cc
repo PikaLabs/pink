@@ -45,9 +45,6 @@ Status PbCli::Send(void *msg) {
 
   BuildWbuf();
 
-  // TODO(chenzongzhi) already serialize 
-  msg_->SerializeToArray(wbuf_ + sizeof(uint32_t), sizeof(wbuf_));
-
   Status s;
 
   /*

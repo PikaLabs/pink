@@ -1,0 +1,29 @@
+CC = g++
+CC_FLAGS = -std=c++11 -g
+LD_FLAGS = 
+SRC_DIR = ./
+
+INCLUDE_PATH = -I/home/wxf/workplace/protobuf/src/ -I/usr/local/include/ -I../output/include -I./
+LIBRARY_PATH = -L/home/wxf/workplace/protobuf/src/.libs/ -L../output/lib/ -L/usr/lib64/
+LIBRARIES = -Wl,-Bstatic -lprotobuf -lpink -Wl,-Bdynamic
+
+##BIN = code_gen 
+##SOURCES = $(wildcard $(SRC_DIR)/*.cc) 
+##OBJS = $(patsubst %.cc, $.o, $(SOURCES)) 
+##.PHONY: all clean 
+##all: $(BIN)
+
+
+BIN = code_gen
+.PHONY: all clean
+
+all: $(BIN)
+	@echo "build success"
+
+CODE_GEN_SOURCE = code_gen.cc code_yield.cc rpc_common.cc 
+code_gen: $(CODE_GEN_SOURCE)
+	$(CC) $(CC_FLAGS) $(LD_FLAGS) $(INCLUDE_PATH) $(CODE_GEN_SOURCE) -o $@ $(LIBRARY_PATH) $(LIBRARIES)	
+
+clean:
+	@rm *.o $(BIN)
+

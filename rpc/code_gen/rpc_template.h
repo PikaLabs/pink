@@ -296,6 +296,7 @@ int main(int argc, char *argv[]) {
 const char *makefile_template =
 	R"pink_delimiter(
 PINK_DIR = [PINK_DIR]
+OUTPUT = ./output
 
 PROTOBUF_DIR = $(PINK_DIR)/deps/protobuf
 
@@ -322,7 +323,7 @@ ALL_SOURCES = $(wildcard ./*.cc)
 MAIN_SOURCES = $(wildcard ./*main.cc)
 CLIENT_MAIN_SOURCE = $(wildcard ./*client_main.cc)
 SERVER_MAIN_SOURCE = $(filter-out $(CLIENT_MAIN_SOURCE), $(MAIN_SOURCES))
-PROTO_SOURCE = [PROTO_NAME].pb.cc
+PROTO_SOURCE = ./[PROTO_NAME].pb.cc
 
 BASE_SOURCES = $(filter-out $(MAIN_SOURCES) $(PROTO_SOURCE), $(ALL_SOURCES))
 CLIENT_BASE_SOURCES = $(wildcard ./*client.cc)
@@ -345,12 +346,12 @@ CLIENT_MAIN = [PROTO_NAME]_client_main
 .PHONY: all server_main client_lib client_main clean
 
 all: server_main client_lib client_main
-	mkdir -p ./output
-	cp $(SERVER_MAIN) ./output
-	cp $(CLIENT_LIB) ./output
-	cp $(CLIENT_MAIN) ./output
-	cp [PROTO_NAME]_client.h ./output
-	cp [PROTO_NAME].conf ./output
+	mkdir -p $(OUTPUT)
+	cp $(SERVER_MAIN) $(OUTPUT)
+	cp $(CLIENT_LIB) $(OUTPUT)
+	cp $(CLIENT_MAIN) $(OUTPUT)
+	cp [PROTO_NAME]_client.h $(OUTPUT)
+	cp [PROTO_NAME].conf $(OUTPUT)
 	@echo "All Building succeeds"
 
 server_main: $(SERVER_MAIN)
@@ -384,7 +385,7 @@ $(PROTO_SOURCE) : %.pb.cc : %.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path ./ --cpp_out=./ $<
 
 clean:
-	rm *.pb.* *.o $(SERVER_MAIN) $(CLIENT_LIB) $(CLIENT_MAIN)	
+	rm -rf *.pb.* *.o $(SERVER_MAIN) $(CLIENT_LIB) $(CLIENT_MAIN) $(OUTPUT)	
 	)pink_delimiter";
 	
 	

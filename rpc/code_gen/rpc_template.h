@@ -93,7 +93,7 @@ void [SERVICE_NAME]Impl::[METHOD_NAME](google::protobuf::RpcController* controll
 																	 [RESPONSE_TYPE_NAME] *response,
 																	 google::protobuf::Closure *done) {
 	(void)controller;
-	(void)controller;
+	(void)done;
 	//TODO: Implement your server service
 }
 	)pink_delimiter";

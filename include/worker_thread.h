@@ -2,32 +2,33 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
-#ifndef PINK_WORKER_THREAD_H_
-#define PINK_WORKER_THREAD_H_
+
+#ifndef PINK_INCLUDE_WORKER_THREAD_H_
+#define PINK_INCLUDE_WORKER_THREAD_H_
+
+#include <sys/epoll.h>
 
 #include <string>
 #include <functional>
 #include <queue>
 #include <map>
 
-#include "pink_thread.h"
-#include "pink_item.h"
-#include "pink_epoll.h"
-#include "pink_mutex.h"
-#include "pink_define.h"
-
-#include "csapp.h"
-#include "xdebug.h"
-#include <sys/epoll.h>
 #include <google/protobuf/message.h>
+
+#include "include/pink_thread.h"
+#include "include/pink_item.h"
+#include "include/pink_epoll.h"
+#include "include/pink_mutex.h"
+#include "include/pink_define.h"
+#include "include/csapp.h"
+#include "include/xdebug.h"
 
 namespace pink {
 
 template <typename Conn>
-class WorkerThread : public Thread
-{
-public:
-  WorkerThread(int cron_interval = 0):
+class WorkerThread : public Thread {
+ public:
+  explicit WorkerThread(int cron_interval = 0):
     Thread::Thread(cron_interval)
   {
     /*
@@ -62,11 +63,11 @@ public:
    */
   std::queue<PinkItem> conn_queue_;
 
-  int notify_receive_fd() { 
-    return notify_receive_fd_; 
+  int notify_receive_fd() {
+    return notify_receive_fd_;
   }
-  int notify_send_fd() { 
-    return notify_send_fd_; 
+  int notify_send_fd() {
+    return notify_send_fd_;
   }
   PinkEpoll* pink_epoll() {
     return pink_epoll_;
@@ -76,14 +77,12 @@ public:
   pthread_rwlock_t rwlock_;
   std::map<int, void *> conns_;
 
-private:
+ private:
   /*
    * These two fd receive the notify from dispatch thread
    */
   int notify_receive_fd_;
   int notify_send_fd_;
- 
-
 
   /*
    * The epoll handler
@@ -91,8 +90,7 @@ private:
   PinkEpoll *pink_epoll_;
 
   // clean conns
-  void cleanup()
-  {
+  void Cleanup() {
     RWLock l(&rwlock_, true);
     Conn *in_conn;
     std::map<int, void *>::iterator iter = conns_.begin();
@@ -103,8 +101,7 @@ private:
     }
   }
 
-  virtual void *ThreadMain()
-  {
+  virtual void *ThreadMain() override {
     int nfds;
     PinkFiredEvent *pfe = NULL;
     char bb[1];
@@ -124,7 +121,7 @@ private:
 
     while (!should_exit_) {
 
-      if (cron_interval_ > 0 ) {
+      if (cron_interval_ > 0) {
         gettimeofday(&now, NULL);
         if (when.tv_sec > now.tv_sec || (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
           timeout = (when.tv_sec - now.tv_sec) * 1000 + (when.tv_usec - now.tv_usec) / 1000;
@@ -140,9 +137,9 @@ private:
 
       for (int i = 0; i < nfds; i++) {
         pfe = (pink_epoll_->firedevent()) + i;
-        log_info("pfe->fd_ %d pfe->mask_ %d", pfe->fd_, pfe->mask_);
-        if (pfe->fd_ == notify_receive_fd_) {
-          if (pfe->mask_ & EPOLLIN) {
+        log_info("pfe->fd_ %d pfe->mask_ %d", pfe->fd, pfe->mask);
+        if (pfe->fd == notify_receive_fd_) {
+          if (pfe->mask & EPOLLIN) {
             read(notify_receive_fd_, bb, 1);
             {
               MutexLock l(&mutex_);
@@ -167,13 +164,13 @@ private:
           if (pfe == NULL) {
             continue;
           }
-          iter = conns_.find(pfe->fd_);
+          iter = conns_.find(pfe->fd);
           if (iter == conns_.end()) {
-            pink_epoll_->PinkDelEvent(pfe->fd_);
+            pink_epoll_->PinkDelEvent(pfe->fd);
             continue;
           }
 
-          if (pfe->mask_ & EPOLLIN) {
+          if (pfe->mask & EPOLLIN) {
 
             in_conn = static_cast<Conn *>(iter->second);
             ReadStatus getRes = in_conn->GetRequest();
@@ -184,47 +181,47 @@ private:
               // kReadError kReadClose kFullError kParseError
               should_close = 1;
             } else if (in_conn->is_reply()) {
-              pink_epoll_->PinkModEvent(pfe->fd_, EPOLLIN, EPOLLOUT);
+              pink_epoll_->PinkModEvent(pfe->fd, EPOLLIN, EPOLLOUT);
             } else {
               continue;
             }
           }
-          if (pfe->mask_ & EPOLLOUT) {
+          if (pfe->mask & EPOLLOUT) {
             in_conn = static_cast<Conn *>(iter->second);
             log_info("in work thead SendReply before");
             WriteStatus write_status = in_conn->SendReply();
             log_info("in work thead SendReply after");
             if (write_status == kWriteAll) {
               in_conn->set_is_reply(false);
-              pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLIN);
+              pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLIN);
             } else if (write_status == kWriteHalf) {
               continue;
             } else if (write_status == kWriteError) {
               should_close = 1;
             }
           }
-          if ((pfe->mask_  & EPOLLERR) || (pfe->mask_ & EPOLLHUP) || should_close) {
+          if ((pfe->mask & EPOLLERR) || (pfe->mask & EPOLLHUP) || should_close) {
             log_info("close pfe fd here");
             {
             RWLock l(&rwlock_, true);
-            pink_epoll_->PinkDelEvent(pfe->fd_);
-            close(pfe->fd_);
+            pink_epoll_->PinkDelEvent(pfe->fd);
+            close(pfe->fd);
             delete(in_conn);
             in_conn = NULL;
 
-            conns_.erase(pfe->fd_);
+            conns_.erase(pfe->fd);
             }
           }
         }
       }
     }
 
-    cleanup();
+    Cleanup();
     return NULL;
   }
 
 };
 
-}
+}  // namespace pink
 
-#endif
+#endif  // PINK_INCLUDE_WORKER_THREAD_H_

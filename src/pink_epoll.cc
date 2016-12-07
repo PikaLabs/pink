@@ -3,17 +3,17 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
+#include "include/pink_epoll.h"
+
 #include <linux/version.h>
 #include <fcntl.h>
 
-#include "include/pink_epoll.h"
 #include "include/pink_define.h"
 #include "include/xdebug.h"
-#include "include/status.h"
 
 namespace pink {
 
-PinkEpoll::PinkEpoll() {
+PinkEpoll::PinkEpoll() : timeout_(1000) {
 #if defined(EPOLL_CLOEXEC)
     epfd_ = epoll_create1(EPOLL_CLOEXEC);
 #else
@@ -27,10 +27,6 @@ PinkEpoll::PinkEpoll() {
     exit(1);
   }
   events_ = (struct epoll_event *)malloc(sizeof(struct epoll_event) * PINK_MAX_CLIENTS);
-  if (!events_) {
-    log_err("init epoll_event error");
-  }
-  timeout_ = 1000;
 
   firedevent_ = (PinkFiredEvent *)malloc(sizeof(PinkFiredEvent) * PINK_MAX_CLIENTS);
 }
@@ -41,24 +37,24 @@ PinkEpoll::~PinkEpoll() {
   close(epfd_);
 }
 
-Status PinkEpoll::PinkAddEvent(int fd, int mask) {
+int PinkEpoll::PinkAddEvent(int fd, int mask) {
   struct epoll_event ee;
   ee.data.fd = fd;
   ee.events = mask;
   if (epoll_ctl(epfd_, EPOLL_CTL_ADD, fd, &ee) == -1) {
-    return Status::Corruption("epollAdd error");
+    return -1;
   }
-  return Status::OK();
+  return 0;
 }
 
-Status PinkEpoll::PinkModEvent(int fd, int oMask, int mask) {
+int PinkEpoll::PinkModEvent(int fd, int oMask, int mask) {
   struct epoll_event ee;
   ee.data.fd = fd;
   ee.events = (oMask | mask);
   if (epoll_ctl(epfd_, EPOLL_CTL_MOD, fd, &ee) == -1) {
-    return Status::Corruption("epollCtl error");
+    return -1;
   }
-  return Status::OK();
+  return 0;
 }
 
 void PinkEpoll::PinkDelEvent(int fd) {
@@ -77,7 +73,7 @@ int PinkEpoll::PinkPoll(int timeout) {
     numevents = retval;
     for (int i = 0; i < numevents; i++) {
       int mask = 0;
-      firedevent_[i].fd_ = (events_ + i)->data.fd;
+      firedevent_[i].fd = (events_ + i)->data.fd;
       /*
        * log_info("events + i events %d", (events_ + i)->events);
        */
@@ -93,10 +89,10 @@ int PinkEpoll::PinkPoll(int timeout) {
       if ((events_ + i)->events & EPOLLHUP) {
         mask |= EPOLLHUP;
       }
-      firedevent_[i].mask_ = mask;
+      firedevent_[i].mask = mask;
     }
   }
   return numevents;
 }
 
-}
+}  // namespace pink

@@ -50,12 +50,6 @@ void *Thread::RunThread(void *arg)
   if (!(thread->thread_name().empty()))
   {
     SetThreadName(pthread_self(), thread->thread_name());
-    //bool result = SetThreadName(pthread_self(), thread->thread_name());
-    //if (!result) {
-    //  printf ("SetName failed\n");
-    //} else {
-    //  printf ("SetName OK\n");
-    //}
   }
   thread->ThreadMain();
   return NULL;

@@ -2,6 +2,7 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
+
 #ifndef PINK_THREAD_H_
 #define PINK_THREAD_H_
 
@@ -13,7 +14,7 @@ namespace pink {
 
 class Thread
 {
-public:
+ public:
   explicit Thread(int cron_interval = 0);
   virtual ~Thread();
   int StartThread();
@@ -24,23 +25,24 @@ public:
   std::atomic<bool> should_exit_;
 
 
-  pthread_t thread_id() {
+  pthread_t thread_id() const {
     return thread_id_;
   }
 
-  const std::string thread_name() {
+  std::string thread_name() const {
     return thread_name_;
   }
   void set_thread_name(const std::string &name) {
     thread_name_ = name;
   }
-private:
-  pthread_t thread_id_;
-  std::string thread_name_;
+ private:
 
   static void *RunThread(void *arg);
   virtual void *ThreadMain() = 0; 
   virtual int InitHandle();
+
+  pthread_t thread_id_;
+  std::string thread_name_;
 
   /*
    * No allowed copy and copy assign

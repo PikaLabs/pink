@@ -20,9 +20,9 @@
 
 #include "include/csapp.h"
 #include "include/xdebug.h"
-#include "include/pink_thread.h"
-#include "include/pink_util.h"
+#include "include/server_thread.h"
 #include "include/pink_socket.h"
+#include "include/pink_util.h"
 #include "include/pink_epoll.h"
 #include "include/pink_item.h"
 #include "include/pink_mutex.h"
@@ -30,65 +30,25 @@
 namespace pink {
 
 template <typename Conn>
-class HolyThread: public Thread
-{
-public:
+class HolyThread: public ServerThread {
+ public:
   // This type thread thread will listen and work self list redis thread
   explicit HolyThread(int port, int cron_interval = 0) :
-    Thread::Thread(cron_interval),
-    port_(port) {
-    ips_.insert("0.0.0.0");
+    ServerThread::ServerThread(port, cron_interval) {
     pthread_rwlock_init(&rwlock_, NULL);
   }
 
   HolyThread(const std::string& bind_ip, int port, int cron_interval = 0) :
-    Thread::Thread(cron_interval),
-    port_(port) {
-    ips_.insert(bind_ip);
+    ServerThread::ServerThread(bind_ip, port, cron_interval) {
     pthread_rwlock_init(&rwlock_, NULL);
   }
 
   HolyThread(const std::set<std::string>& bind_ips, int port, int cron_interval = 0) :
-    Thread::Thread(cron_interval),
-    port_(port) {
-    ips_ = bind_ips;
+    ServerThread::ServerThread(bind_ips, port, cron_interval) {
     pthread_rwlock_init(&rwlock_, NULL);
   }
 
-  virtual int InitHandle() {
-    int ret = 0;
-    ServerSocket* socket_p;
-    pink_epoll_ = new PinkEpoll();
-    if (ips_.find("0.0.0.0") != ips_.end()) {
-      ips_.clear();
-      ips_.insert("0.0.0.0");
-    }
-    for (std::set<std::string>::iterator iter = ips_.begin();
-        iter != ips_.end();
-        ++iter) {
-      socket_p = new ServerSocket(port_);
-      ret = socket_p->Listen(*iter);
-      if (ret != kSuccess) {
-        return ret;
-      }
-      pink_epoll_->PinkAddEvent(socket_p->sockfd(), EPOLLIN | EPOLLERR | EPOLLHUP);
-      server_sockets_.push_back(socket_p);
-      server_fds_.insert(socket_p->sockfd());
-    }
-    return kSuccess;
-  
-  }
-
   virtual ~HolyThread() {
-    should_exit_ = true;
-    JoinThread();
-
-    delete(pink_epoll_);
-    for (std::vector<ServerSocket*>::iterator iter = server_sockets_.begin();
-        iter != server_sockets_.end();
-        ++iter) {
-      delete *iter;
-    }
   }
 
   virtual void CronHandle() {
@@ -101,23 +61,6 @@ public:
   pthread_rwlock_t rwlock_;
   std::map<int, void *> conns_;
 
- private:
-  /*
-   * The tcp server port and address
-   */
-
-  std::vector<ServerSocket*> server_sockets_;
-  std::set<int32_t> server_fds_;
-
-  int port_;
-  std::set<std::string> ips_;
-
-  /*
-   * The Epoll event handler
-   */
-  PinkEpoll *pink_epoll_;
-
- public:
   virtual void *ThreadMain() {
     int nfds;
     PinkFiredEvent *pfe;
@@ -158,16 +101,16 @@ public:
       nfds = pink_epoll_->PinkPoll(timeout);
       for (int i = 0; i < nfds; i++) {
         pfe = (pink_epoll_->firedevent()) + i;
-        log_info("tfe->fd_ %d tfe->mask_ %d", pfe->fd_, pfe->mask_);
-        fd = pfe->fd_;
+        log_info("tfe->fd %d tfe->mask %d", pfe->fd, pfe->mask);
+        fd = pfe->fd;
         if (server_fds_.find(fd) != server_fds_.end()) {
           /*
            * this branch means the listen fd is error
            */
-          if (pfe->mask_ & (EPOLLHUP | EPOLLERR)) {
-            close(pfe->fd_);
+          if (pfe->mask & (EPOLLHUP | EPOLLERR)) {
+            close(pfe->fd);
             continue;
-          } else if (pfe->mask_ & EPOLLIN) {
+          } else if (pfe->mask & EPOLLIN) {
             connfd = accept(fd, (struct sockaddr *) &cliaddr, &clilen);
             if (connfd == -1) {
               if (errno != EWOULDBLOCK) {
@@ -205,13 +148,13 @@ public:
           if (pfe == NULL) {
             continue;
           }
-          iter = conns_.find(pfe->fd_);
+          iter = conns_.find(pfe->fd);
           if (iter == conns_.end()) {
-            pink_epoll_->PinkDelEvent(pfe->fd_);
+            pink_epoll_->PinkDelEvent(pfe->fd);
             continue;
           }
 
-          if (pfe->mask_ & EPOLLIN) {
+          if (pfe->mask & EPOLLIN) {
             in_conn = static_cast<Conn *>(iter->second);
             ReadStatus getRes = in_conn->GetRequest();
             in_conn->set_last_interaction(now);
@@ -219,46 +162,45 @@ public:
               // kReadError kReadClose kFullError kParseError
               should_close = 1;
             } else if (in_conn->is_reply()) {
-              pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLOUT);
+              pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLOUT);
             } else {
               continue;
             }
           }
-          if (pfe->mask_ & EPOLLOUT) {
+          if (pfe->mask & EPOLLOUT) {
 
             in_conn = static_cast<Conn *>(iter->second);
             WriteStatus write_status = in_conn->SendReply();
             if (write_status == kWriteAll) {
               in_conn->set_is_reply(false);
-              pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLIN);
+              pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLIN);
             } else if (write_status == kWriteHalf) {
               continue;
             } else if (write_status == kWriteError) {
               should_close = 1;
             }
           }
-          if ((pfe->mask_ & EPOLLERR) || (pfe->mask_ & EPOLLHUP) || should_close) {
+          if ((pfe->mask & EPOLLERR) || (pfe->mask & EPOLLHUP) || should_close) {
             log_info("close pfe fd here");
             {
             RWLock l(&rwlock_, true);
-            pink_epoll_->PinkDelEvent(pfe->fd_);
-            close(pfe->fd_);
+            pink_epoll_->PinkDelEvent(pfe->fd);
+            close(pfe->fd);
             delete(in_conn);
             in_conn = NULL;
-            conns_.erase(pfe->fd_);
+            conns_.erase(pfe->fd);
             }
           }
         }
       }
     }
 
-    cleanup();
+    Cleanup();
     return NULL;
   }
 
   // clean conns
-  void cleanup()
-  {
+  void Cleanup() {
     RWLock l(&rwlock_, true);
     Conn *in_conn;
     std::map<int, void *>::iterator iter = conns_.begin();

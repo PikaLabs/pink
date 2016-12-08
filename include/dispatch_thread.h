@@ -23,13 +23,14 @@
 #include "include/xdebug.h"
 #include "include/pink_thread.h"
 #include "include/worker_thread.h"
+#include "include/server_thread.h"
 #include "include/pink_util.h"
 #include "include/pink_socket.h"
 #include "include/pink_epoll.h"
 
 namespace pink {
 template <typename T>
-class DispatchThread : public Thread
+class DispatchThread : public ServerThread
 {
 public:
   // This type Dispatch thread just get Connection and then Dispatch the fd to
@@ -43,12 +44,9 @@ public:
    * @param cron_interval the cron job interval
    */
   DispatchThread(int port, int work_num, WorkerThread<T> **worker_thread, int cron_interval = 0) :
-    Thread::Thread(cron_interval),
-    port_(port),
+    ServerThread::ServerThread(port, cron_interval),
     work_num_(work_num),
-    worker_thread_(worker_thread)
-  {
-    ips_.insert("0.0.0.0");
+    worker_thread_(worker_thread) {
   }
 
   /**
@@ -62,50 +60,15 @@ public:
    */
 
   DispatchThread(const std::string &ip, int port, int work_num, WorkerThread<T> **worker_thread, int cron_interval = 0) :
-    Thread::Thread(cron_interval),
-    port_(port),
+    ServerThread::ServerThread(ip, cron_interval),
     work_num_(work_num),
-    worker_thread_(worker_thread)
-  {
-    ips_.insert(ip);
+    worker_thread_(worker_thread) {
   }
 
   DispatchThread(const std::set<std::string>& ips, int port, int work_num, WorkerThread<T> **worker_thread, int cron_interval = 0) :
-      Thread::Thread(cron_interval),
-      port_(port),
+      ServerThread::ServerThread(ips, cron_interval),
       work_num_(work_num),
-      worker_thread_(worker_thread)
-  {
-    ips_ = ips;
-  }
-
-  virtual int InitHandle() {
-    int ret = 0;
-    ServerSocket* socket_p;
-    pink_epoll_ = new PinkEpoll();
-    if (ips_.find("0.0.0.0") != ips_.end()) {
-      ips_.clear();
-      ips_.insert("0.0.0.0");
-    }
-    for (std::set<std::string>::iterator iter = ips_.begin();
-        iter != ips_.end();
-        ++iter) {
-      socket_p = new ServerSocket(port_);
-      ret = socket_p->Listen(*iter);
-      if (ret != kSuccess) {
-        return ret;
-      }
-      // init epoll
-      pink_epoll_->PinkAddEvent(socket_p->sockfd(), EPOLLIN | EPOLLERR | EPOLLHUP);
-      server_sockets_.push_back(socket_p);
-      server_fds_.insert(socket_p->sockfd());
-    }
-    last_thread_ = 0;
-    for (int i = 0; i < work_num_; i++) {
-      worker_thread_[i]->StartThread();
-    }
-    return kSuccess;
-  
+      worker_thread_(worker_thread) {
   }
 
   int work_num() {
@@ -117,16 +80,6 @@ public:
   }
 
   virtual ~DispatchThread() {
-    should_exit_ = true;
-
-    JoinThread();
-
-    delete(pink_epoll_);
-    for (std::vector<ServerSocket*>::iterator iter = server_sockets_.begin();
-        iter != server_sockets_.end();
-        ++iter) {
-      delete *iter;
-    }
   }
 
   virtual void CronHandle() {
@@ -160,6 +113,11 @@ public:
     char port_buf[32];
     char ip_addr[INET_ADDRSTRLEN] = "";
 
+    last_thread_ = 0;
+    for (int i = 0; i < work_num_; i++) {
+      worker_thread_[i]->StartThread();
+    }
+
     while (!should_exit_) {
 
       if (cron_interval_ > 0) {
@@ -180,10 +138,10 @@ public:
        */
       for (int i = 0; i < nfds; i++) {
         pfe = (pink_epoll_->firedevent()) + i;
-        fd = pfe->fd_;
+        fd = pfe->fd;
         log_info("come fd is %d\n", fd);
         if (server_fds_.find(fd) != server_fds_.end()) {
-          if (pfe->mask_ & EPOLLIN) {
+          if (pfe->mask & EPOLLIN) {
             connfd = accept(fd, (struct sockaddr *) &cliaddr, &clilen);
             log_info("Connect fd %d", connfd);
             if (connfd == -1) {
@@ -211,7 +169,7 @@ public:
             write(worker_thread_[last_thread_]->notify_send_fd(), "", 1);
             last_thread_++;
             last_thread_ %= work_num_;
-          } else if (pfe->mask_ & (EPOLLERR | EPOLLHUP)) {
+          } else if (pfe->mask & (EPOLLERR | EPOLLHUP)) {
             /*
              * this branch means there is error on the listen fd
              */
@@ -228,30 +186,15 @@ public:
 
  private:
   /*
-   * The tcp server port and address
-   */
-
-  std::vector<ServerSocket*> server_sockets_;
-  std::set<int32_t> server_fds_;
-  /*
-   * The Epoll event handler
-   */
-  PinkEpoll *pink_epoll_;
-
-  /*
    * Here we used auto poll to find the next work thread,
    * last_thread_ is the last work thread
    */
   int last_thread_;
-
-  int port_;
   int work_num_;
-//  int cron_interval_;
   /*
    * This is the work threads
    */
   WorkerThread<T> **worker_thread_;
-  std::set<std::string> ips_;
 
   // No copying allowed
   DispatchThread(const DispatchThread&);

@@ -14,4 +14,4 @@ compiler:
 
 language: cpp
 
-script: make
+script: make && make -C example

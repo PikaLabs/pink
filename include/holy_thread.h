@@ -158,16 +158,16 @@ public:
       nfds = pink_epoll_->PinkPoll(timeout);
       for (int i = 0; i < nfds; i++) {
         pfe = (pink_epoll_->firedevent()) + i;
-        log_info("tfe->fd_ %d tfe->mask_ %d", pfe->fd_, pfe->mask_);
-        fd = pfe->fd_;
+        log_info("tfe->fd %d tfe->mask %d", pfe->fd, pfe->mask);
+        fd = pfe->fd;
         if (server_fds_.find(fd) != server_fds_.end()) {
           /*
            * this branch means the listen fd is error
            */
-          if (pfe->mask_ & (EPOLLHUP | EPOLLERR)) {
-            close(pfe->fd_);
+          if (pfe->mask & (EPOLLHUP | EPOLLERR)) {
+            close(pfe->fd);
             continue;
-          } else if (pfe->mask_ & EPOLLIN) {
+          } else if (pfe->mask & EPOLLIN) {
             connfd = accept(fd, (struct sockaddr *) &cliaddr, &clilen);
             if (connfd == -1) {
               if (errno != EWOULDBLOCK) {
@@ -205,13 +205,13 @@ public:
           if (pfe == NULL) {
             continue;
           }
-          iter = conns_.find(pfe->fd_);
+          iter = conns_.find(pfe->fd);
           if (iter == conns_.end()) {
-            pink_epoll_->PinkDelEvent(pfe->fd_);
+            pink_epoll_->PinkDelEvent(pfe->fd);
             continue;
           }
 
-          if (pfe->mask_ & EPOLLIN) {
+          if (pfe->mask & EPOLLIN) {
             in_conn = static_cast<Conn *>(iter->second);
             ReadStatus getRes = in_conn->GetRequest();
             in_conn->set_last_interaction(now);
@@ -219,33 +219,33 @@ public:
               // kReadError kReadClose kFullError kParseError
               should_close = 1;
             } else if (in_conn->is_reply()) {
-              pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLOUT);
+              pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLOUT);
             } else {
               continue;
             }
           }
-          if (pfe->mask_ & EPOLLOUT) {
+          if (pfe->mask & EPOLLOUT) {
 
             in_conn = static_cast<Conn *>(iter->second);
             WriteStatus write_status = in_conn->SendReply();
             if (write_status == kWriteAll) {
               in_conn->set_is_reply(false);
-              pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLIN);
+              pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLIN);
             } else if (write_status == kWriteHalf) {
               continue;
             } else if (write_status == kWriteError) {
               should_close = 1;
             }
           }
-          if ((pfe->mask_ & EPOLLERR) || (pfe->mask_ & EPOLLHUP) || should_close) {
+          if ((pfe->mask & EPOLLERR) || (pfe->mask & EPOLLHUP) || should_close) {
             log_info("close pfe fd here");
             {
             RWLock l(&rwlock_, true);
-            pink_epoll_->PinkDelEvent(pfe->fd_);
-            close(pfe->fd_);
+            pink_epoll_->PinkDelEvent(pfe->fd);
+            close(pfe->fd);
             delete(in_conn);
             in_conn = NULL;
-            conns_.erase(pfe->fd_);
+            conns_.erase(pfe->fd);
             }
           }
         }

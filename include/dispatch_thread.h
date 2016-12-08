@@ -180,10 +180,10 @@ public:
        */
       for (int i = 0; i < nfds; i++) {
         pfe = (pink_epoll_->firedevent()) + i;
-        fd = pfe->fd_;
+        fd = pfe->fd;
         log_info("come fd is %d\n", fd);
         if (server_fds_.find(fd) != server_fds_.end()) {
-          if (pfe->mask_ & EPOLLIN) {
+          if (pfe->mask & EPOLLIN) {
             connfd = accept(fd, (struct sockaddr *) &cliaddr, &clilen);
             log_info("Connect fd %d", connfd);
             if (connfd == -1) {
@@ -211,7 +211,7 @@ public:
             write(worker_thread_[last_thread_]->notify_send_fd(), "", 1);
             last_thread_++;
             last_thread_ %= work_num_;
-          } else if (pfe->mask_ & (EPOLLERR | EPOLLHUP)) {
+          } else if (pfe->mask & (EPOLLERR | EPOLLHUP)) {
             /*
              * this branch means there is error on the listen fd
              */

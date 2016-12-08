@@ -17,7 +17,7 @@ int PikaConn::DealMessage() {
 
   std::string res;
   std::vector<std::string>::iterator iter = argv_.begin();
-  for (iter; iter != argv_.end(); iter++) {
+  for (; iter != argv_.end(); iter++) {
     res.append(*iter);
     res.append(" ");
   }

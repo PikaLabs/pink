@@ -68,9 +68,9 @@ int main() {
   printf ("Send mset return %s\n", s.ToString().c_str());
 
   s = rcli->Recv(NULL);
-  printf("Recv mset return %s with %d elements\n", s.ToString().c_str());
-  for (int i = 0; i < rcli->argv_.size(); i++) {
-    printf("  argv[%d] = (%s)", i, rcli->argv_[i].c_str());
+  printf("Recv mset return %s with %lu elements\n", s.ToString().c_str(), rcli->argv_.size());
+  for (size_t i = 0; i < rcli->argv_.size(); i++) {
+    printf("  argv[%lu] = (%s)", i, rcli->argv_[i].c_str());
   }
 
   printf ("\n\nTest Mget case 1: send 1 time, and recv 1 time\n");
@@ -82,9 +82,9 @@ int main() {
     printf ("Send mget case 1: i=%d, return %s\n", si, s.ToString().c_str());
 
     s = rcli->Recv(NULL);
-    printf ("Recv mget case 1: i=%d, return %s with %d elements\n", si, s.ToString().c_str(), rcli->argv_.size());
-    for (int i = 0; i < rcli->argv_.size(); i++) {
-      printf("  argv[%d] = (%s)\n", i, rcli->argv_[i].c_str());
+    printf ("Recv mget case 1: i=%d, return %s with %lu elements\n", si, s.ToString().c_str(), rcli->argv_.size());
+    for (size_t i = 0; i < rcli->argv_.size(); i++) {
+      printf("  argv[%lu] = (%s)\n", i, rcli->argv_[i].c_str());
     }
   }
 
@@ -99,9 +99,9 @@ int main() {
 
   for (int si = 0; si < 2; si++) {
     s = rcli->Recv(NULL);
-    printf ("Recv mget case 1: i=%d, return %s with %d elements\n", si, s.ToString().c_str(), rcli->argv_.size());
-    for (int i = 0; i < rcli->argv_.size(); i++) {
-      printf ("  argv[%d] = (%s)\n", i, rcli->argv_[i].c_str());
+    printf ("Recv mget case 1: i=%d, return %s with %lu elements\n", si, s.ToString().c_str(), rcli->argv_.size());
+    for (size_t i = 0; i < rcli->argv_.size(); i++) {
+      printf ("  argv[%lu] = (%s)\n", i, rcli->argv_[i].c_str());
     }
   }
 

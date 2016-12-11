@@ -13,6 +13,12 @@
 
 namespace pink {
 
+enum PB_STATUS {
+  PB_ETIMEOUT = -2,
+  PB_ERR = -1,
+  PB_OK = 0,
+};
+
 PbCli::PbCli() :
   packet_len_(0),
   rbuf_len_(0),
@@ -67,10 +73,12 @@ Status PbCli::Send(void *msg) {
       if (errno == EINTR) {
         nwritten = 0;
         continue;
+      } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        s = Status::Timeout("Send timeout");
       } else {
-        s = Status::IOError(wbuf_, "write bada context error");
-        return s;
+        s = Status::IOError("write error " + std::string(strerror(errno)));
       }
+      return s;
     }
     nleft -= nwritten;
     wbuf_pos_ += nwritten;
@@ -86,17 +94,28 @@ Status PbCli::Recv(void *msg_res) {
   log_info("The Recv function");
   msg_res_ = reinterpret_cast<google::protobuf::Message *>(msg_res);
   int ret = ReadHeader();
-  if(ret == 0 || ret == -1)
-    return Status::Corruption("read header error");
+  if (ret != PB_OK) {
+    if (ret == PB_ETIMEOUT) {
+      return Status::Timeout("");
+    } else {
+      return Status::Corruption("read header error");
+    }
+  }
   log_info("packet_len_ %d", packet_len_);
   ret = ReadPacket();
-  if(ret == 0 )
-    return Status::Corruption("read packet error");
+  if (ret != PB_OK) {
+    if (ret == PB_ETIMEOUT) {
+      return Status::Timeout("");
+    } else {
+      return Status::Corruption("read packet error");
+    }
+  }
   msg_res_->ParseFromArray(rbuf_, packet_len_);
 
   return Status::OK();
 }
 
+ 
 int PbCli::ReadHeader() {
   int nread = 0;
   rbuf_pos_ = 0;
@@ -109,9 +128,11 @@ int PbCli::ReadHeader() {
       log_err("nread %d", nread);
       if (errno == EINTR) {
         continue;
+      } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        return PB_ETIMEOUT;
       } else {
         log_info ("ReadHeader nread is -1 and error isnot EINTR, nleft=%d\n", nleft);
-        return -1;
+        return PB_ERR;
       }
     } else if (nread == 0) {
       /*
@@ -119,7 +140,7 @@ int PbCli::ReadHeader() {
        * so this must be an incomplete packet
        */
       log_info ("ReadHeader nread is 0, nleft=%d\n", nleft);
-      return 0;
+      return PB_ERR;
     }
     nleft -= nread;
     rbuf_pos_ += nread;
@@ -128,7 +149,7 @@ int PbCli::ReadHeader() {
   uint32_t integer;
   memcpy((char *)(&integer), rbuf_, sizeof(uint32_t));
   packet_len_ = ntohl(integer);
-  return COMMAND_HEADER_LENGTH;
+  return PB_OK;
 }
 
 int PbCli::ReadPacket() {
@@ -140,15 +161,18 @@ int PbCli::ReadPacket() {
     if (nread == -1) {
       if (errno == EINTR) {
         continue;
+      } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        return PB_ETIMEOUT;
       } else {
-        return 0;
+        log_info ("ReadPacket nread is -1 and error isnot EINTR, nleft=%d\n", nleft);
+        return PB_ERR;
       }
     } else if (nread == 0) {
       /*
        * we read end of file here, but in our protocol we need more data
        * so this must be an incomplete packet, so we return an error
        */
-      return 0;
+      return PB_ERR;
     }
     nleft -= nread;
     rbuf_pos_ += nread;

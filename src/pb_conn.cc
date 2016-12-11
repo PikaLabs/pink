@@ -22,8 +22,8 @@ PbConn::PbConn(const int fd, const std::string &ip_port) :
   connStatus_(kHeader),
   wbuf_len_(0),
   wbuf_pos_(0) {
-  rbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * PB_MAX_MESSAGE));
-  wbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * PB_MAX_MESSAGE));
+  rbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * kProtoMaxMessage));
+  wbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * kProtoMaxMessage));
 }
 
 PbConn::~PbConn() {
@@ -63,7 +63,7 @@ ReadStatus PbConn::GetRequest() {
         break;
       }
       case kPacket: {
-        if (header_len_ >= PB_MAX_MESSAGE - COMMAND_HEADER_LENGTH) {
+        if (header_len_ >= kProtoMaxMessage - COMMAND_HEADER_LENGTH) {
           return kFullError;
         } else {
           // read msg body

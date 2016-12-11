@@ -3,8 +3,8 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef INCLUDE_PB_CLI_H_
-#define INCLUDE_PB_CLI_H_
+#ifndef PINK_INCLUDE_PB_CLI_H_
+#define PINK_INCLUDE_PB_CLI_H_
 
 #include <string>
 
@@ -22,14 +22,13 @@ class PbCli : public PinkCli {
   PbCli();
   virtual ~PbCli();
 
-
-  virtual Status Send(void *msg);
-  virtual Status Recv(void *msg_res);
+  virtual Status Send(void *msg) override;
+  virtual Status Recv(void *msg_res) override;
 
  protected:
   virtual void BuildWbuf();
 
-  inline int ReadHeader();
+  int ReadHeader();
   int ReadPacket();
 
   int packet_len_;

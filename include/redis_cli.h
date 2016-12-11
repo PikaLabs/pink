@@ -17,7 +17,7 @@ typedef std::vector<std::string> RedisCmdArgsType;
 class RedisCli : public PinkCli {
  public:
   RedisCli();
-  ~RedisCli();
+  virtual ~RedisCli();
 
   // We could set miliseconds timeout by 
   //    int set_send_timeout(int send_timeout)
@@ -35,10 +35,10 @@ class RedisCli : public PinkCli {
   static int SerializeCommand(RedisCmdArgsType argv, std::string *cmd);
 
   // msg should have been parsed
-  virtual Status Send(void *msg);
+  virtual Status Send(void *msg) override;
 
   // Read, parse and store the reply
-  virtual Status Recv(void *result = NULL);
+  virtual Status Recv(void *result = NULL) override;
 
   RedisCmdArgsType argv_;   // The parsed result 
 

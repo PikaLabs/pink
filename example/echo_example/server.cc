@@ -18,7 +18,7 @@ public:
     message_.set_name("hello " + message_.name());
     uint32_t u =htonl( message_.ByteSize());
     memcpy(static_cast<void*>(wbuf_), static_cast<void*>(&u), COMMAND_HEADER_LENGTH);
-    message_.SerializeToArray(wbuf_ + COMMAND_HEADER_LENGTH, PB_MAX_MESSAGE);
+    message_.SerializeToArray(wbuf_ + COMMAND_HEADER_LENGTH, kProtoMaxMessage);
     set_is_reply(true);
   }
  private:

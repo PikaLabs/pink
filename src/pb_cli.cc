@@ -13,6 +13,8 @@
 
 namespace pink {
 
+static const int kCommandHeaderLength = 4;
+
 enum PB_STATUS {
   PB_ETIMEOUT = -2,
   PB_ERR = -1,
@@ -25,9 +27,9 @@ PbCli::PbCli() :
   rbuf_pos_(0),
   wbuf_len_(0),
   wbuf_pos_(0) {
-  rbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * PB_MAX_MESSAGE));
-  wbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * PB_MAX_MESSAGE));
-  scratch_ = reinterpret_cast<char *>(malloc(sizeof(char) * PB_MAX_MESSAGE));
+  rbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * kProtoMaxMessage));
+  wbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * kProtoMaxMessage));
+  scratch_ = reinterpret_cast<char *>(malloc(sizeof(char) * kProtoMaxMessage));
 }
 
 PbCli::~PbCli() {
@@ -39,11 +41,11 @@ PbCli::~PbCli() {
 
 void PbCli::BuildWbuf() {
   wbuf_len_ = msg_->ByteSize();
-  msg_->SerializeToArray(wbuf_ + COMMAND_HEADER_LENGTH, wbuf_len_);
+  msg_->SerializeToArray(wbuf_ + kCommandHeaderLength, wbuf_len_);
   uint32_t len;
   len = htonl(wbuf_len_);
   memcpy(wbuf_, &len, sizeof(uint32_t));
-  wbuf_len_ += COMMAND_HEADER_LENGTH;
+  wbuf_len_ += kCommandHeaderLength;
 
 }
 
@@ -119,7 +121,7 @@ Status PbCli::Recv(void *msg_res) {
 int PbCli::ReadHeader() {
   int nread = 0;
   rbuf_pos_ = 0;
-  size_t nleft = COMMAND_HEADER_LENGTH;
+  size_t nleft = kCommandHeaderLength;
   log_info("nleft %d", nleft);
   while (nleft > 0) {
     nread = read(fd(), rbuf_ + rbuf_pos_, nleft);

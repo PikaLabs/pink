@@ -9,19 +9,12 @@
 
 namespace pink {
 
-Thread::Thread(int cron_interval)
-  : cron_interval_(cron_interval),
+Thread::Thread() :
     should_exit_(false),
-    thread_id_(0)
-{
+    thread_id_(0) {
 }
 
-Thread::~Thread()
-{
-}
-
-void Thread::CronHandle() {
-//  log_info("Come in thread cronhandle");
+Thread::~Thread() {
 }
 
 int Thread::StartThread()

@@ -14,19 +14,19 @@ namespace pink {
 class ServerThread : public Thread {
  public:
   explicit ServerThread(int port, int cron_interval = 0) :
-    Thread::Thread(cron_interval),
+    cron_interval_(cron_interval),
     port_(port) {
     ips_.insert("0.0.0.0");
   }
 
   ServerThread(const std::string& bind_ip, int port, int cron_interval = 0) :
-    Thread::Thread(cron_interval),
+    cron_interval_(cron_interval),
     port_(port) {
     ips_.insert(bind_ip);
   }
 
   ServerThread(const std::set<std::string>& bind_ips, int port, int cron_interval = 0) :
-    Thread::Thread(cron_interval),
+    cron_interval_(cron_interval),
     port_(port) {
     ips_ = bind_ips;
   }
@@ -76,6 +76,7 @@ class ServerThread : public Thread {
   virtual void *ThreadMain() = 0;
 
  protected:
+  int cron_interval_;
   /*
    * The tcp server port and address
    */

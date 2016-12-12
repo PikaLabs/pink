@@ -28,9 +28,8 @@ namespace pink {
 template <typename Conn>
 class WorkerThread : public Thread {
  public:
-  explicit WorkerThread(int cron_interval = 0):
-    Thread::Thread(cron_interval)
-  {
+  explicit WorkerThread(int cron_interval = 0) :
+    cron_interval_(cron_interval) {
     /*
      * install the protobuf handler here
      */
@@ -78,6 +77,7 @@ class WorkerThread : public Thread {
   std::map<int, void *> conns_;
 
  private:
+  int cron_interval_;
   /*
    * These two fd receive the notify from dispatch thread
    */

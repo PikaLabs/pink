@@ -30,9 +30,8 @@
 
 namespace pink {
 template <typename T>
-class DispatchThread : public ServerThread
-{
-public:
+class DispatchThread : public ServerThread {
+ public:
   // This type Dispatch thread just get Connection and then Dispatch the fd to
   // worker thead
   /**
@@ -89,8 +88,7 @@ public:
     return true;
   }
 
-  virtual void *ThreadMain()
-  {
+  virtual void *ThreadMain() {
     int nfds;
     PinkFiredEvent *pfe;
     Status s;

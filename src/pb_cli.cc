@@ -13,7 +13,6 @@
 
 namespace pink {
 
-static const int kCommandHeaderLength = 4;
 
 enum PB_STATUS {
   PB_ETIMEOUT = -2,

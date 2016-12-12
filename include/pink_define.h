@@ -17,13 +17,14 @@ namespace pink {
 #define PINK_NAME_LEN 1024
 
 #define PB_MAX_MESSAGE 102400
-const int kProtoMaxMessage = 102400
+const int kProtoMaxMessage = 102400;
 /*
  * The pb head and code length
  */
 #define COMMAND_HEADER_LENGTH 4
 #define COMMAND_CODE_LENGTH 4
 
+const int kCommandHeaderLength = 4;
 
 /*
  * The socket block type

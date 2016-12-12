@@ -2,12 +2,14 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
-#include "bg_thread.h"
+
+#include "include/bg_thread.h"
 
 namespace pink {
+
 void BGThread::Schedule(void (*function)(void*), void* arg) {
   pthread_mutex_lock(&mu_);
-  while (queue_.size() >= full_ && !should_exit_) {
+  while (queue_.size() >= full_ && running()) {
     pthread_cond_wait(&wsignal_, &mu_);
   }
   if (queue_.size() < full_) {
@@ -18,12 +20,12 @@ void BGThread::Schedule(void (*function)(void*), void* arg) {
 }
 
 void *BGThread::ThreadMain() {
-  while (!should_exit_) {
+  while (running()) {
     pthread_mutex_lock(&mu_);
-    while (queue_.empty() && !should_exit_) {
+    while (queue_.empty() && running()) {
       pthread_cond_wait(&rsignal_, &mu_);
     }
-    if (should_exit_) {
+    if (!running()) {
       pthread_mutex_unlock(&mu_);
       continue;
     }
@@ -36,4 +38,5 @@ void *BGThread::ThreadMain() {
   }
   return NULL;
 }
+
 }

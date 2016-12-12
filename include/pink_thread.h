@@ -18,12 +18,13 @@ class Thread
   explicit Thread(int cron_interval = 0);
   virtual ~Thread();
   int StartThread();
-  void JoinThread();
+  int JoinThread();
   virtual void CronHandle();
   int cron_interval_;
 
-  std::atomic<bool> should_exit_;
-
+  bool runing() const {
+    return running_.load();
+  }
 
   pthread_t thread_id() const {
     return thread_id_;
@@ -43,11 +44,11 @@ class Thread
 
   pthread_t thread_id_;
   std::string thread_name_;
+  std::atomic<bool> running_;
 
   /*
    * No allowed copy and copy assign
    */
-  
   Thread(const Thread&);
   void operator=(const Thread&);
 };

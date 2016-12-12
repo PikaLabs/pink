@@ -3,20 +3,24 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef INCLUDE_BG_THREAD_H_
-#define INCLUDE_BG_THREAD_H_
+#ifndef PINK_INCLUDE_BG_THREAD_H_
+#define PINK_INCLUDE_BG_THREAD_H_
 
 #include <atomic>
 #include <deque>
 
 #include "include/pink_thread.h"
+#include "third/slash/output/include/slash_mutex.h"
 
 namespace pink {
 
 class BGThread : public Thread {
  public:
   explicit BGThread(int full = 100000) :
-    Thread::Thread(), full_(full), running_(false) {
+    Thread::Thread(), 
+    full_(full),
+    rsignal_(&mu_), 
+    wsignal_(&mu_) {
       pthread_mutex_init(&mu_, NULL);
       pthread_cond_init(&rsignal_, NULL);
       pthread_cond_init(&wsignal_, NULL);
@@ -24,52 +28,43 @@ class BGThread : public Thread {
 
   virtual ~BGThread() {
     Stop();
+    
     pthread_cond_destroy(&rsignal_);
     pthread_cond_destroy(&wsignal_);
     pthread_mutex_destroy(&mu_);
   }
-  bool is_running() {
-    return running_;
-  }
 
   void Stop() {
-    should_exit_ = true;
-    if (running_) {
-      pthread_cond_signal(&rsignal_);
-      pthread_cond_signal(&wsignal_);
-      pthread_join(thread_id(), NULL);
+    if (running()) {
+      rsignal_.Signal();
+      wsignal_.Signal();
+      JoinThread(thread_id());
       running_ = false;
     }
   }
 
-  void StartIfNeed() {
-    bool expect = false;
-    if (!running_.compare_exchange_strong(expect, true)) {
-      return;
-    }
-    StartThread();
-  }
-
   void Schedule(void (*function)(void*), void* arg);
 
+  void TimeSchedule(void (*function)(void *), void* arg);
+
  private:
+
   struct BGItem {
     void (*function)(void*);
     void* arg;
     BGItem(void (*_function)(void*), void* _arg)
       : function(_function), arg(_arg) {}
   };
+
   typedef std::deque<BGItem> BGQueue;
-  pthread_mutex_t mu_;
-  pthread_cond_t rsignal_;
-  pthread_cond_t wsignal_;
+  slash::Mutex mu_;
+  slash::CondVar rsignal_;
+  slash::CondVar wsignal_;
   BGQueue queue_;
   size_t full_;
-  // std::atomic<bool> exit_;
-  std::atomic<bool> running_;
   virtual void *ThreadMain();
 };
 
 }  // namespace pink
 
-#endif  // INCLUDE_BG_THREAD_H_
+#endif  // PINK_INCLUDE_BG_THREAD_H_

@@ -117,7 +117,7 @@ public:
   }
 
   virtual ~DispatchThread() {
-    should_exit_ = true;
+    running_.store(false);
 
     JoinThread();
 
@@ -160,7 +160,7 @@ public:
     char port_buf[32];
     char ip_addr[INET_ADDRSTRLEN] = "";
 
-    while (!should_exit_) {
+    while (running()) {
 
       if (cron_interval_ > 0) {
         gettimeofday(&now, NULL);

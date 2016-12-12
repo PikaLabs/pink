@@ -2,6 +2,7 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
+
 #include "pink_thread.h"
 #include "pink_thread_name.h"
 #include "xdebug.h"
@@ -11,7 +12,7 @@ namespace pink {
 
 Thread::Thread(int cron_interval)
   : cron_interval_(cron_interval),
-    should_exit_(false),
+    running_(false),
     thread_id_(0)
 {
 }
@@ -21,12 +22,14 @@ Thread::~Thread()
 }
 
 void Thread::CronHandle() {
-//  log_info("Come in thread cronhandle");
 }
 
 int Thread::StartThread()
 {
-  should_exit_ = false;
+  bool expect = false;
+  if (!running_.compare_exchange_strong(expect, true)) {
+    return -1;
+  }
   int ret = InitHandle();
   if (ret != kSuccess) {
     return ret;
@@ -38,10 +41,12 @@ int Thread::StartThread()
   return kSuccess;
 }
 
-void Thread::JoinThread()
+int Thread::JoinThread()
 {
-  if (thread_id_ != 0)
-    pthread_join(thread_id_, NULL);
+  if (thread_id_ != 0) {
+    return pthread_join(thread_id_, NULL);
+  }
+  return -1;
 }
 
 void *Thread::RunThread(void *arg)

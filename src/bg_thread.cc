@@ -8,32 +8,32 @@
 namespace pink {
 
 void BGThread::Schedule(void (*function)(void*), void* arg) {
-  pthread_mutex_lock(&mu_);
+  mu_.Lock();
   while (queue_.size() >= full_ && running()) {
-    pthread_cond_wait(&wsignal_, &mu_);
+    wsignal_.Wait();
   }
   if (queue_.size() < full_) {
     queue_.push_back(BGItem(function, arg));
-    pthread_cond_signal(&rsignal_);
+    rsignal_.Signal();
   }
-  pthread_mutex_unlock(&mu_);
+  mu_.Unlock();
 }
 
 void *BGThread::ThreadMain() {
   while (running()) {
-    pthread_mutex_lock(&mu_);
+    mu_.Lock();
     while (queue_.empty() && running()) {
-      pthread_cond_wait(&rsignal_, &mu_);
+      rsignal_.Wait();
     }
     if (!running()) {
-      pthread_mutex_unlock(&mu_);
+      mu_.Unlock();
       continue;
     }
     void (*function)(void*) = queue_.front().function;
     void* arg = queue_.front().arg;
     queue_.pop_front();
-    pthread_cond_signal(&wsignal_);
-    pthread_mutex_unlock(&mu_);
+    wsignal_.Signal();
+    mu_.Unlock();
     (*function)(arg);
   }
   return NULL;

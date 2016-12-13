@@ -49,9 +49,8 @@ class WorkerThread : public Thread {
   }
 
   virtual ~WorkerThread() {
-    set_runing(true);
-    pthread_join(thread_id(), NULL);
-
+    set_running(true);
+    JoinThread();
     delete(pink_epoll_);
   }
 
@@ -119,7 +118,7 @@ class WorkerThread : public Thread {
       timeout = PINK_CRON_INTERVAL;
     }
 
-    while (runing()) {
+    while (running()) {
 
       if (cron_interval_ > 0) {
         gettimeofday(&now, NULL);

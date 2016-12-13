@@ -19,27 +19,17 @@ class BGThread : public Thread {
   explicit BGThread(int full = 100000) :
     Thread::Thread(), 
     full_(full),
+    mu_(),
     rsignal_(&mu_), 
     wsignal_(&mu_) {
-      pthread_mutex_init(&mu_, NULL);
-      pthread_cond_init(&rsignal_, NULL);
-      pthread_cond_init(&wsignal_, NULL);
     }
 
   virtual ~BGThread() {
-    Stop();
-    
-    pthread_cond_destroy(&rsignal_);
-    pthread_cond_destroy(&wsignal_);
-    pthread_mutex_destroy(&mu_);
-  }
-
-  void Stop() {
     if (running()) {
       rsignal_.Signal();
       wsignal_.Signal();
-      JoinThread(thread_id());
-      running_ = false;
+      JoinThread();
+      set_running(false);
     }
   }
 
@@ -57,11 +47,11 @@ class BGThread : public Thread {
   };
 
   typedef std::deque<BGItem> BGQueue;
+  size_t full_;
   slash::Mutex mu_;
   slash::CondVar rsignal_;
   slash::CondVar wsignal_;
   BGQueue queue_;
-  size_t full_;
   virtual void *ThreadMain();
 };
 

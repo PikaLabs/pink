@@ -22,8 +22,12 @@ class Thread
   virtual void CronHandle();
   int cron_interval_;
 
-  bool runing() const {
+  bool running() const {
     return running_.load();
+  }
+
+  void set_running(bool running) {
+    running_.store(running);
   }
 
   pthread_t thread_id() const {
@@ -42,9 +46,9 @@ class Thread
   virtual void *ThreadMain() = 0; 
   virtual int InitHandle();
 
+  std::atomic<bool> running_;
   pthread_t thread_id_;
   std::string thread_name_;
-  std::atomic<bool> running_;
 
   /*
    * No allowed copy and copy assign

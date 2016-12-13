@@ -117,7 +117,7 @@ public:
   }
 
   virtual ~DispatchThread() {
-    running_.store(false);
+    set_running(false);
 
     JoinThread();
 

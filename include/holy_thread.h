@@ -80,7 +80,7 @@ public:
   }
 
   virtual ~HolyThread() {
-    should_exit_ = true;
+    set_running(false);
     JoinThread();
 
     delete(pink_epoll_);
@@ -142,7 +142,7 @@ public:
     char port_buf[32];
     char ip_addr[INET_ADDRSTRLEN] = "";
 
-    while (!should_exit_) {
+    while (running()) {
       if (cron_interval_ > 0) {
         gettimeofday(&now, NULL);
         if (when.tv_sec > now.tv_sec || (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {

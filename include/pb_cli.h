@@ -13,40 +13,23 @@
 #include "include/pink_cli.h"
 
 namespace pink {
-/*
- * pbcli support block client
- * I think block client is enough for a client
- */
+
+// Default PBCli is block IO;
 class PbCli : public PinkCli {
  public:
   PbCli();
   virtual ~PbCli();
 
-  virtual Status Send(void *msg) override;
-  virtual Status Recv(void *msg_res) override;
-
- protected:
-  virtual void BuildWbuf();
-
-  int ReadHeader();
-  int ReadPacket();
-
-  int packet_len_;
-  char *rbuf_;
-  int32_t rbuf_len_;
-  int32_t rbuf_pos_;
-
-  char *wbuf_; /* Write buffer */
-  int32_t wbuf_len_;
-  int32_t wbuf_pos_;
-
-  char *scratch_;
-  google::protobuf::Message *msg_;
-  google::protobuf::Message *msg_res_;
+  virtual Status Send(void *msg_req);
+  virtual Status Recv(void *msg_res);
 
  private:
+  // BuildWbuf need to access rbuf_, wbuf_;
+  char *rbuf_;
+  char *wbuf_;
+
   PbCli(const PbCli&);
-  void operator=(const PbCli&);
+  void operator= (const PbCli&);
 };
 
 }  // namespace pink

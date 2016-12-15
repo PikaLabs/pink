@@ -35,10 +35,10 @@ class RedisCli : public PinkCli {
   static int SerializeCommand(RedisCmdArgsType argv, std::string *cmd);
 
   // msg should have been parsed
-  virtual Status Send(void *msg) override;
+  virtual Status Send(void *msg);
 
   // Read, parse and store the reply
-  virtual Status Recv(void *result = NULL) override;
+  virtual Status Recv(void *result = NULL);
 
   RedisCmdArgsType argv_;   // The parsed result 
 
@@ -50,10 +50,6 @@ class RedisCli : public PinkCli {
   int32_t rbuf_offset_;
   int elements_;    // the elements number of this current reply
   int err_;
-
-//  char *wbuf_;
-//  int32_t wbuf_len_;
-//  int32_t wbuf_pos_;
 
   int GetReply();
   int GetReplyFromReader();
@@ -68,7 +64,6 @@ class RedisCli : public PinkCli {
 
   RedisCli(const RedisCli&);
   void operator=(const RedisCli&);
-
 };
 
 }   // namespace pink

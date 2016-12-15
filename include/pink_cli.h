@@ -8,37 +8,28 @@
 
 #include <string>
 
-#include "include/pink_cli_socket.h"
 #include "include/status.h"
 
 namespace pink {
-
-class CliSocket;
 
 class PinkCli {
  public:
   PinkCli();
   virtual ~PinkCli();
 
-  Status Connect(const std::string &peer_ip, const int peer_port,
-      const std::string& bind_ip = "");
+  Status Connect(const std::string &peer_ip, const int peer_port, const std::string& bind_ip = "");
   Status Close();
-  virtual Status Send(void *msg) = 0;
-  virtual Status Recv(void *msg_res) = 0;
+
+  Status SendRaw(void *buf, size_t count);
+  Status RecvRaw(void *buf, size_t* count);
 
   int fd();
 
-  virtual int set_send_timeout(int send_timeout) {
-    return cli_socket_->set_send_timeout(send_timeout);
-  }
-
-  virtual int set_recv_timeout(int recv_timeout) {
-    return cli_socket_->set_recv_timeout(recv_timeout);
-  }
-
-  virtual void set_connect_timeout(int connect_timeout) {
-    cli_socket_->set_connect_timeout(connect_timeout);
-  }
+  // Set timeout in miliseconds, default send and recv timeout is 0,
+  // default connect timeout is 1000ms
+  int set_send_timeout(int send_timeout);
+  int set_recv_timeout(int recv_timeout);
+  void set_connect_timeout(int connect_timeout);
 
   bool Available() {
     return available_;
@@ -50,7 +41,14 @@ class PinkCli {
   std::string peer_ip_;
   int peer_port_;
 
-  CliSocket *cli_socket_;
+  int send_timeout_;
+  int recv_timeout_;
+  int connect_timeout_;
+
+  bool keep_alive_;
+  bool is_block_;
+
+  int sockfd_;
 };
 
 };  // namespace pink

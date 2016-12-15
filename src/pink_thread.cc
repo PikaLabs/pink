@@ -20,11 +20,7 @@ Thread::~Thread() {
 int Thread::StartThread()
 {
   should_exit_ = false;
-  int ret = InitHandle();
-  if (ret != kSuccess) {
-    return ret;
-  }
-  ret = pthread_create(&thread_id_, NULL, RunThread, (void *)this);
+  int ret = pthread_create(&thread_id_, NULL, RunThread, (void *)this);
   if (ret != 0) {
     return kCreateThreadError;
   }
@@ -48,8 +44,4 @@ void *Thread::RunThread(void *arg)
   return NULL;
 }
 
-int Thread::InitHandle() {
-  return kSuccess;
-}
-
-}
+} // namespace pink

@@ -28,34 +28,8 @@ namespace pink {
 template <typename Conn>
 class WorkerThread : public Thread {
  public:
-  explicit WorkerThread(int cron_interval = 0) :
-    cron_interval_(cron_interval) {
-    /*
-     * install the protobuf handler here
-     */
-    log_info("WorkerThread construct");
-    pthread_rwlock_init(&rwlock_, NULL);
-    pink_epoll_ = new PinkEpoll();
-    int fds[2];
-    if (pipe(fds)) {
-      // LOG(FATAL) << "Can't create notify pipe";
-      log_err("Can't create notify pipe");
-    }
-    notify_receive_fd_ = fds[0];
-    notify_send_fd_ = fds[1];
-    pink_epoll_->PinkAddEvent(notify_receive_fd_, EPOLLIN | EPOLLERR | EPOLLHUP);
-
-  }
-
-  virtual ~WorkerThread() {
-    should_exit_ = true;
-    pthread_join(thread_id(), NULL);
-
-    delete(pink_epoll_);
-  }
-
-  virtual void CronHandle() {
-  }
+  explicit WorkerThread(int cron_interval);
+  virtual ~WorkerThread();
 
   /*
    * The PbItem queue is the fd queue, receive from dispatch thread
@@ -73,8 +47,13 @@ class WorkerThread : public Thread {
   }
   Mutex mutex_;
 
+  /*
+   *  public for external statistics
+   */
   pthread_rwlock_t rwlock_;
   std::map<int, void *> conns_;
+
+  virtual void *ThreadMain() override;
 
  private:
   int cron_interval_;
@@ -89,120 +68,142 @@ class WorkerThread : public Thread {
    */
   PinkEpoll *pink_epoll_;
 
+  void CronHandle() {}
+
   // clean conns
-  void Cleanup() {
-    RWLock l(&rwlock_, true);
-    Conn *in_conn;
-    std::map<int, void *>::iterator iter = conns_.begin();
-    for (; iter != conns_.end(); iter++) {
-         close(iter->first);
-         in_conn = static_cast<Conn *>(iter->second);
-         delete in_conn;
-    }
+  void Cleanup();
+
+};  // class WorkerThread
+
+template <typename Conn>
+WorkerThread<Conn>::WorkerThread(int cron_interval = 0) :
+  cron_interval_(cron_interval) {
+  /*
+   * install the protobuf handler here
+   */
+  log_info("WorkerThread construct");
+  pthread_rwlock_init(&rwlock_, NULL);
+  pink_epoll_ = new PinkEpoll();
+  int fds[2];
+  if (pipe(fds)) {
+    // LOG(FATAL) << "Can't create notify pipe";
+    log_err("Can't create notify pipe");
+  }
+  notify_receive_fd_ = fds[0];
+  notify_send_fd_ = fds[1];
+  pink_epoll_->PinkAddEvent(notify_receive_fd_, EPOLLIN | EPOLLERR | EPOLLHUP);
+}
+
+template <typename Conn>
+WorkerThread<Conn>::~WorkerThread() {
+  should_exit_ = true;
+  pthread_join(thread_id(), NULL);
+  delete(pink_epoll_);
+}
+
+template <typename Conn>
+void *WorkerThread<Conn>::ThreadMain() {
+  int nfds;
+  PinkFiredEvent *pfe = NULL;
+  char bb[1];
+  PinkItem ti;
+  Conn *in_conn = NULL;
+
+  struct timeval when;
+  gettimeofday(&when, NULL);
+  struct timeval now = when;
+
+  when.tv_sec += (cron_interval_ / 1000);
+  when.tv_usec += ((cron_interval_ % 1000 ) * 1000);
+  int timeout = cron_interval_;
+  if (timeout <= 0) {
+    timeout = PINK_CRON_INTERVAL;
   }
 
-  virtual void *ThreadMain() override {
-    int nfds;
-    PinkFiredEvent *pfe = NULL;
-    char bb[1];
-    PinkItem ti;
-    Conn *in_conn = NULL;
+  while (!should_exit_) {
 
-    struct timeval when;
-    gettimeofday(&when, NULL);
-    struct timeval now = when;
-
-    when.tv_sec += (cron_interval_ / 1000);
-    when.tv_usec += ((cron_interval_ % 1000 ) * 1000);
-    int timeout = cron_interval_;
-    if (timeout <= 0) {
-      timeout = PINK_CRON_INTERVAL;
+    if (cron_interval_ > 0) {
+      gettimeofday(&now, NULL);
+      if (when.tv_sec > now.tv_sec || (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
+        timeout = (when.tv_sec - now.tv_sec) * 1000 + (when.tv_usec - now.tv_usec) / 1000;
+      } else {
+        when.tv_sec = now.tv_sec + (cron_interval_ / 1000);
+        when.tv_usec = now.tv_usec + ((cron_interval_ % 1000 ) * 1000);
+        CronHandle();
+        timeout = cron_interval_;
+      }
     }
 
-    while (!should_exit_) {
+    nfds = pink_epoll_->PinkPoll(timeout);
 
-      if (cron_interval_ > 0) {
-        gettimeofday(&now, NULL);
-        if (when.tv_sec > now.tv_sec || (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
-          timeout = (when.tv_sec - now.tv_sec) * 1000 + (when.tv_usec - now.tv_usec) / 1000;
-        } else {
-          when.tv_sec = now.tv_sec + (cron_interval_ / 1000);
-          when.tv_usec = now.tv_usec + ((cron_interval_ % 1000 ) * 1000);
-          CronHandle();
-          timeout = cron_interval_;
-        }
-      }
-
-      nfds = pink_epoll_->PinkPoll(timeout);
-
-      for (int i = 0; i < nfds; i++) {
-        pfe = (pink_epoll_->firedevent()) + i;
-        log_info("pfe->fd_ %d pfe->mask_ %d", pfe->fd, pfe->mask);
-        if (pfe->fd == notify_receive_fd_) {
-          if (pfe->mask & EPOLLIN) {
-            read(notify_receive_fd_, bb, 1);
-            {
-              MutexLock l(&mutex_);
-              ti = conn_queue_.front();
-              conn_queue_.pop();
-            }
-            Conn *tc = new Conn(ti.fd(), ti.ip_port(), this);
-            tc->SetNonblock();
-            {
+    for (int i = 0; i < nfds; i++) {
+      pfe = (pink_epoll_->firedevent()) + i;
+      log_info("pfe->fd_ %d pfe->mask_ %d", pfe->fd, pfe->mask);
+      if (pfe->fd == notify_receive_fd_) {
+        if (pfe->mask & EPOLLIN) {
+          read(notify_receive_fd_, bb, 1);
+          {
+            MutexLock l(&mutex_);
+            ti = conn_queue_.front();
+            conn_queue_.pop();
+          }
+          Conn *tc = new Conn(ti.fd(), ti.ip_port(), this);
+          tc->SetNonblock();
+          {
             RWLock l(&rwlock_, true);
             conns_[ti.fd()] = tc;
-            }
-            pink_epoll_->PinkAddEvent(ti.fd(), EPOLLIN);
-            log_info("receive one fd %d", ti.fd());
+          }
+          pink_epoll_->PinkAddEvent(ti.fd(), EPOLLIN);
+          log_info("receive one fd %d", ti.fd());
+        } else {
+          continue;
+        }
+      } else {
+        in_conn = NULL;
+        int should_close = 0;
+        std::map<int, void *>::iterator iter = conns_.begin();
+        if (pfe == NULL) {
+          continue;
+        }
+        iter = conns_.find(pfe->fd);
+        if (iter == conns_.end()) {
+          pink_epoll_->PinkDelEvent(pfe->fd);
+          continue;
+        }
+
+        if (pfe->mask & EPOLLIN) {
+
+          in_conn = static_cast<Conn *>(iter->second);
+          ReadStatus getRes = in_conn->GetRequest();
+          in_conn->set_last_interaction(now);
+          log_info("now: %d, %d", now.tv_sec, now.tv_usec);
+          log_info("in_conn->is_reply() %d", in_conn->is_reply());
+          if (getRes != kReadAll && getRes != kReadHalf) {
+            // kReadError kReadClose kFullError kParseError
+            should_close = 1;
+          } else if (in_conn->is_reply()) {
+            pink_epoll_->PinkModEvent(pfe->fd, EPOLLIN, EPOLLOUT);
           } else {
             continue;
           }
-        } else {
-          in_conn = NULL;
-          int should_close = 0;
-          std::map<int, void *>::iterator iter = conns_.begin();
-          if (pfe == NULL) {
+        }
+        if (pfe->mask & EPOLLOUT) {
+          in_conn = static_cast<Conn *>(iter->second);
+          log_info("in work thead SendReply before");
+          WriteStatus write_status = in_conn->SendReply();
+          log_info("in work thead SendReply after");
+          if (write_status == kWriteAll) {
+            in_conn->set_is_reply(false);
+            pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLIN);
+          } else if (write_status == kWriteHalf) {
             continue;
+          } else if (write_status == kWriteError) {
+            should_close = 1;
           }
-          iter = conns_.find(pfe->fd);
-          if (iter == conns_.end()) {
-            pink_epoll_->PinkDelEvent(pfe->fd);
-            continue;
-          }
-
-          if (pfe->mask & EPOLLIN) {
-
-            in_conn = static_cast<Conn *>(iter->second);
-            ReadStatus getRes = in_conn->GetRequest();
-            in_conn->set_last_interaction(now);
-            log_info("now: %d, %d", now.tv_sec, now.tv_usec);
-            log_info("in_conn->is_reply() %d", in_conn->is_reply());
-            if (getRes != kReadAll && getRes != kReadHalf) {
-              // kReadError kReadClose kFullError kParseError
-              should_close = 1;
-            } else if (in_conn->is_reply()) {
-              pink_epoll_->PinkModEvent(pfe->fd, EPOLLIN, EPOLLOUT);
-            } else {
-              continue;
-            }
-          }
-          if (pfe->mask & EPOLLOUT) {
-            in_conn = static_cast<Conn *>(iter->second);
-            log_info("in work thead SendReply before");
-            WriteStatus write_status = in_conn->SendReply();
-            log_info("in work thead SendReply after");
-            if (write_status == kWriteAll) {
-              in_conn->set_is_reply(false);
-              pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLIN);
-            } else if (write_status == kWriteHalf) {
-              continue;
-            } else if (write_status == kWriteError) {
-              should_close = 1;
-            }
-          }
-          if ((pfe->mask & EPOLLERR) || (pfe->mask & EPOLLHUP) || should_close) {
-            log_info("close pfe fd here");
-            {
+        }
+        if ((pfe->mask & EPOLLERR) || (pfe->mask & EPOLLHUP) || should_close) {
+          log_info("close pfe fd here");
+          {
             RWLock l(&rwlock_, true);
             pink_epoll_->PinkDelEvent(pfe->fd);
             close(pfe->fd);
@@ -210,17 +211,27 @@ class WorkerThread : public Thread {
             in_conn = NULL;
 
             conns_.erase(pfe->fd);
-            }
           }
         }
       }
     }
-
-    Cleanup();
-    return NULL;
   }
 
-};
+  Cleanup();
+  return NULL;
+}
+
+template <typename Conn>
+void WorkerThread<Conn>::Cleanup() {
+  RWLock l(&rwlock_, true);
+  Conn *in_conn;
+  std::map<int, void *>::iterator iter = conns_.begin();
+  for (; iter != conns_.end(); iter++) {
+    close(iter->first);
+    in_conn = static_cast<Conn *>(iter->second);
+    delete in_conn;
+  }
+}
 
 }  // namespace pink
 

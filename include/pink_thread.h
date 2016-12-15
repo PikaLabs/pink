@@ -16,7 +16,7 @@ class Thread {
  public:
   Thread();
   virtual ~Thread();
-  int StartThread();
+  virtual int StartThread();
   void JoinThread();
 
   std::atomic<bool> should_exit_;
@@ -36,7 +36,6 @@ class Thread {
 
   static void *RunThread(void *arg);
   virtual void *ThreadMain() = 0; 
-  virtual int InitHandle();
 
   pthread_t thread_id_;
   std::string thread_name_;

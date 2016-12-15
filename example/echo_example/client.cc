@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
     fprintf(stderr, "create a new socket failed\n");
     return -1;
   }
-  char buf[kProtoMaxMessage + 4];
+  char buf[pink::kProtoMaxMessage + 4];
   uint32_t host_len, net_len, buf_len;
   int total_bytes_send, total_bytes_recv, num_bytes;
   ::simple_message::SimpleMessage message;

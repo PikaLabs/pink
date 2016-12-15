@@ -13,7 +13,6 @@
 #include <fcntl.h>
 
 #include "include/status.h"
-#include "include/pink_cli_socket.h"
 #include "include/xdebug.h"
 
 namespace pink {

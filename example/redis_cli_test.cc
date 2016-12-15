@@ -6,7 +6,15 @@
 
 using namespace pink;
 
-int main() {
+int main(int argc, char* argv[]) {
+  if (argc < 3) {
+    printf ("Usage: ./redis_cli ip port\n");
+    exit(0);
+  }
+
+  std::string ip(argv[1]);
+  int port = atoi(argv[2]);
+
   std::string str;
   int i = 5;
 
@@ -14,24 +22,26 @@ int main() {
   int ret = RedisCli::SerializeCommand(&str, "HSET %s %d", "key", i);
   printf ("   1. Serialize by va return %d, (%s)\n", ret, str.c_str());
 
-  RedisCmdArgsType argv;
-  argv.push_back("hset");
-  argv.push_back("key");
-  argv.push_back(std::to_string(5));
+  RedisCmdArgsType vec;
+  vec.push_back("hset");
+  vec.push_back("key");
+  vec.push_back(std::to_string(5));
 
-  ret = RedisCli::SerializeCommand(argv, &str);
-  printf ("   2. Serialize by argv return %d, (%s)\n", ret, str.c_str());
+  ret = RedisCli::SerializeCommand(vec, &str);
+  printf ("   2. Serialize by vec return %d, (%s)\n", ret, str.c_str());
 
   RedisCli *rcli = new RedisCli();
   rcli->set_connect_timeout(3000);
 
-  printf ("  Connect with bind_ip(101.199.114.205)\n");
-  Status s = rcli->Connect("127.0.0.1", 7221, "101.199.114.205");
+  // redis v3.2+ protect mode will block other ip
+  //printf ("  Connect with bind_ip(101.199.114.205)\n");
+  //Status s = rcli->Connect(ip, port, "101.199.114.205");
 
+  Status s = rcli->Connect(ip, port, "101.199.114.205");
   // Test connect timeout with a non-routable IP
   //Status s = rcli->Connect("10.255.255.1", 9824);
 
-  printf(" RedisCli Connect return %s\n", s.ToString().c_str());
+  printf(" RedisCli Connect(%s:%d) return %s\n", ip.c_str(), port, s.ToString().c_str());
   if (!s.ok()) {
       printf ("Connect failed, %s\n", s.ToString().c_str());
       exit(-1);

@@ -10,7 +10,6 @@
 #include <stdarg.h>
 
 #include "pink_define.h"
-#include "pink_cli_socket.h"
 #include "xdebug.h"
 
 
@@ -38,23 +37,27 @@ RedisCli::RedisCli()
     rbuf_offset_(0),
     err_(REDIS_OK) {
       rbuf_ = (char *)malloc(sizeof(char) * rbuf_size_);
+      cli_ = new PinkCli;
 }
 
 RedisCli::~RedisCli() {
   free(rbuf_);
+  delete cli_;
 }
 
 // We use passed-in send buffer here
 Status RedisCli::Send(void *msg) {
-  if (!Available()) {
+  if (!cli_->Available()) {
     return Status::IOError("unavailable connection");
   }
   log_info("The Send function");
   Status s;
 
+  // TODO anan use cli_->SendRaw instead
   std::string* storage = reinterpret_cast<std::string *>(msg);
   const char *wbuf = storage->data();
   size_t nleft = storage->size();
+
   int wbuf_pos = 0;
 
   ssize_t nwritten;
@@ -83,7 +86,7 @@ Status RedisCli::Send(void *msg) {
 
 // The result is useless
 Status RedisCli::Recv(void *trival) {
-  if (!Available()) {
+  if (!cli_->Available()) {
     return Status::IOError("unavailable connection");
   }
   log_info("The Recv function");

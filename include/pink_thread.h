@@ -12,15 +12,12 @@
 
 namespace pink {
 
-class Thread
-{
+class Thread {
  public:
-  explicit Thread(int cron_interval = 0);
+  Thread();
   virtual ~Thread();
-  int StartThread();
+  virtual int StartThread();
   int JoinThread();
-  virtual void CronHandle();
-  int cron_interval_;
 
   bool running() const {
     return running_.load();
@@ -44,7 +41,6 @@ class Thread
 
   static void *RunThread(void *arg);
   virtual void *ThreadMain() = 0; 
-  virtual int InitHandle();
 
   std::atomic<bool> running_;
   pthread_t thread_id_;
@@ -57,6 +53,6 @@ class Thread
   void operator=(const Thread&);
 };
 
-}
+}  // namespace pink
 
 #endif

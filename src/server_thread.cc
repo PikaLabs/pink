@@ -29,9 +29,6 @@ ServerThread::ServerThread(const std::set<std::string>& bind_ips,
 }
 
 ServerThread::~ServerThread() {
-  set_running(false);
-  JoinThread();
-
   delete(pink_epoll_);
   for (std::vector<ServerSocket*>::iterator iter = server_sockets_.begin();
        iter != server_sockets_.end();

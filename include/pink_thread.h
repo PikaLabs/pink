@@ -16,6 +16,7 @@ class Thread {
  public:
   Thread();
   virtual ~Thread();
+
   virtual int StartThread();
   int JoinThread();
 
@@ -37,9 +38,10 @@ class Thread {
   void set_thread_name(const std::string &name) {
     thread_name_ = name;
   }
+
  private:
 
-  static void *RunThread(void *arg);
+  static void* RunThread(void* arg);
   virtual void *ThreadMain() = 0; 
 
   std::atomic<bool> running_;

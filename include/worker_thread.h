@@ -53,7 +53,6 @@ class WorkerThread : public Thread {
   pthread_rwlock_t rwlock_;
   std::map<int, void *> conns_;
 
-  virtual void *ThreadMain() override;
 
  private:
   int cron_interval_;
@@ -67,6 +66,8 @@ class WorkerThread : public Thread {
    * The epoll handler
    */
   PinkEpoll *pink_epoll_;
+
+  virtual void *ThreadMain() override;
 
   void CronHandle() {}
 
@@ -96,8 +97,6 @@ WorkerThread<Conn>::WorkerThread(int cron_interval = 0) :
 
 template <typename Conn>
 WorkerThread<Conn>::~WorkerThread() {
-  set_running(true);
-  JoinThread();
   delete(pink_epoll_);
 }
 

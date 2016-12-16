@@ -59,6 +59,7 @@ class ServerThread : public Thread {
 
   virtual int StartThread() override;
 
+
  protected:
   int cron_interval_;
 
@@ -82,7 +83,7 @@ class ServerThread : public Thread {
     return true;
   }
 
-  virtual void *ThreadMain();
+  virtual void *ThreadMain() override;
 
   /*
    * The server connection and event handle

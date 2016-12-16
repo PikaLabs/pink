@@ -32,15 +32,15 @@ class DispatchThread : public ServerThread {
                  int work_num, WorkerThread<T> **worker_thread,
                  int cron_interval);
 
+  virtual ~DispatchThread() {
+  }
+
   int work_num() {
     return work_num_;
   }
 
   WorkerThread<T>** worker_thread() {
     return worker_thread_;
-  }
-
-  virtual ~DispatchThread() {
   }
 
  private:

@@ -58,9 +58,9 @@ int main(int argc, char* argv[]) {
   }
   MyDispatchThread *dispatch_thread = new MyDispatchThread(my_port, my_worker_threads_num, my_worker_threads_ptr, dispatch_cron_interval);
   dispatch_thread->StartThread();
-  dispatch_thread->JoinThread();
   for (int i = 0; i != my_worker_threads_num; i++) {
     delete my_worker_threads_ptr[i];  
   }
   free(my_worker_threads_ptr);
+  delete(dispatch_thread);
 }

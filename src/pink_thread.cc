@@ -16,28 +16,11 @@ Thread::Thread()
 }
 
 Thread::~Thread() {
+  set_running(false);
+  JoinThread();
 }
 
-int Thread::StartThread() {
-  bool expect = false;
-  if (!running_.compare_exchange_strong(expect, true)) {
-    return -1;
-  }
-  int ret = pthread_create(&thread_id_, NULL, RunThread, (void *)this);
-  if (ret != 0) {
-    return kCreateThreadError;
-  }
-  return kSuccess;
-}
-
-int Thread::JoinThread() {
-  if (thread_id_ != 0) {
-    return pthread_join(thread_id_, NULL);
-  }
-  return -1;
-}
-
-void *Thread::RunThread(void *arg) {
+void* Thread::RunThread(void *arg) {
   Thread* thread = reinterpret_cast<Thread*>(arg);
   if (!(thread->thread_name().empty())) {
     SetThreadName(pthread_self(), thread->thread_name());
@@ -45,5 +28,19 @@ void *Thread::RunThread(void *arg) {
   thread->ThreadMain();
   return NULL;
 }
+
+int Thread::StartThread() {
+  printf("start thread\n");
+  bool expect = false;
+  if (!running_.compare_exchange_strong(expect, true)) {
+    return -1;
+  }
+  return pthread_create(&thread_id_, NULL, RunThread, (void *)this);
+}
+
+int Thread::JoinThread() {
+    return pthread_join(thread_id_, NULL);
+}
+
 
 }  // namespace pink

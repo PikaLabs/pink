@@ -7,7 +7,7 @@
 #define PINK_INCLUDE_BG_THREAD_H_
 
 #include <atomic>
-#include <deque>
+#include <queue>
 
 #include "include/pink_thread.h"
 #include "third/slash/output/include/slash_mutex.h"
@@ -28,14 +28,15 @@ class BGThread : public Thread {
     if (running()) {
       rsignal_.Signal();
       wsignal_.Signal();
-      JoinThread();
-      set_running(false);
     }
   }
 
   void Schedule(void (*function)(void*), void* arg);
 
-  void TimeSchedule(void (*function)(void *), void* arg);
+  /*
+   * timeout is in millionsecond
+   */
+  void DelaySchedule(uint64_t timeout, void (*function)(void *), void* arg);
 
  private:
 
@@ -46,13 +47,28 @@ class BGThread : public Thread {
       : function(_function), arg(_arg) {}
   };
 
-  typedef std::deque<BGItem> BGQueue;
+  struct TimerItem {
+    uint64_t exec_time;
+    void (*function)(void *);
+    void* arg;
+    TimerItem(uint64_t _exec_time, void (*_function)(void*), void* _arg) :
+      exec_time(_exec_time),
+      function(_function),
+      arg(_arg) {}
+    bool operator < (const TimerItem& item) const {
+      return exec_time > item.exec_time;
+    }
+  };
+
+
+  std::queue<BGItem> queue_;
+  std::priority_queue<TimerItem> timer_queue_;
+
   size_t full_;
   slash::Mutex mu_;
   slash::CondVar rsignal_;
   slash::CondVar wsignal_;
-  BGQueue queue_;
-  virtual void *ThreadMain();
+  virtual void *ThreadMain() override;
 };
 
 }  // namespace pink

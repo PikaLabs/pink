@@ -13,40 +13,39 @@
 #include "include/pink_cli.h"
 
 namespace pink {
-/*
- * pbcli support block client
- * I think block client is enough for a client
- */
-class PbCli : public PinkCli {
+
+// Default PBCli is block IO;
+class PbCli {
  public:
   PbCli();
   virtual ~PbCli();
 
-  virtual Status Send(void *msg) override;
-  virtual Status Recv(void *msg_res) override;
+  virtual Status Send(void *msg_req);
+  virtual Status Recv(void *msg_res);
 
- protected:
-  virtual void BuildWbuf();
+  // Wrapper of PinkCli
+  int fd();
+  Status Connect(const std::string &peer_ip, const int peer_port, const std::string& bind_ip = "");
+  Status Close();
 
-  int ReadHeader();
-  int ReadPacket();
-
-  int packet_len_;
-  char *rbuf_;
-  int32_t rbuf_len_;
-  int32_t rbuf_pos_;
-
-  char *wbuf_; /* Write buffer */
-  int32_t wbuf_len_;
-  int32_t wbuf_pos_;
-
-  char *scratch_;
-  google::protobuf::Message *msg_;
-  google::protobuf::Message *msg_res_;
+  // Set timeout in miliseconds, default send and recv timeout is 0,
+  // default connect timeout is 1000ms
+  int set_send_timeout(int send_timeout);
+  int set_recv_timeout(int recv_timeout);
+  void set_connect_timeout(int connect_timeout);
+  bool Available() {
+    return cli_->Available();
+  }
 
  private:
+  // BuildWbuf need to access rbuf_, wbuf_;
+  char *rbuf_;
+  char *wbuf_;
+
+  PinkCli* cli_;
+
   PbCli(const PbCli&);
-  void operator=(const PbCli&);
+  void operator= (const PbCli&);
 };
 
 }  // namespace pink

@@ -14,15 +14,10 @@ namespace pink {
 
 typedef std::vector<std::string> RedisCmdArgsType;
 
-class RedisCli : public PinkCli {
+class RedisCli {
  public:
   RedisCli();
   virtual ~RedisCli();
-
-  // We could set miliseconds timeout by 
-  //    int set_send_timeout(int send_timeout)
-  //    int set_recv_timeout(int recv_timeout)
-  //    void set_connect_timeout(int connect_timeout)
 
   // We can serialize redis command by 2 ways:
   // 1. by variable argmuments;
@@ -35,14 +30,43 @@ class RedisCli : public PinkCli {
   static int SerializeCommand(RedisCmdArgsType argv, std::string *cmd);
 
   // msg should have been parsed
-  virtual Status Send(void *msg) override;
+  virtual Status Send(void *msg);
 
   // Read, parse and store the reply
-  virtual Status Recv(void *result = NULL) override;
+  virtual Status Recv(void *result = NULL);
 
   RedisCmdArgsType argv_;   // The parsed result 
 
+
+  // Wrapper of PinkCli
+  int fd() {
+    return cli_->fd();
+  }
+  Status Connect(const std::string &peer_ip, const int peer_port, const std::string& bind_ip = "") {
+    return cli_->Connect(peer_ip, peer_port, bind_ip);
+  }
+  Status Close() {
+    return cli_->Close();
+  }
+
+  // Set timeout in miliseconds, default send and recv timeout is 0,
+  // default connect timeout is 1000ms
+  int set_send_timeout(int send_timeout) {
+    return cli_->set_send_timeout(send_timeout);
+  }
+  int set_recv_timeout(int recv_timeout) {
+    return cli_->set_recv_timeout(recv_timeout);
+  }
+  void set_connect_timeout(int connect_timeout) {
+    cli_->set_connect_timeout(connect_timeout);
+  }
+  bool Available() {
+    return cli_->Available();
+  }
+
  private:
+
+  PinkCli* cli_;
 
   char *rbuf_;
   int32_t rbuf_size_;
@@ -50,10 +74,6 @@ class RedisCli : public PinkCli {
   int32_t rbuf_offset_;
   int elements_;    // the elements number of this current reply
   int err_;
-
-//  char *wbuf_;
-//  int32_t wbuf_len_;
-//  int32_t wbuf_pos_;
 
   int GetReply();
   int GetReplyFromReader();
@@ -68,7 +88,6 @@ class RedisCli : public PinkCli {
 
   RedisCli(const RedisCli&);
   void operator=(const RedisCli&);
-
 };
 
 }   // namespace pink

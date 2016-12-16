@@ -47,7 +47,7 @@ int main() {
   pq.push(TimerItem(4, task, NULL));
 
   while (!pq.empty()) {
-    printf("%lld\n", pq.top().exec_time);
+    printf("%ld\n", pq.top().exec_time);
     pq.pop();
   }
 

@@ -22,7 +22,7 @@ public:
    */
   bool SetNonblock();
 
-  int flags() { 
+  int flags() const { 
     return flags_; 
   };
 

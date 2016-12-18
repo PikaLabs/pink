@@ -20,9 +20,9 @@ PbCli::PbCli() {
 }
 
 PbCli::~PbCli() {
+  delete cli_;
   free(wbuf_);
   free(rbuf_);
-  delete cli_;
 }
 
 // Wrapper of PbCli

@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#include "include/pink_cli.h"
+#include "src/pink_cli.h"
 
 #include <sys/socket.h>
 #include <netinet/in.h>

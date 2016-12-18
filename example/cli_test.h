@@ -4,7 +4,6 @@
 #include "status.h"
 #include "pb_cli.h"
 #include "pink.pb.h"
-#include "pink_cli.h"
 
 #include <google/protobuf/message.h>
 

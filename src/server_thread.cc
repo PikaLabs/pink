@@ -4,7 +4,7 @@
 // of patent rights can be found in the PATENTS file in the same directory.
 
 #include "xdebug.h"
-#include "include/server_thread.h"
+#include "src/server_thread.h"
 
 namespace pink {
 

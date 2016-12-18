@@ -11,9 +11,9 @@
 
 #include <google/protobuf/message.h>
 #include "include/csapp.h"
-#include "include/pink_conn.h"
+#include "src/pink_conn.h"
 #include "include/pink_define.h"
-#include "include/pink_util.h"
+#include "src/pink_util.h"
 #include "include/xdebug.h"
 #include "include/status.h"
 

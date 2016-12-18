@@ -8,7 +8,7 @@
 #include <vector>
 #include <string>
 
-#include "pink_cli.h"
+#include "src/pink_cli.h"
 
 namespace pink {
 

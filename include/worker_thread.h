@@ -16,8 +16,8 @@
 #include <google/protobuf/message.h>
 
 #include "include/pink_thread.h"
-#include "include/pink_item.h"
-#include "include/pink_epoll.h"
+#include "src/pink_item.h"
+#include "src/pink_epoll.h"
 #include "include/pink_mutex.h"
 #include "include/pink_define.h"
 #include "include/csapp.h"

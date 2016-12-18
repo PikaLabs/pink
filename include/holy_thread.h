@@ -11,9 +11,9 @@
 #include <string>
 
 #include "include/xdebug.h"
-#include "include/server_thread.h"
-#include "include/pink_epoll.h"
-#include "include/pink_item.h"
+#include "src/server_thread.h"
+#include "src/pink_epoll.h"
+#include "src/pink_item.h"
 #include "include/pink_mutex.h"
 
 namespace pink {

@@ -6,14 +6,15 @@
 #ifndef PINK_REDIS_CONN_H_
 #define PINK_REDIS_CONN_H_
 
-#include "status.h"
-#include "csapp.h"
-#include "pink_define.h"
-#include "pink_util.h"
-#include "pink_conn.h"
-#include "xdebug.h"
 #include <map>
 #include <vector>
+
+#include "include/status.h"
+#include "include/csapp.h"
+#include "include/pink_define.h"
+#include "src/pink_util.h"
+#include "src/pink_conn.h"
+#include "include/xdebug.h"
 
 namespace pink {
 

@@ -13,8 +13,8 @@
 #include <fcntl.h>
 #include <string.h>
 
-#include "include/pink_socket.h"
-#include "include/pink_util.h"
+#include "src/pink_socket.h"
+#include "src/pink_util.h"
 #include "include/pink_define.h"
 
 namespace pink {

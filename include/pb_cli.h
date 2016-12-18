@@ -10,7 +10,7 @@
 
 #include <google/protobuf/message.h>
 
-#include "include/pink_cli.h"
+#include "src/pink_cli.h"
 
 namespace pink {
 

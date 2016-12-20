@@ -58,9 +58,10 @@ ReadStatus PbConn::GetRequest() {
             cur_pos_ += COMMAND_HEADER_LENGTH;
             connStatus_ = kPacket;
           }
-          log_info("GetRequest kHeader header_len=%u cur_pos=%u rbuf_len=%u remain_packet_len_=%d nread=%d\n", header_len_, cur_pos_, rbuf_len_, remain_packet_len_, nread);
+          log_info("GetRequest kHeader header_len=%u cur_pos=%u rbuf_len=%u remain_packet_len_=%d nread=%d\n", 
+              header_len_, cur_pos_, rbuf_len_, remain_packet_len_, nread);
+          return kReadHalf;
         }
-        break;
       }
       case kPacket: {
         if (header_len_ >= kProtoMaxMessage - COMMAND_HEADER_LENGTH) {
@@ -84,14 +85,14 @@ ReadStatus PbConn::GetRequest() {
             cur_pos_ = rbuf_len_;
             connStatus_ = kComplete;
           }
-          log_info("GetRequest kPacket header_len=%u cur_pos=%u rbuf_len=%u remain_packet_len_=%d nread=%d\n", header_len_, cur_pos_, rbuf_len_, remain_packet_len_, nread);
+          log_info("GetRequest kPacket header_len=%u cur_pos=%u rbuf_len=%u remain_packet_len_=%d nread=%d\n", 
+              header_len_, cur_pos_, rbuf_len_, remain_packet_len_, nread);
+          return kReadHalf;
         }
-        break;
       }
       case kComplete: {
         DealMessage();
         connStatus_ = kHeader;
-
         cur_pos_ = 0;
         rbuf_len_ = 0;
         return kReadAll;

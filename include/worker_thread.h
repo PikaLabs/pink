@@ -20,7 +20,7 @@
 #include "src/pink_epoll.h"
 #include "include/pink_mutex.h"
 #include "include/pink_define.h"
-#include "include/csapp.h"
+#include "src/csapp.h"
 #include "include/xdebug.h"
 
 namespace pink {
@@ -171,7 +171,6 @@ void *WorkerThread<Conn>::ThreadMain() {
         }
 
         if (pfe->mask & EPOLLIN) {
-
           in_conn = static_cast<Conn *>(iter->second);
           ReadStatus getRes = in_conn->GetRequest();
           in_conn->set_last_interaction(now);

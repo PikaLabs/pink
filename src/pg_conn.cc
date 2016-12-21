@@ -178,7 +178,7 @@ ReadStatus PGConn::HandleNormal() {
         AppendCommandComplete();
         return kReadAll;
       } else {
-        Glog("syntax error for Query statement\"" + statement_.substr(0, 30) + "\"");
+        Glog("syntax error for Query statement\"" + statement_ + "\"");
         //AppendErrorResponse();
         return kParseError;
       }
@@ -213,7 +213,7 @@ ReadStatus PGConn::HandleNormal() {
       if (parser_.Parse()) {
         AppendSingleResponse('1'); // ParseComplete
       } else {
-        Glog("syntax error for Parse statement\"" + statement_.substr(0, 30) + "\"");
+        Glog("syntax error for Parse statement\"" + statement_ + "\"");
         parse_error_ = true;
         AppendErrorResponse(ERROR_MSG_PARSE);
       }

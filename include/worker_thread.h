@@ -82,13 +82,11 @@ WorkerThread<Conn>::WorkerThread(int cron_interval = 0) :
   /*
    * install the protobuf handler here
    */
-  log_info("WorkerThread construct");
   pthread_rwlock_init(&rwlock_, NULL);
   pink_epoll_ = new PinkEpoll();
   int fds[2];
   if (pipe(fds)) {
-    // LOG(FATAL) << "Can't create notify pipe";
-    log_err("Can't create notify pipe");
+    exit(-1);
   }
   notify_receive_fd_ = fds[0];
   notify_send_fd_ = fds[1];
@@ -137,7 +135,6 @@ void *WorkerThread<Conn>::ThreadMain() {
 
     for (int i = 0; i < nfds; i++) {
       pfe = (pink_epoll_->firedevent()) + i;
-      log_info("pfe->fd_ %d pfe->mask_ %d", pfe->fd, pfe->mask);
       if (pfe->fd == notify_receive_fd_) {
         if (pfe->mask & EPOLLIN) {
           read(notify_receive_fd_, bb, 1);
@@ -153,7 +150,6 @@ void *WorkerThread<Conn>::ThreadMain() {
             conns_[ti.fd()] = tc;
           }
           pink_epoll_->PinkAddEvent(ti.fd(), EPOLLIN);
-          log_info("receive one fd %d", ti.fd());
         } else {
           continue;
         }
@@ -174,8 +170,6 @@ void *WorkerThread<Conn>::ThreadMain() {
           in_conn = static_cast<Conn *>(iter->second);
           ReadStatus getRes = in_conn->GetRequest();
           in_conn->set_last_interaction(now);
-          log_info("now: %d, %d", now.tv_sec, now.tv_usec);
-          log_info("in_conn->is_reply() %d", in_conn->is_reply());
           if (getRes != kReadAll && getRes != kReadHalf) {
             // kReadError kReadClose kFullError kParseError
             should_close = 1;
@@ -187,9 +181,7 @@ void *WorkerThread<Conn>::ThreadMain() {
         }
         if (pfe->mask & EPOLLOUT) {
           in_conn = static_cast<Conn *>(iter->second);
-          log_info("in work thead SendReply before");
           WriteStatus write_status = in_conn->SendReply();
-          log_info("in work thead SendReply after");
           if (write_status == kWriteAll) {
             in_conn->set_is_reply(false);
             pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLIN);
@@ -200,7 +192,6 @@ void *WorkerThread<Conn>::ThreadMain() {
           }
         }
         if ((pfe->mask & EPOLLERR) || (pfe->mask & EPOLLHUP) || should_close) {
-          log_info("close pfe fd here");
           {
             RWLock l(&rwlock_, true);
             pink_epoll_->PinkDelEvent(pfe->fd);

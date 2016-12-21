@@ -214,7 +214,6 @@ Status PinkCli::RecvRaw(void *buf, size_t *count) {
         return Status::IOError("read error " + std::string(strerror(errno)));
       }
     }
-    log_info("nread %d", nread);
     nleft -= nread;
     pos += nread;
   }

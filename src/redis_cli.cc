@@ -50,7 +50,6 @@ Status RedisCli::Send(void *msg) {
   if (!cli_->Available()) {
     return Status::IOError("unavailable connection");
   }
-  log_info("The Send function");
   Status s;
 
   // TODO anan use cli_->SendRaw instead
@@ -89,7 +88,6 @@ Status RedisCli::Recv(void *trival) {
   if (!cli_->Available()) {
     return Status::IOError("unavailable connection");
   }
-  log_info("The Recv function");
 
   argv_.clear();
   int result = GetReply();
@@ -129,7 +127,6 @@ ssize_t RedisCli::BufferRead() {
       } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
         return REDIS_ETIMEOUT;
       } else {
-        log_info("read error, %s", strerror(errno));
         return REDIS_EREAD;
       }
     } else if (nread == 0) {    // we consider read null an error 

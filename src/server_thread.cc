@@ -109,7 +109,6 @@ void *ServerThread::ThreadMain() {
     nfds = pink_epoll_->PinkPoll(timeout);
     for (int i = 0; i < nfds; i++) {
       pfe = (pink_epoll_->firedevent()) + i;
-      log_info("tfe->fd %d tfe->mask %d", pfe->fd, pfe->mask);
       fd = pfe->fd;
       /*
        * Handle server event
@@ -145,7 +144,6 @@ void *ServerThread::ThreadMain() {
           /*
            * this branch means there is error on the listen fd
            */
-          log_info("close the fd here");
           close(pfe->fd);
           continue;
         }

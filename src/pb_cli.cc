@@ -50,7 +50,6 @@ Status PbCli::Send(void *msg) {
     return Status::IOError("unavailable connection");
   }
 
-  log_info("The Send function");
   google::protobuf::Message *req = reinterpret_cast<google::protobuf::Message *>(msg);
 
   int wbuf_len = req->ByteSize();
@@ -67,7 +66,6 @@ Status PbCli::Recv(void *msg_res) {
     return Status::IOError("unavailable connection");
   }
 
-  log_info("The Recv function");
   google::protobuf::Message *res = reinterpret_cast<google::protobuf::Message *>(msg_res);
 
   // Read Header
@@ -80,7 +78,6 @@ Status PbCli::Recv(void *msg_res) {
   uint32_t integer;
   memcpy((char *)(&integer), rbuf_, sizeof(uint32_t));
   size_t packet_len = ntohl(integer);
-  log_info("packet_len %d", packet_len);
 
   // Read Packet
   s = cli_->RecvRaw((void *)rbuf_, &packet_len);

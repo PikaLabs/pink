@@ -74,9 +74,7 @@ int PinkEpoll::PinkPoll(int timeout) {
     for (int i = 0; i < numevents; i++) {
       int mask = 0;
       firedevent_[i].fd = (events_ + i)->data.fd;
-      /*
-       * log_info("events + i events %d", (events_ + i)->events);
-       */
+
       if ((events_ + i)->events & EPOLLIN) {
         mask |= EPOLLIN;
       }

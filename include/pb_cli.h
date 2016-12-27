@@ -10,7 +10,7 @@
 
 #include <google/protobuf/message.h>
 
-#include "src/pink_socket.h"
+#include "src/cli_socket.h"
 
 namespace pink {
 
@@ -34,7 +34,7 @@ class PbCli {
   int set_recv_timeout(int recv_timeout);
   void set_connect_timeout(int connect_timeout);
   bool Available() {
-    return psocket_->Available();
+    return socket_->Available();
   }
 
  private:
@@ -42,7 +42,7 @@ class PbCli {
   char *rbuf_;
   char *wbuf_;
 
-  PinkSocket* psocket_;
+  CliSocket* socket_;
 
   PbCli(const PbCli&);
   void operator= (const PbCli&);
@@ -50,4 +50,4 @@ class PbCli {
 
 }  // namespace pink
 
-#endif  // INCLUDE_PB_psocket_H_
+#endif  // PINK_INCLUDE_PB_CLI_H_

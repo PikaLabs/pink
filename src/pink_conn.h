@@ -64,7 +64,6 @@ private:
   struct timeval last_interaction_;
   int flags_;
 
-
   /*
    * No allowed copy and copy assign operator
    */

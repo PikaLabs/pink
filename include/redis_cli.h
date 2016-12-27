@@ -9,7 +9,7 @@
 #include <vector>
 #include <string>
 
-#include "src/pink_socket.h"
+#include "src/cli_socket.h"
 
 namespace pink {
 
@@ -39,35 +39,35 @@ class RedisCli {
   RedisCmdArgsType argv_;   // The parsed result 
 
 
-  // Wrapper of PinkSocket
+  // Wrapper of CliSocket
   int fd() {
-    return psocket_->fd();
+    return socket_->fd();
   }
   Status Connect(const std::string &peer_ip, const int peer_port, const std::string& bind_ip = "") {
-    return psocket_->Connect(peer_ip, peer_port, bind_ip);
+    return socket_->Connect(peer_ip, peer_port, bind_ip);
   }
   Status Close() {
-    return psocket_->Close();
+    return socket_->Close();
   }
 
   // Set timeout in miliseconds, default send and recv timeout is 0,
   // default connect timeout is 1000ms
   int set_send_timeout(int send_timeout) {
-    return psocket_->set_send_timeout(send_timeout);
+    return socket_->set_send_timeout(send_timeout);
   }
   int set_recv_timeout(int recv_timeout) {
-    return psocket_->set_recv_timeout(recv_timeout);
+    return socket_->set_recv_timeout(recv_timeout);
   }
   void set_connect_timeout(int connect_timeout) {
-    psocket_->set_connect_timeout(connect_timeout);
+    socket_->set_connect_timeout(connect_timeout);
   }
   bool Available() {
-    return psocket_->Available();
+    return socket_->Available();
   }
 
  private:
 
-  PinkSocket* psocket_;
+  CliSocket* socket_;
 
   char *rbuf_;
   int32_t rbuf_size_;

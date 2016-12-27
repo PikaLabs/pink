@@ -16,37 +16,37 @@ namespace pink {
 PbCli::PbCli() {
   rbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * kProtoMaxMessage));
   wbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * kProtoMaxMessage));
-  psocket_ = new PinkSocket();
+  socket_ = new CliSocket();
 }
 
 PbCli::~PbCli() {
-  delete psocket_;
+  delete socket_;
   free(wbuf_);
   free(rbuf_);
 }
 
 // Wrapper of PbCli
 int PbCli::fd() {
-  return psocket_->fd();
+  return socket_->fd();
 }
 Status PbCli::Connect(const std::string &ip, const int port, const std::string &bind_ip) {
-  return psocket_->Connect(ip, port, bind_ip);
+  return socket_->Connect(ip, port, bind_ip);
 }
 Status PbCli::Close() {
-  return psocket_->Close();
+  return socket_->Close();
 }
 void PbCli::set_connect_timeout(int connect_timeout) {
-  psocket_->set_connect_timeout(connect_timeout);
+  socket_->set_connect_timeout(connect_timeout);
 }
 int PbCli::set_send_timeout(int send_timeout) {
-  return psocket_->set_send_timeout(send_timeout);
+  return socket_->set_send_timeout(send_timeout);
 }
 int PbCli::set_recv_timeout(int recv_timeout) {
-  return psocket_->set_recv_timeout(recv_timeout);
+  return socket_->set_recv_timeout(recv_timeout);
 }
 
 Status PbCli::Send(void *msg) {
-  if (!psocket_->Available()) {
+  if (!socket_->Available()) {
     return Status::IOError("unavailable connection");
   }
 
@@ -58,11 +58,11 @@ Status PbCli::Send(void *msg) {
   memcpy(wbuf_, &len, sizeof(uint32_t));
   wbuf_len += kCommandHeaderLength;
 
-  return psocket_->SendRaw(wbuf_, wbuf_len);
+  return socket_->SendRaw(wbuf_, wbuf_len);
 }
 
 Status PbCli::Recv(void *msg_res) {
-  if (!psocket_->Available()) {
+  if (!socket_->Available()) {
     return Status::IOError("unavailable connection");
   }
 
@@ -70,7 +70,7 @@ Status PbCli::Recv(void *msg_res) {
 
   // Read Header
   size_t read_len = kCommandHeaderLength;
-  Status s = psocket_->RecvRaw((void *)rbuf_, &read_len);
+  Status s = socket_->RecvRaw((void *)rbuf_, &read_len);
   if (!s.ok()) {
     return s;
   }
@@ -80,7 +80,7 @@ Status PbCli::Recv(void *msg_res) {
   size_t packet_len = ntohl(integer);
 
   // Read Packet
-  s = psocket_->RecvRaw((void *)rbuf_, &packet_len);
+  s = socket_->RecvRaw((void *)rbuf_, &packet_len);
   if (!s.ok()) {
     return s;
   }

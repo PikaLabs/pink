@@ -69,8 +69,6 @@ class WorkerThread : public Thread {
 
   virtual void *ThreadMain() override;
 
-  void CronHandle() {}
-
   // clean conns
   void Cleanup();
 
@@ -126,7 +124,6 @@ void *WorkerThread<Conn>::ThreadMain() {
       } else {
         when.tv_sec = now.tv_sec + (cron_interval_ / 1000);
         when.tv_usec = now.tv_usec + ((cron_interval_ % 1000 ) * 1000);
-        CronHandle();
         timeout = cron_interval_;
       }
     }

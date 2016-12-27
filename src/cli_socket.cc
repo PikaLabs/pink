@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#include "src/pink_socket.h"
+#include "src/cli_socket.h"
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -17,7 +17,7 @@
 
 namespace pink {
 
-PinkSocket::PinkSocket()
+CliSocket::CliSocket()
     : available_(false),
       send_timeout_(0),
       recv_timeout_(0),
@@ -26,14 +26,15 @@ PinkSocket::PinkSocket()
       is_block_(true) {
 }
 
-PinkSocket::~PinkSocket() {
+CliSocket::~CliSocket() {
+  Close();
 }
 
-int PinkSocket::fd() {
+int CliSocket::fd() const{
   return sockfd_;
 }
 
-Status PinkSocket::Close() {
+Status CliSocket::Close() {
   if (available_) {
     close(sockfd_);
     available_ = false;
@@ -41,11 +42,11 @@ Status PinkSocket::Close() {
   return Status::OK();
 }
 
-void PinkSocket::set_connect_timeout(int connect_timeout) {
+void CliSocket::set_connect_timeout(int connect_timeout) {
   connect_timeout_ = connect_timeout;
 }
 
-int PinkSocket::set_send_timeout(int send_timeout) {
+int CliSocket::set_send_timeout(int send_timeout) {
   int ret = 0;
   if (send_timeout > 0) {
     send_timeout_ = send_timeout;
@@ -55,7 +56,7 @@ int PinkSocket::set_send_timeout(int send_timeout) {
   return ret;
 }
 
-int PinkSocket::set_recv_timeout(int recv_timeout) {
+int CliSocket::set_recv_timeout(int recv_timeout) {
   int ret = 0;
   if (recv_timeout > 0) {
     recv_timeout_ = recv_timeout;
@@ -65,7 +66,7 @@ int PinkSocket::set_recv_timeout(int recv_timeout) {
   return ret;
 }
 
-Status PinkSocket::Connect(const std::string &ip, const int port, const std::string &bind_ip) {
+Status CliSocket::Connect(const std::string &ip, const int port, const std::string &bind_ip) {
   Status s;
   int rv;
 
@@ -164,7 +165,7 @@ Status PinkSocket::Connect(const std::string &ip, const int port, const std::str
   return s;
 }
 
-Status PinkSocket::SendRaw(void *buf, size_t count) {
+Status CliSocket::SendRaw(void *buf, size_t count) {
   if (!Available()) {
     return Status::IOError("unavailable connection");
   }
@@ -193,7 +194,7 @@ Status PinkSocket::SendRaw(void *buf, size_t count) {
   return Status::OK();
 }
 
-Status PinkSocket::RecvRaw(void *buf, size_t *count) {
+Status CliSocket::RecvRaw(void *buf, size_t *count) {
   if (!Available()) {
     return Status::IOError("unavailable connection");
   }

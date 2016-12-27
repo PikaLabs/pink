@@ -36,22 +36,22 @@ RedisCli::RedisCli()
     rbuf_offset_(0),
     err_(REDIS_OK) {
       rbuf_ = (char *)malloc(sizeof(char) * rbuf_size_);
-      psocket_ = new PinkSocket();
+      socket_ = new CliSocket();
 }
 
 RedisCli::~RedisCli() {
   free(rbuf_);
-  delete psocket_;
+  delete socket_;
 }
 
 // We use passed-in send buffer here
 Status RedisCli::Send(void *msg) {
-  if (!psocket_->Available()) {
+  if (!socket_->Available()) {
     return Status::IOError("unavailable connection");
   }
   Status s;
 
-  // TODO anan use psocket_->SendRaw instead
+  // TODO anan use socket_->SendRaw instead
   std::string* storage = reinterpret_cast<std::string *>(msg);
   const char *wbuf = storage->data();
   size_t nleft = storage->size();
@@ -84,7 +84,7 @@ Status RedisCli::Send(void *msg) {
 
 // The result is useless
 Status RedisCli::Recv(void *trival) {
-  if (!psocket_->Available()) {
+  if (!socket_->Available()) {
     return Status::IOError("unavailable connection");
   }
 

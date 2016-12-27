@@ -56,7 +56,7 @@ class DispatchThread : public ServerThread {
   WorkerThread<T> **worker_thread_;
 
   void CronHandle() override {}
-  bool AccessHandle(std::string& ip) override {
+  virtual bool AccessHandle(std::string& ip) override {
     return true;
   }
 

@@ -3,8 +3,8 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef INCLUDE_PINK_SOCKET_H_
-#define INCLUDE_PINK_SOCKET_H_
+#ifndef PINK_SRC_CLI_SOCKET_H_
+#define PINK_SRC_CLI_SOCKET_H_
 
 #include <string>
 
@@ -12,10 +12,10 @@
 
 namespace pink {
 
-class PinkSocket {
+class CliSocket {
  public:
-  PinkSocket();
-  virtual ~PinkSocket();
+  CliSocket();
+  virtual ~CliSocket();
 
   Status Connect(const std::string &peer_ip, const int peer_port, const std::string& bind_ip = "");
   Status Close();
@@ -53,4 +53,4 @@ class PinkSocket {
 
 };  // namespace pink
 
-#endif  // INCLUDE_PINK_SOCKET_H_
+#endif  // PINK_SRC_CLI_SOCKET_H_

@@ -1,4 +1,4 @@
-// Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
+// Copyright (c) 2015-present, Qihoo, Inc.  All rights reserved.
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
@@ -6,96 +6,51 @@
 #ifndef INCLUDE_PINK_SOCKET_H_
 #define INCLUDE_PINK_SOCKET_H_
 
-#include <netinet/in.h>
-#include <sys/socket.h>
-
 #include <string>
-#include <iostream>
+
+#include "include/status.h"
 
 namespace pink {
 
-class ServerSocket {
+class PinkSocket {
  public:
-  explicit ServerSocket(int port, bool is_block = false);
+  PinkSocket();
+  virtual ~PinkSocket();
 
-  virtual ~ServerSocket();
+  Status Connect(const std::string &peer_ip, const int peer_port, const std::string& bind_ip = "");
+  Status Close();
 
-  /*
-   * Listen to a specific ip addr on a multi eth machine
-   * Return 0 if Listen success, <0 other wise
-   */
-  int Listen(const std::string &bind_ip = std::string());
+  Status SendRaw(void *buf, size_t count);
+  Status RecvRaw(void *buf, size_t* count);
 
-  void Close();
+  int fd() const;
 
-  /*
-   * The get and set functions
-   */
-  void set_port(int port) {
-    port_ = port;
-  }
+  // Set timeout in miliseconds, default send and recv timeout is 0,
+  // default connect timeout is 1000ms
+  int set_send_timeout(int send_timeout);
+  int set_recv_timeout(int recv_timeout);
+  void set_connect_timeout(int connect_timeout);
 
-  int port() {
-    return port_;
-  }
-
-  void set_keep_alive(bool keep_alive) {
-    keep_alive_ = keep_alive;
-  }
-  bool keep_alive() {
-    return keep_alive_;
-  }
-
-  void set_send_timeout(int send_timeout) {
-    send_timeout_ = send_timeout;
-  }
-  int send_timeout() {
-    return send_timeout_;
-  }
-
-  void set_recv_timeout(int recv_timeout) {
-    recv_timeout_ = recv_timeout;
-  }
-  int recv_timeout() {
-    return recv_timeout_;
-  }
-
-  int sockfd() {
-    return sockfd_;
-  }
-  void set_sockfd(int sockfd) {
-    sockfd_ = sockfd;
+  bool Available() {
+    return available_;
   }
 
  private:
-  int SetNonBlock();
+  bool available_;
 
-  /*
-   * The tcp server port and address
-   */
-  int port_;
-  int flags_;
+  std::string peer_ip_;
+  int peer_port_;
+
   int send_timeout_;
   int recv_timeout_;
-  int accept_timeout_;
-  int accept_backlog_;
-  int tcp_send_buffer_;
-  int tcp_recv_buffer_;
+  int connect_timeout_;
+
   bool keep_alive_;
-  bool listening_;
   bool is_block_;
 
-  struct sockaddr_in servaddr_;
   int sockfd_;
-
-  /*
-   * No allowed copy and copy assign operator
-   */
-
-  ServerSocket(const ServerSocket&);
-  void operator=(const ServerSocket&);
 };
 
-}  // namespace pink
+};  // namespace pink
 
 #endif  // INCLUDE_PINK_SOCKET_H_

@@ -2,13 +2,14 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
-#ifndef PINK_REDIS_CLI_H_
-#define PINK_REDIS_CLI_H_
+//
+#ifndef PINK_INCLUDE_REDIS_CLI_H_
+#define PINK_INCLUDE_REDIS_CLI_H_
 
 #include <vector>
 #include <string>
 
-#include "src/pink_cli.h"
+#include "src/pink_socket.h"
 
 namespace pink {
 
@@ -38,35 +39,35 @@ class RedisCli {
   RedisCmdArgsType argv_;   // The parsed result 
 
 
-  // Wrapper of PinkCli
+  // Wrapper of PinkSocket
   int fd() {
-    return cli_->fd();
+    return psocket_->fd();
   }
   Status Connect(const std::string &peer_ip, const int peer_port, const std::string& bind_ip = "") {
-    return cli_->Connect(peer_ip, peer_port, bind_ip);
+    return psocket_->Connect(peer_ip, peer_port, bind_ip);
   }
   Status Close() {
-    return cli_->Close();
+    return psocket_->Close();
   }
 
   // Set timeout in miliseconds, default send and recv timeout is 0,
   // default connect timeout is 1000ms
   int set_send_timeout(int send_timeout) {
-    return cli_->set_send_timeout(send_timeout);
+    return psocket_->set_send_timeout(send_timeout);
   }
   int set_recv_timeout(int recv_timeout) {
-    return cli_->set_recv_timeout(recv_timeout);
+    return psocket_->set_recv_timeout(recv_timeout);
   }
   void set_connect_timeout(int connect_timeout) {
-    cli_->set_connect_timeout(connect_timeout);
+    psocket_->set_connect_timeout(connect_timeout);
   }
   bool Available() {
-    return cli_->Available();
+    return psocket_->Available();
   }
 
  private:
 
-  PinkCli* cli_;
+  PinkSocket* psocket_;
 
   char *rbuf_;
   int32_t rbuf_size_;
@@ -91,4 +92,5 @@ class RedisCli {
 };
 
 }   // namespace pink
-#endif
+
+#endif  // PINK_INCLUDE_REDIS_CLI_H_

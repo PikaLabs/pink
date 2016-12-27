@@ -10,7 +10,7 @@
 
 #include <google/protobuf/message.h>
 
-#include "src/pink_cli.h"
+#include "src/pink_socket.h"
 
 namespace pink {
 
@@ -23,7 +23,7 @@ class PbCli {
   virtual Status Send(void *msg_req);
   virtual Status Recv(void *msg_res);
 
-  // Wrapper of PinkCli
+  // Wrapper of PinkSocket
   int fd();
   Status Connect(const std::string &peer_ip, const int peer_port, const std::string& bind_ip = "");
   Status Close();
@@ -34,7 +34,7 @@ class PbCli {
   int set_recv_timeout(int recv_timeout);
   void set_connect_timeout(int connect_timeout);
   bool Available() {
-    return cli_->Available();
+    return psocket_->Available();
   }
 
  private:
@@ -42,7 +42,7 @@ class PbCli {
   char *rbuf_;
   char *wbuf_;
 
-  PinkCli* cli_;
+  PinkSocket* psocket_;
 
   PbCli(const PbCli&);
   void operator= (const PbCli&);
@@ -50,4 +50,4 @@ class PbCli {
 
 }  // namespace pink
 
-#endif  // INCLUDE_PB_CLI_H_
+#endif  // INCLUDE_PB_psocket_H_

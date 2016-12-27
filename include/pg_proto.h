@@ -174,7 +174,7 @@ class InsertParser {
   std::vector<std::string> attributes_;
   std::string header_;
 
-  bool Parse();
+  bool Parse(std::string &error_info);
   bool NextToken(std::string& token);
   std::string EscapeValues(const std::string& str);
   void EscapeAttribute(const std::string& str);

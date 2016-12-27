@@ -173,12 +173,14 @@ ReadStatus PGConn::HandleNormal() {
       statement_ = std::string(rbuf_ + parse_offset_,  packet_header_.len - parse_offset_);
       parse_offset_ = packet_header_.len;
       parser_.Init(statement_, packet_header_.type);
-      if (parser_.Parse()) {
+      std::string error_info;
+      if (parser_.Parse(error_info)) {
         DealMessage();
         AppendCommandComplete();
         return kReadAll;
       } else {
         Glog("syntax error for Query statement\"" + statement_ + "\"");
+        Glog("syntax error for Parse statement error_info: " + error_info);
         //AppendErrorResponse();
         return kParseError;
       }
@@ -210,10 +212,12 @@ ReadStatus PGConn::HandleNormal() {
       statement_ = std::string(rbuf_ + parse_offset_,  packet_header_.len - parse_offset_);
       parse_offset_ = packet_header_.len;
       parser_.Init(statement_, packet_header_.type);
-      if (parser_.Parse()) {
+      std::string error_info;
+      if (parser_.Parse(error_info)) {
         AppendSingleResponse('1'); // ParseComplete
       } else {
         Glog("syntax error for Parse statement\"" + statement_ + "\"");
+        Glog("syntax error for Parse statement error_info: " + error_info);
         parse_error_ = true;
         AppendErrorResponse(ERROR_MSG_PARSE);
       }

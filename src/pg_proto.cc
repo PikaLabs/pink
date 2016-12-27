@@ -4,6 +4,7 @@
 #include <climits>
 
 #include <stdarg.h>
+#include <sys/time.h>
 
 #include "xdebug.h"
 
@@ -293,8 +294,19 @@ bool InsertParser::NextToken(std::string& token) {
   bool single_quote = false;
   bool double_quote = false;
 
+  // timeout 1s
+  struct timeval before;
+  gettimeofday(&before, NULL);
+
   // we handle quotes simply;
   while (parse_pos_ < len_) {
+    // timeout 1s
+    struct timeval now;
+    gettimeofday(&now, NULL);
+    if (now.tv_sec > before.tv_sec + 1) {
+      return false;
+    }
+
     if (statement_[parse_pos_] == ' ' 
         || statement_[parse_pos_] == '\0') {
       if (!single_quote && !double_quote && !bracket && begin_pos >= 0) {
@@ -328,7 +340,6 @@ bool InsertParser::NextToken(std::string& token) {
         token = statement_.substr(begin_pos, parse_pos_ - begin_pos - 2);
         return true;
       }
-    //} else if (statement_[parse_pos_] == '\0') {
     } else if (begin_pos < 0) {
       begin_pos = parse_pos_;
       if (statement_[parse_pos_] == '\'') { // single quote
@@ -510,7 +521,7 @@ void InsertParser::EscapeAttribute(const std::string& str) {
 //    insert into Table values
 //      (attr1, attr...),
 //      (attr1, att...);
-bool InsertParser::Parse() {
+bool InsertParser::Parse(std::string &error_info) {
   std::string token;
   bool need_parse_header = false;
 
@@ -519,6 +530,7 @@ bool InsertParser::Parse() {
     // PDO will use parametered prepared statements and deallocate statement;
     if (strcasecmp(token.c_str(), "insert") != 0) {
       log_info ("InsertParse: first token=(%s) not insert", token.c_str());
+      error_info = "InsertParse: first token=" + token + " not insert";
       if (!NextToken(token)) {
         return false;
       }
@@ -527,6 +539,7 @@ bool InsertParser::Parse() {
       }
       if (strcasecmp(token.c_str(), "insert") != 0) {
         log_info ("InsertParse: first 2 token=(%s) not insert", token.c_str());
+        error_info = "InsertParse: first token=" + token + " not insert";
         return false;
       }
     }
@@ -556,6 +569,11 @@ bool InsertParser::Parse() {
 
           if (strcasecmp(token.c_str(), "values") == 0) {
             log_info ("InsertParse: 4rd token values=(%s)\n", token.c_str());
+
+            // timeout 1s
+            struct timeval before;
+            gettimeofday(&before, NULL);
+
             while (parse_pos_ < statement_.size()) {
               // We trick here
               // jdbc maybe end without semicolon
@@ -564,12 +582,22 @@ bool InsertParser::Parse() {
               //  return false;
               //}
 
+              // timeout 1s
+              struct timeval now;
+              gettimeofday(&now, NULL);
+              if (now.tv_sec > before.tv_sec + 1) {
+                error_info = "timeout statement: " + statement_;
+                error_info += "\ntimeout values: " + token;
+                return false;
+              }
+
               if (token == ";") {
                 break;
               } else if (token[0] == '(' && (token.size() > 1 && token[token.size() - 1] == ')')) {
                 //rows_.push_back(Escape(token));
                 rows_.push_back(EscapeValues(token.substr(1, token.size() - 2)));
               } else if (token.size() > 0) {
+                error_info = "unknow values: " + token;
                 return false;
               }
             }

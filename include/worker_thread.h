@@ -29,7 +29,7 @@ public:
     /*
      * install the protobuf handler here
      */
-    log_info("WorkerThread construct");
+    // log_info("WorkerThread construct");
     pthread_rwlock_init(&rwlock_, NULL);
     pink_epoll_ = new PinkEpoll();
     int fds[2];
@@ -136,7 +136,7 @@ private:
 
       for (int i = 0; i < nfds; i++) {
         pfe = (pink_epoll_->firedevent()) + i;
-        log_info("pfe->fd_ %d pfe->mask_ %d", pfe->fd_, pfe->mask_);
+        // log_info("pfe->fd_ %d pfe->mask_ %d", pfe->fd_, pfe->mask_);
         if (pfe->fd_ == notify_receive_fd_) {
           if (pfe->mask_ & EPOLLIN) {
             read(notify_receive_fd_, bb, 1);
@@ -152,7 +152,7 @@ private:
             conns_[ti.fd()] = tc;
             }
             pink_epoll_->PinkAddEvent(ti.fd(), EPOLLIN);
-            log_info("receive one fd %d", ti.fd());
+            // log_info("receive one fd %d", ti.fd());
           } else {
             continue;
           }
@@ -174,8 +174,8 @@ private:
             in_conn = static_cast<Conn *>(iter->second);
             ReadStatus getRes = in_conn->GetRequest();
             in_conn->set_last_interaction(now);
-            log_info("now: %d, %d", now.tv_sec, now.tv_usec);
-            log_info("in_conn->is_reply() %d", in_conn->is_reply());
+            // log_info("now: %d, %d", now.tv_sec, now.tv_usec);
+            // log_info("in_conn->is_reply() %d", in_conn->is_reply());
             if (getRes != kReadAll && getRes != kReadHalf) {
               // kReadError kReadClose kFullError kParseError
               should_close = 1;
@@ -187,9 +187,9 @@ private:
           }
           if (pfe->mask_ & EPOLLOUT) {
             in_conn = static_cast<Conn *>(iter->second);
-            log_info("in work thead SendReply before");
+            // log_info("in work thead SendReply before");
             WriteStatus write_status = in_conn->SendReply();
-            log_info("in work thead SendReply after");
+            // log_info("in work thead SendReply after");
             if (write_status == kWriteAll) {
               in_conn->set_is_reply(false);
               pink_epoll_->PinkModEvent(pfe->fd_, 0, EPOLLIN);
@@ -200,7 +200,7 @@ private:
             }
           }
           if ((pfe->mask_  & EPOLLERR) || (pfe->mask_ & EPOLLHUP) || should_close) {
-            log_info("close pfe fd here");
+            // log_info("close pfe fd here");
             {
             RWLock l(&rwlock_, true);
             pink_epoll_->PinkDelEvent(pfe->fd_);

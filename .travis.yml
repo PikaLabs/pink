@@ -14,4 +14,7 @@ compiler:
 
 language: cpp
 
-script: make && make -C example
+script:
+  - make -C third/slash
+  - make
+  - make -C example

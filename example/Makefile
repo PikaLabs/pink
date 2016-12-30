@@ -64,6 +64,9 @@ redis_cli: redis_cli_test.cc
 bg_thread: bg_thread.cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
+pink.pb.cc: pink.proto
+	protoc -I=$(SRC_DIR) --cpp_out=$(SRC_DIR) ./$^
+
 $(OBJS): %.o : %.cc
 	$(CXX) $(CXXFLAGS) -c $< -o $@ $(INCLUDE_PATH) 
 

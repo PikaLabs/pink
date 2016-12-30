@@ -2,17 +2,59 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
-#include "redis_cli.h"
+#include "include/redis_cli.h"
 
 #include <netinet/in.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdarg.h>
 
-#include "pink_define.h"
+#include <string>
+#include <vector>
+
+#include "include/pink_define.h"
+#include "include/pink_cli.h"
 
 
 namespace pink {
+
+class RedisCli : public PinkCli {
+ public:
+  RedisCli();
+  virtual ~RedisCli();
+
+  // msg should have been parsed
+  virtual Status Send(void *msg);
+
+  // Read, parse and store the reply
+  virtual Status Recv(void *result = NULL);
+
+  RedisCmdArgsType argv_;   // The parsed result 
+
+ private:
+
+  char *rbuf_;
+  int32_t rbuf_size_;
+  int32_t rbuf_pos_;
+  int32_t rbuf_offset_;
+  int elements_;    // the elements number of this current reply
+  int err_;
+
+  int GetReply();
+  int GetReplyFromReader();
+
+  int ProcessLineItem();
+  int ProcessBulkItem();
+  int ProcessMultiBulkItem();
+
+  ssize_t BufferRead();
+  char* ReadBytes(unsigned int bytes);
+  char* ReadLine(int *_len);
+
+  // No copyable
+  RedisCli(const RedisCli&);
+  void operator=(const RedisCli&);
+};
 
 enum REDIS_STATUS {
   REDIS_ETIMEOUT = -5,
@@ -36,19 +78,14 @@ RedisCli::RedisCli()
     rbuf_offset_(0),
     err_(REDIS_OK) {
       rbuf_ = (char *)malloc(sizeof(char) * rbuf_size_);
-      socket_ = new CliSocket();
 }
 
 RedisCli::~RedisCli() {
   free(rbuf_);
-  delete socket_;
 }
 
 // We use passed-in send buffer here
 Status RedisCli::Send(void *msg) {
-  if (!socket_->Available()) {
-    return Status::IOError("unavailable connection");
-  }
   Status s;
 
   // TODO anan use socket_->SendRaw instead
@@ -84,9 +121,6 @@ Status RedisCli::Send(void *msg) {
 
 // The result is useless
 Status RedisCli::Recv(void *trival) {
-  if (!socket_->Available()) {
-    return Status::IOError("unavailable connection");
-  }
 
   argv_.clear();
   int result = GetReply();
@@ -569,7 +603,7 @@ int redisFormatCommandArgv(RedisCmdArgsType argv, std::string *cmd) {
   return REDIS_OK;
 }
 
-int RedisCli::SerializeCommand(std::string *cmd, const char *format, ...) {
+extern int SerializeCommand(std::string *cmd, const char *format, ...) {
   va_list ap;
   va_start(ap, format);
   int result = redisvAppendCommand(cmd, format, ap);
@@ -577,7 +611,7 @@ int RedisCli::SerializeCommand(std::string *cmd, const char *format, ...) {
   return result;
 }
 
-int RedisCli::SerializeCommand(RedisCmdArgsType argv, std::string *cmd)  {
+extern int SerializeCommand(RedisCmdArgsType argv, std::string *cmd)  {
   return redisFormatCommandArgv(argv, cmd);
 }
 

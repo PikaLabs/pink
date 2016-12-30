@@ -1,4 +1,5 @@
-#include "redis_cli.h"
+#include "include/pink_cli.h"
+#include "include/redis_cli.h"
 
 #include <stdio.h>
 #include <errno.h>
@@ -19,7 +20,7 @@ int main(int argc, char* argv[]) {
   int i = 5;
 
   printf ("\nTest Serialize\n");
-  int ret = RedisCli::SerializeCommand(&str, "HSET %s %d", "key", i);
+  int ret = SerializeCommand(&str, "HSET %s %d", "key", i);
   printf ("   1. Serialize by va return %d, (%s)\n", ret, str.c_str());
 
   RedisCmdArgsType vec;
@@ -27,10 +28,10 @@ int main(int argc, char* argv[]) {
   vec.push_back("key");
   vec.push_back(std::to_string(5));
 
-  ret = RedisCli::SerializeCommand(vec, &str);
+  ret = SerializeCommand(vec, &str);
   printf ("   2. Serialize by vec return %d, (%s)\n", ret, str.c_str());
 
-  RedisCli *rcli = new RedisCli();
+  PinkCli *rcli = NewRedisCli();
   rcli->set_connect_timeout(3000);
 
   // redis v3.2+ protect mode will block other ip
@@ -72,7 +73,7 @@ int main(int argc, char* argv[]) {
   }
 
   printf ("\nTest Send and Recv Mutli\n");
-  RedisCli::SerializeCommand(&str, "MSET a 1 b 2 c 3 d 4");
+  SerializeCommand(&str, "MSET a 1 b 2 c 3 d 4");
   printf ("Send mset parse (%s)\n", str.c_str());
   s = rcli->Send(&str);
   printf ("Send mset return %s\n", s.ToString().c_str());
@@ -84,7 +85,7 @@ int main(int argc, char* argv[]) {
   }
 
   printf ("\n\nTest Mget case 1: send 1 time, and recv 1 time\n");
-  RedisCli::SerializeCommand(&str, "MGET a  b  c  d ");
+  SerializeCommand(&str, "MGET a  b  c  d ");
   printf ("Send mget parse (%s)\n", str.c_str());
 
   for (int si = 0; si < 2; si++) {
@@ -99,7 +100,7 @@ int main(int argc, char* argv[]) {
   }
 
   printf ("\nTest Mget case 2: send 2 times, then recv 2 times\n");
-  RedisCli::SerializeCommand(&str, "MGET a  b  c  d ");
+  SerializeCommand(&str, "MGET a  b  c  d ");
   printf ("\nSend mget parse (%s)\n", str.c_str());
 
   for (int si = 0; si < 2; si++) {

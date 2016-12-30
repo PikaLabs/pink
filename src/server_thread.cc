@@ -8,6 +8,8 @@
 
 namespace pink {
 
+using slash::Status;
+
 ServerThread::ServerThread(int port, int cron_interval = 0)
   : cron_interval_(cron_interval),
     port_(port) {

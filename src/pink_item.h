@@ -6,7 +6,8 @@
 #ifndef PINK_ITEM_H_
 #define PINK_ITEM_H_
 
-#include "status.h"
+#include "third/slash/include/slash_status.h"
+
 #include "pink_define.h"
 
 namespace pink {

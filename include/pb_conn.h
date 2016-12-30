@@ -10,14 +10,15 @@
 #include <map>
 
 #include <google/protobuf/message.h>
+
+#include "third/slash/include/slash_status.h"
 #include "src/csapp.h"
 #include "src/pink_conn.h"
 #include "include/pink_define.h"
 #include "src/pink_util.h"
-#include "include/xdebug.h"
-#include "include/status.h"
 
 namespace pink {
+using slash::Status;
 
 class PbConn: public PinkConn {
  public:

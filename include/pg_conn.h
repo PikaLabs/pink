@@ -60,6 +60,7 @@ class PGConn: public PinkConn {
  private:
   PacketHeader packet_header_;
 
+  bool skip_statement_;
   bool parse_error_;
   char cancel_key_[32];
 

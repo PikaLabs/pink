@@ -24,6 +24,7 @@ PGConn::PGConn(const int fd, const std::string &ip_port) :
   wbuf_size_(PG_MAX_MESSAGE),
   wbuf_offset_(0),
   write_offset_(0),
+  skip_statement_(false),
   parse_error_(false) {
   rbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * rbuf_size_));
   wbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * wbuf_size_));
@@ -174,7 +175,15 @@ ReadStatus PGConn::HandleNormal() {
       parse_offset_ = packet_header_.len;
       parser_.Init(statement_, packet_header_.type);
       std::string error_info;
-      if (parser_.Parse(error_info)) {
+
+      if (statement_.find("set names") != std::string::npos ||
+          statement_.find("DEALLOCATE") != std::string::npos) {
+        // Deal with "DEALLOCATE" statement
+        // and "set names" statement
+        // for lavavel PDO's last phase.
+        AppendCommandComplete();
+        return kReadAll;
+      } else if (parser_.Parse(error_info)) {
         DealMessage();
         AppendCommandComplete();
         return kReadAll;
@@ -208,12 +217,19 @@ ReadStatus PGConn::HandleNormal() {
     // to buffer packets until sync or flush is sent by client
     //	
     case 'P':	{	// Parse
+      skip_statement_ = false;
       parse_error_ = false;
       statement_ = std::string(rbuf_ + parse_offset_,  packet_header_.len - parse_offset_);
       parse_offset_ = packet_header_.len;
       parser_.Init(statement_, packet_header_.type);
       std::string error_info;
-      if (parser_.Parse(error_info)) {
+
+      // Deal with "set names" statement for some applications.
+      if (statement_.find("set names") != std::string::npos) {
+        AppendSingleResponse('1'); // ParseComplete
+        skip_statement_ = true;
+        return kReadHalf;
+      } else if (parser_.Parse(error_info)) {
         AppendSingleResponse('1'); // ParseComplete
       } else {
         Glog("syntax error for Parse statement\"" + statement_ + "\"");
@@ -224,6 +240,9 @@ ReadStatus PGConn::HandleNormal() {
       return kReadHalf;
     }
     case 'B':	{	// Bind
+      std::string param_statement =
+        std::string(rbuf_ + parse_offset_,  packet_header_.len - parse_offset_);
+      parser_.BindParam(param_statement);
       parse_offset_ = packet_header_.len;
       if (!parse_error_) {
         AppendSingleResponse('2'); // BindComplete
@@ -240,7 +259,9 @@ ReadStatus PGConn::HandleNormal() {
     case 'E':	{	// Execute
       parse_offset_ = packet_header_.len;
       if (!parse_error_) {
-        DealMessage();
+        if (!skip_statement_) {
+          DealMessage();
+        }
         AppendCommandComplete();
       }
       return kReadHalf;

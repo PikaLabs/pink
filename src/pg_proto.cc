@@ -347,6 +347,12 @@ bool InsertParser::NextToken(std::string& token) {
       } else if (statement_[parse_pos_] == '"') {
         double_quote = !double_quote;
       }
+    } else if (statement_[parse_pos_] == '"') {
+      if (double_quote) {
+        parse_pos_++;
+        token = statement_.substr(begin_pos, parse_pos_ - begin_pos);
+        return true;
+      }
     }
 
     parse_pos_++;
@@ -548,7 +554,11 @@ bool InsertParser::Parse(std::string &error_info) {
     if (NextToken(token) && strcasecmp(token.c_str(), "into") == 0) {
       log_info ("InsertParse: 2nd token=(%s)", token.c_str());
       // table_name;
-      if (NextToken(token) && isalnum(token[0])) {
+      if (NextToken(token) && (isalnum(token[0]) || token[0] == '"')) {
+        if (token[0] == '"') {
+          // Trim quote in table string
+          token = token.substr(1, token.size() - 2);
+        }
         // if clinet insert different table, need parse header again.
         if (token != table_)
           need_parse_header = true;
@@ -570,7 +580,7 @@ bool InsertParser::Parse(std::string &error_info) {
           if (strcasecmp(token.c_str(), "values") == 0) {
             log_info ("InsertParse: 4rd token values=(%s)\n", token.c_str());
 
-            // timeout 1s
+            // timeout 5s
             struct timeval before;
             gettimeofday(&before, NULL);
 
@@ -578,14 +588,11 @@ bool InsertParser::Parse(std::string &error_info) {
               // We trick here
               // jdbc maybe end without semicolon
               NextToken(token);
-              //if (!NextToken(token)) {
-              //  return false;
-              //}
 
-              // timeout 1s
+              // timeout 5s
               struct timeval now;
               gettimeofday(&now, NULL);
-              if (now.tv_sec > before.tv_sec + 1) {
+              if (now.tv_sec > before.tv_sec + 5) {
                 error_info = "timeout statement: " + statement_;
                 error_info += "\ntimeout values: " + token;
                 return false;
@@ -594,11 +601,10 @@ bool InsertParser::Parse(std::string &error_info) {
               if (token == ";") {
                 break;
               } else if (token[0] == '(' && (token.size() > 1 && token[token.size() - 1] == ')')) {
-                //rows_.push_back(Escape(token));
                 rows_.push_back(EscapeValues(token.substr(1, token.size() - 2)));
               } else if (token.size() > 0) {
                 error_info = "unknow values: " + token;
-                return false;
+                break;
               }
             }
           } else {
@@ -610,6 +616,98 @@ bool InsertParser::Parse(std::string &error_info) {
     }
   }
   
+  return true;
+}
+
+namespace {
+class ParamBinder {
+ public:
+  ParamBinder(std::vector<std::string> *rows, int attribute_size)
+      : rows_(rows),
+        param_count_(0),
+        row_index_(0),
+        attr_size_(attribute_size) {
+  }
+
+  // Replace '$1, $2, $3, ...' with param
+  // Test in lavavel with pdo driver only.
+  bool Apply(std::string &param) {
+    ++param_count_;
+    if (param_count_ > attr_size_ * rows_->size())
+      return false;
+    std::string placeholder = "$" + std::to_string(param_count_);
+
+    std::string &row = (*rows_)[row_index_];
+    if (param_count_ % attr_size_ == 0)
+      ++row_index_;
+
+    size_t pos = row.find(placeholder);
+    row.replace(pos, placeholder.size(), param);
+
+    return true;
+  }
+ private:
+  std::vector<std::string> *rows_;
+  int param_count_;
+  int row_index_;
+  int attr_size_;
+};
+}
+
+// On Error parse_error_ = true;
+bool InsertParser::BindParam(std::string &statement) {
+  size_t str_count = 0;
+  size_t start_pos = 0;
+
+  // Parse two String
+  for (; start_pos < statement.size(); start_pos++) {
+    if (statement[start_pos] == 0) {
+      ++str_count;
+      if (str_count == 2)
+        break;
+    }
+  }
+  ++start_pos; // Skip '0'
+
+  if (start_pos > statement.size())
+    return false;
+  // int16 and int16[c], number of parameter format codes, useless for now
+  size_t a, b, c;
+  a = (unsigned char)statement[start_pos];
+  b = (unsigned char)statement[start_pos + 1];
+  c = (a << 8) | b;
+  start_pos += (c + 1) * 2;
+
+  if (start_pos > statement.size())
+    return false;
+  // int16, number of parameter values
+  a = (unsigned char)statement[start_pos];
+  b = (unsigned char)statement[start_pos + 1];
+  c = (a << 8) | b;
+  if (attributes_.size() > 0 &&
+      c / attributes_.size() != rows_.size()) {
+    return false;
+  }
+  start_pos += 2;
+
+  if (start_pos > statement.size())
+    return false;
+  // int32 and Byte n
+  ParamBinder binder(&rows_, attributes_.size());
+  size_t n, w, x, y, z;
+  std::string param;
+  for (size_t i = 0; i < c; i++) {
+    n = 0;
+    w = (unsigned char)statement[start_pos];
+    x = (unsigned char)statement[start_pos + 1];
+    y = (unsigned char)statement[start_pos + 2];
+    z = (unsigned char)statement[start_pos + 3];
+    n = (w << 24) | (x << 16) | (y << 8) | z;
+    param.assign(statement.substr(start_pos + 4, n));
+    binder.Apply(param);
+    start_pos += 4 + n;
+  }
+
   return true;
 }
 

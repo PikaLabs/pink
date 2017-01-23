@@ -174,11 +174,11 @@ public:
       for (int i = 0; i < nfds; i++) {
         pfe = (pink_epoll_->firedevent()) + i;
         fd = pfe->fd_;
-        log_info("come fd is %d\n", fd);
+        // log_info("come fd is %d\n", fd);
         if (server_fds_.find(fd) != server_fds_.end()) {
           if (pfe->mask_ & EPOLLIN) {
             connfd = accept(fd, (struct sockaddr *) &cliaddr, &clilen);
-            log_info("Connect fd %d", connfd);
+            // log_info("Connect fd %d", connfd);
             if (connfd == -1) {
               if (errno != EWOULDBLOCK) {
                 continue;

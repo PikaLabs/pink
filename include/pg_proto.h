@@ -17,8 +17,8 @@ namespace pink {
 //
 // PG related
 //
-#define PG_MAX_MESSAGE  102400
-#define PG_MAX_BUF      10240
+#define PG_MAX_MESSAGE  2097152   // 2MB
+#define PG_MAX_BUF      2097152   // 2MB
 
 // old style V2 packet header: 
 //    [ len(4 bytes) | code(4 bytes) ]
@@ -178,6 +178,7 @@ class InsertParser {
   bool NextToken(std::string& token);
   std::string EscapeValues(const std::string& str);
   void EscapeAttribute(const std::string& str);
+  bool BindParam(std::string &param_statement);
 
  private:
   size_t parse_pos_;

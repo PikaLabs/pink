@@ -23,6 +23,24 @@ namespace pink {
 
 class HttpRequest {
  public:
+  // attach in header
+  std::string method;
+  std::string path;
+  std::string version;
+  std::map<std::string, std::string> headers;
+
+  // in header for Get, in content for Post Put Delete
+  std::map<std::string, std::string> query_params;
+  
+  // attach in content
+  std::string content;
+
+  HttpRequest();
+  void Clear();
+  bool ParseHeadFromArray(const char* data, const int size);
+  bool ParseBodyFromArray(const char* data, const int size);
+
+ private:
   enum ParseStatus {
     kHeaderMethod,
     kHeaderPath,
@@ -32,28 +50,10 @@ class HttpRequest {
     kBody
   };
 
-  ParseStatus parseStatus_;
-
-  // attach in header
-  enum Method {
-    GET = 1,
-    POST = 2
-  };
-  std::string method;
-  std::string path;
-  std::string version;
-  std::map<std::string, std::string> headers;
-
-  // attach in content
-  std::map<std::string, std::string> query_params;
-  std::string content;
-
-  HttpRequest();
-  void Clear();
-  bool ParseHeadFromArray(const char* data, const int size);
-
- private:
-  void ParseHeadLine(const char* data, int line_start, int line_end);
+  bool ParseGetUrl();
+  bool ParseHeadLine(const char* data, int line_start,
+    int line_end, ParseStatus* parseStatus);
+  bool ParseParameters(std::string data, std::string::size_type line_start = 0);
 };
 
 class HttpResponse {
@@ -72,32 +72,26 @@ class HttpConn: public PinkConn {
   HttpConn(const int fd, const std::string &ip_port);
   virtual ~HttpConn();
 
-  virtual ReadStatus GetRequest();
-
-  virtual WriteStatus SendReply();
-
-  ConnStatus connStatus_;
-
-  virtual bool HandleGet(class HttpRequest* req, struct HttpResponse* res) = 0;
-  virtual bool HandlePost(class HttpRequest* req, struct HttpResponse* res) = 0;
-  virtual bool DealMessage();
+  virtual ReadStatus GetRequest() override;
+  virtual WriteStatus SendReply() override;
+  bool BuildResponseBuf();
 
  private:
-  bool BuildRequestContent();
+  virtual slash::Status DealMessage(class HttpRequest* req,
+      struct HttpResponse* res) = 0;
+
   bool BuildRequestHeader();
-  bool BuildResponseBuf();
-  void AddToHeader(ssize_t nread);
+  bool BuildRequestBody();
+  void HandleMessage();
 
+  ConnStatus conn_status_;
   char* rbuf_;
-  uint32_t header_len_;
-  uint32_t rbuf_len_;  // length we read in
-  uint32_t rbuf_size_;  // size we allocate
-  uint32_t remain_packet_len_;
-
+  uint32_t rbuf_pos_;
   char* wbuf_;
   uint32_t wbuf_len_;  // length we wanna write out
-  uint32_t wbuf_size_;  // size we allocate
   uint32_t wbuf_pos_;
+  uint32_t header_len_;
+  int64_t remain_packet_len_;
 
   HttpRequest* request_;
   HttpResponse* response_;

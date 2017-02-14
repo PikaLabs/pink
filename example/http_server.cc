@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 #include <string>
+#include "slash_status.h"
 #include "pink_thread.h"
 #include "worker_thread.h"
 #include "dispatch_thread.h"
@@ -13,26 +14,28 @@ class MyHttpConn : public pink::HttpConn {
       pink::WorkerThread<MyHttpConn>* worker) :
     HttpConn(fd, ip_port) {
   }
-  virtual bool HandleGet(pink::HttpRequest* req, pink::HttpResponse* res) {
+  virtual slash::Status DealMessage(pink::HttpRequest* req, pink::HttpResponse* res) {
     std::cout << "handle get"<< std::endl;
+    std::cout << " + method: " << req->method << std::endl;
+    std::cout << " + path: " << req->path << std::endl;
+    std::cout << " + version: " << req->version << std::endl;
+    std::cout << " + content: " << req->version << std::endl;
+    std::cout << " + headers: " << std::endl;
+    for (auto h : req->headers) {
+      std::cout << "   + " << h.first << ":" << h.second << std::endl;
+    }
+    std::cout << " + query_params: " << std::endl;
+    for (auto q : req->query_params) {
+      std::cout << "   + " << q.first << ":" << q.second << std::endl;
+    }
     res->content.append("HTTP/1.1 200 OK\r\n");
     if (req->path == std::string("/country")) {
       res->content.append("Content-Length:7");
       res->content.append("\r\n\r\n");
       res->content.append("china\r\n");
-      return true;
+      return slash::Status::OK();
     }
-    return true;
-  }
-
-  virtual bool HandlePost(pink::HttpRequest* req, pink::HttpResponse* res) {
-    if (req->path == std::string("/name")) {
-      res->content.append("receive post: \"name="+
-          req->query_params["name"] + "\"\n");
-      return true;
-    }
-    res->content.append("this page does not exist");
-    return true;
+    return slash::Status::OK();
   }
 };
 

@@ -5,8 +5,8 @@ else
 	CXXFLAGS = -O2 -pipe -fPIC -W -Wwrite-strings -Wpointer-arith -Wreorder -Wswitch -Wsign-promo -Wredundant-decls -Wformat -Wall -D_GNU_SOURCE -D__STDC_FORMAT_MACROS -std=c++11 -Wno-unused-variable -Wno-maybe-uninitialized -Wno-unused-parameter
 	# CXXFLAGS = -Wall -W -DDEBUG -g -O0 -D__XDEBUG__ 
 endif
-OBJECT = pink holy pika pika_holy pcli redis_cli bg_thread http_server
-# OBJECT = pcli pink
+OBJECT = pink holy pika pika_holy bg_thread http_server
+# OBJECT = pink
 
 SRC_DIR = ./
 
@@ -23,9 +23,10 @@ LIBS = -lpink \
 
 INCLUDE_PATH = -I../output/ \
 							 -I../output/include/ \
+							 -I../third/slash/include/ \
 							 -I../
 
-.PHONY: all clean version pcli redis_cli
+.PHONY: all clean version
 
 
 BASE_BOJS := $(wildcard $(SRC_DIR)/*.cc)

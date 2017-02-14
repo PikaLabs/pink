@@ -130,7 +130,7 @@ bool HttpRequest::ParseHeadFromArray(const char* data, const int size) {
   int line_end = 0;
   ParseStatus parseStatus = kHeaderMethod;
   while (remain_size > 4) {
-    line_end += find_lf(data + line_start, remain_size);
+    line_end += find_lf(data + line_start, remain_size) + 1;
     if (line_end < line_start) {
       return false;
     }

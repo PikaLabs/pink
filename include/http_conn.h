@@ -77,8 +77,8 @@ class HttpConn: public PinkConn {
   bool BuildResponseBuf();
 
  private:
-  virtual void DealMessage(class HttpRequest* req,
-      struct HttpResponse* res) = 0;
+  virtual void DealMessage(const HttpRequest* req,
+      HttpResponse* res) = 0;
 
   bool BuildRequestHeader();
   bool BuildRequestBody();

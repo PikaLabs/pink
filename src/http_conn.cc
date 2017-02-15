@@ -105,17 +105,25 @@ bool HttpRequest::ParseGetUrl() {
 bool HttpRequest::ParseParameters(const std::string data,
     size_t line_start) {
   size_t pre = line_start, mid, end;
-  while ((mid = data.find('=', pre)) != std::string::npos) {
+  while (pre < data.size()) {
+    mid = data.find('=', pre);
+    if (mid == std::string::npos) {
+      mid = data.size();
+    }
     end = data.find('&', pre);
-    if (end != std::string::npos && end <= pre) {
-      // empty value
-      return false;
-    } else if (end == std::string::npos) {
+    if (end == std::string::npos) {
       end = data.size();
     }
-    query_params[data.substr(pre, mid - pre)]
-      = data.substr(mid + 1, end - mid - 1);
-    pre = end + 1;
+    if (end <= mid) {
+      // empty value
+      query_params[data.substr(pre, end - pre)]
+        = std::string();
+      pre = end + 1;
+    } else {
+      query_params[data.substr(pre, mid - pre)]
+        = data.substr(mid + 1, end - mid - 1);
+      pre = end + 1;
+    }
   }
   return true;
 }
@@ -216,6 +224,10 @@ bool HttpConn::BuildRequestHeader() {
     slash::string2l(iter->second.data(), iter->second.size(),
         static_cast<long*>(&remain_packet_len_));
   }
+
+  if (rbuf_pos_ > header_len_) {
+    remain_packet_len_ -= rbuf_pos_ - header_len_;
+  }
   return true;
 }
 
@@ -237,7 +249,11 @@ ReadStatus HttpConn::GetRequest() {
     switch (conn_status_) {
       case kHeader: {
         nread = read(fd(), rbuf_ + rbuf_pos_, kHttpMaxHeader - rbuf_pos_);
-        if (nread > 0) {
+        if (nread == -1 && errno == EAGAIN) {
+          return kReadHalf;
+        } else if (nread <= 0) {
+          return kReadClose;
+        } else {
           rbuf_pos_ += nread;
           rbuf_[rbuf_pos_] = '\0'; // So that strstr will not parse the expire char
           char *sep_pos = strstr(rbuf_, "\r\n\r\n");
@@ -253,22 +269,24 @@ ReadStatus HttpConn::GetRequest() {
         break;
       }
       case kPacket: {
-        if (remain_packet_len_ <= 0) {
-          conn_status_ = kComplete;
-          break;
-        }
         if (remain_packet_len_ > kHttpMaxMessage - rbuf_pos_) {
           // message too long
           return kReadError;
         }
-        nread = read(fd(), rbuf_ + rbuf_pos_, remain_packet_len_);
-        if (nread > 0) {
-          rbuf_pos_ += nread;
-          remain_packet_len_ -= nread;
-          if (remain_packet_len_ <= 0) {
-            BuildRequestBody();
-            conn_status_ = kComplete;
+        if (remain_packet_len_ > 0) {
+          nread = read(fd(), rbuf_ + rbuf_pos_, remain_packet_len_);
+          if (nread == -1 && errno == EAGAIN) {
+            return kReadHalf;
+          } else if (nread <= 0) {
+            return kReadClose;
+          } else {
+            rbuf_pos_ += nread;
+            remain_packet_len_ -= nread;
           }
+        }
+        if (remain_packet_len_ <= 0) {
+          BuildRequestBody();
+          conn_status_ = kComplete;
         }
         break;
       }
@@ -281,14 +299,6 @@ ReadStatus HttpConn::GetRequest() {
       default: {
         return kReadError;
       }
-    }
-    if (nread == -1) {
-      if (errno == EAGAIN) {
-        return kReadHalf;
-      }
-      return kReadError;
-    } else if (nread == 0) {
-      return kReadClose;
     }
     // else continue
   }

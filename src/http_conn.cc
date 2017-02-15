@@ -16,13 +16,12 @@
 
 namespace pink {
 
-static const uint32_t kHttpMaxMessage = 1024 * 100;
-static const uint32_t kHttpMaxHeader = 1024;
+static const uint32_t kHttpMaxMessage = 1024 * 1024 * 8;
+static const uint32_t kHttpMaxHeader = 1024 * 64;
 
 HttpRequest::HttpRequest():
   method("GET"),
-  path("/index"),
-  content() {
+  path("/index") {
 }
 
 inline int find_lf(const char* data, int size) {
@@ -90,11 +89,11 @@ bool HttpRequest::ParseHeadLine(const char* data, int line_start,
 }
 
 bool HttpRequest::ParseGetUrl() {
-  std::string::size_type n = path.find('?');
+  size_t n = path.find('?');
   if (n == std::string::npos) {
     return true; // no parameter
   }
-  if (!ParseParameters(path, n)) {
+  if (!ParseParameters(path, n + 1)) {
     return false;
   }
   path.resize(n);
@@ -103,18 +102,20 @@ bool HttpRequest::ParseGetUrl() {
 
 // Parse query parameter from GET url or POST body
 // format: key1=value1&key2=value2&key3=value3
-bool HttpRequest::ParseParameters(std::string data,
-    std::string::size_type line_start) {
-  std::string::size_type n = line_start, pre = n, mid = pre;
-  while ((n = data.find('&', n)) != std::string::npos) {
-    mid = data.find('=', pre);
-    if (mid == std::string::npos) {
-      // find '&' but no para
+bool HttpRequest::ParseParameters(const std::string data,
+    size_t line_start) {
+  size_t pre = line_start, mid, end;
+  while ((mid = data.find('=', pre)) != std::string::npos) {
+    end = data.find('&', pre);
+    if (end != std::string::npos && end <= pre) {
+      // empty value
       return false;
+    } else if (end == std::string::npos) {
+      end = data.size();
     }
     query_params[data.substr(pre, mid - pre)]
-      = data.substr(mid + 1, n - mid - 1);
-    pre = n;
+      = data.substr(mid + 1, end - mid - 1);
+    pre = end + 1;
   }
   return true;
 }
@@ -225,10 +226,7 @@ bool HttpConn::BuildRequestBody() {
 
 void HttpConn::HandleMessage() {
   response_->Clear();
-  slash::Status s = DealMessage(request_, response_);
-  if (!s.ok()) {
-    // TODO wangkang-xy build error response
-  }
+  DealMessage(request_, response_);
   set_is_reply(true);
   BuildResponseBuf();
 }

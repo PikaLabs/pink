@@ -14,7 +14,7 @@ class MyHttpConn : public pink::HttpConn {
       pink::WorkerThread<MyHttpConn>* worker) :
     HttpConn(fd, ip_port) {
   }
-  virtual slash::Status DealMessage(pink::HttpRequest* req, pink::HttpResponse* res) {
+  virtual void DealMessage(pink::HttpRequest* req, pink::HttpResponse* res) {
     std::cout << "handle get"<< std::endl;
     std::cout << " + method: " << req->method << std::endl;
     std::cout << " + path: " << req->path << std::endl;
@@ -33,9 +33,7 @@ class MyHttpConn : public pink::HttpConn {
       res->content.append("Content-Length:7");
       res->content.append("\r\n\r\n");
       res->content.append("china\r\n");
-      return slash::Status::OK();
     }
-    return slash::Status::OK();
   }
 };
 

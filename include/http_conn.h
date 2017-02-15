@@ -53,7 +53,7 @@ class HttpRequest {
   bool ParseGetUrl();
   bool ParseHeadLine(const char* data, int line_start,
     int line_end, ParseStatus* parseStatus);
-  bool ParseParameters(std::string data, std::string::size_type line_start = 0);
+  bool ParseParameters(const std::string data, size_t line_start = 0);
 };
 
 class HttpResponse {
@@ -77,7 +77,7 @@ class HttpConn: public PinkConn {
   bool BuildResponseBuf();
 
  private:
-  virtual slash::Status DealMessage(class HttpRequest* req,
+  virtual void DealMessage(class HttpRequest* req,
       struct HttpResponse* res) = 0;
 
   bool BuildRequestHeader();

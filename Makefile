@@ -8,24 +8,27 @@ endif
 
 OBJECT = pink
 SRC_DIR = ./src
-THIRD_PATH = ./third/
+THIRD_PATH = ./third
 OUTPUT = ./output
 
 
 INCLUDE_PATH = -I./ \
 							 -I./include/ \
 							 -I./src/ \
+							 -I$(THIRD_PATH)/slash/include
 
 LIB_PATH = -L./ \
+					 -L$(THIRD_PATH)/slash/output/lib
 
 
-LIBS = -lpthread \
+LIBS = -lslash \
+			 -lpthread \
 			 -lprotobuf
 
 LIBRARY = libpink.a
 
 
-.PHONY: all clean
+.PHONY: all clean distclean
 
 
 BASE_OBJS := $(wildcard $(SRC_DIR)/*.cc)
@@ -33,28 +36,33 @@ BASE_OBJS += $(wildcard $(SRC_DIR)/*.c)
 BASE_OBJS += $(wildcard $(SRC_DIR)/*.cpp)
 OBJS = $(patsubst %.cc,%.o,$(BASE_OBJS))
 
+SLASH = $(THIRD_PATH)/slash/output/lib/libslash.a
 
 all: $(LIBRARY)
-	@echo "Success, go, go, go..."
-
-$(LIBRARY): $(OBJS)
 	rm -rf $(OUTPUT)
 	mkdir $(OUTPUT)
 	mkdir $(OUTPUT)/include
 	mkdir $(OUTPUT)/lib
-	rm -rf $@
-	ar -rcs $@ $(OBJS)
+	rm -rf $(LIBRARY)
+	ar -rcs $(LIBRARY) $(OBJS)
 	cp -r ./include $(OUTPUT)/
-	mv $@ $(OUTPUT)/lib/
+	mv $(LIBRARY) $(OUTPUT)/lib/
+	@echo "Success, go, go, go..."
 
-$(OBJECT): $(OBJS)
+$(LIBRARY): $(SLASH) $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) -Wl,-Bdynamic $(LIBS)
 
 $(OBJS): %.o : %.cc
 	$(CXX) $(CXXFLAGS) -c $< -o $@ $(INCLUDE_PATH) 
+
+$(SLASH):
+	make -C $(THIRD_PATH)/slash/
 
 clean: 
 	make clean -C example
 	rm -rf $(SRC_DIR)/*.o
 	rm -rf $(OUTPUT)/*
 	rm -rf $(OUTPUT)
+
+distclean: clean
+	make -C $(THIRD_PATH)/slash/ clean

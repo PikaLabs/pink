@@ -96,7 +96,7 @@ template <typename T>
 DispatchThread<T>::DispatchThread(const std::set<std::string>& ips, int port,
                                   int work_num, WorkerThread<T> **worker_thread,
                                   int cron_interval = 0) :
-  ServerThread::ServerThread(ips, cron_interval),
+  ServerThread::ServerThread(ips, port, cron_interval),
   last_thread_(0),
   work_num_(work_num),
   worker_thread_(worker_thread) {

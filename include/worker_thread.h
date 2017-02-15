@@ -28,7 +28,7 @@ namespace pink {
 template <typename Conn>
 class WorkerThread : public Thread {
  public:
-  explicit WorkerThread(int cron_interval);
+  explicit WorkerThread(int cron_interval = 0);
   virtual ~WorkerThread();
 
   /*
@@ -75,7 +75,7 @@ class WorkerThread : public Thread {
 };  // class WorkerThread
 
 template <typename Conn>
-WorkerThread<Conn>::WorkerThread(int cron_interval = 0) :
+WorkerThread<Conn>::WorkerThread(int cron_interval) :
   cron_interval_(cron_interval) {
   /*
    * install the protobuf handler here

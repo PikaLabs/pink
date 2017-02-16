@@ -40,26 +40,25 @@ SLASH = $(THIRD_PATH)/slash/output/lib/libslash.a
 
 all: $(LIBRARY)
 	rm -rf $(OUTPUT)
-	mkdir $(OUTPUT)
-	mkdir $(OUTPUT)/include
-	mkdir $(OUTPUT)/lib
-	rm -rf $(LIBRARY)
-	ar -rcs $(LIBRARY) $(OBJS)
+	mkdir -p $(OUTPUT)/include
+	mkdir -p $(OUTPUT)/lib
 	cp -r ./include $(OUTPUT)/
 	mv $(LIBRARY) $(OUTPUT)/lib/
 	@echo "Success, go, go, go..."
 
 $(LIBRARY): $(SLASH) $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) -Wl,-Bdynamic $(LIBS)
+	rm -rf $(LIBRARY)
+	ar -rcs $(LIBRARY) $(OBJS)
 
 $(OBJS): %.o : %.cc
 	$(CXX) $(CXXFLAGS) -c $< -o $@ $(INCLUDE_PATH) 
 
 $(SLASH):
-	make -C $(THIRD_PATH)/slash/
+	make -C $(THIRD_PATH)/slash/ __PERF=$(__PERF)
 
 clean: 
 	make clean -C example
+	make clean -C $(THIRD_PATH)/slash
 	rm -rf $(SRC_DIR)/*.o
 	rm -rf $(OUTPUT)/*
 	rm -rf $(OUTPUT)

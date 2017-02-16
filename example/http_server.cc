@@ -14,7 +14,7 @@ class MyHttpConn : public pink::HttpConn {
       pink::WorkerThread<MyHttpConn>* worker) :
     HttpConn(fd, ip_port) {
   }
-  virtual void DealMessage(pink::HttpRequest* req, pink::HttpResponse* res) {
+  virtual void DealMessage(const pink::HttpRequest* req, pink::HttpResponse* res) {
     std::cout << "handle get"<< std::endl;
     std::cout << " + method: " << req->method << std::endl;
     std::cout << " + path: " << req->path << std::endl;

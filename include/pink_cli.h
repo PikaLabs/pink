@@ -10,7 +10,7 @@ namespace pink {
 class PinkCli {
  public:
   PinkCli();
-  ~PinkCli();
+  virtual ~PinkCli();
 
   Status Connect(const std::string &peer_ip, const int peer_port, 
       const std::string& bind_ip = "");

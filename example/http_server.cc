@@ -29,9 +29,8 @@ class MyHttpConn : public pink::HttpConn {
       std::cout << "   + " << q.first << ":" << q.second << std::endl;
     }
 
-    res->status_code = 200;
-    res->reason_phrase = "OK";
-    res->body = "china";
+    res->SetStatusCode(200);
+    res->SetBody("china");
   }
 };
 

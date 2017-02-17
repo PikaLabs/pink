@@ -175,10 +175,10 @@ void HttpRequest::Clear() {
 }
 
 void HttpResponse::Clear() {
-  status_code = 0;
-  reason_phrase.clear();
-  headers.clear();
-  body.clear();
+  status_code_ = 0;
+  reason_phrase_.clear();
+  headers_.clear();
+  body_.clear();
 }
 
 uint32_t HttpResponse::SerializeToArray(char* data, size_t size) {
@@ -188,14 +188,14 @@ uint32_t HttpResponse::SerializeToArray(char* data, size_t size) {
 
   // Serialize statues line
   ret = snprintf(data, size, "HTTP/1.1 %d %s\r\n",
-                 status_code, reason_phrase.c_str());
+                 status_code_, reason_phrase_.c_str());
   serial_size += ret;
   if (serial_size == size)
     return serial_size;
 
   // Serialize header
-  headers["Content-Length"] = std::to_string(body.size());
-  for (auto &line : headers) {
+  SetHeaders("Content-Length", body_.size());
+  for (auto &line : headers_) {
     ret = snprintf(data + serial_size, size - serial_size, "%s: %s\r\n",
                    line.first.c_str(), line.second.c_str());
     serial_size += ret;
@@ -205,10 +205,27 @@ uint32_t HttpResponse::SerializeToArray(char* data, size_t size) {
 
   // Serialize body
   ret = snprintf(data + serial_size, size - serial_size, "\r\n%s",
-                 body.c_str());
+                 body_.c_str());
   serial_size += ret;
 
   return serial_size;
+}
+
+void HttpResponse::SetStatusCode(int code) {
+  status_code_ = code;
+  if (code < 200) {
+    assert(code >= 100 && code <= 102);
+    reason_phrase_.assign(message_phrase[code - 100]);
+  } else if (code < 300) {
+    assert(code >= 200 && code <= 207);
+    reason_phrase_.assign(success_phrase[code - 200]);
+  } else if (code < 500) {
+    assert(code >= 400&& code <= 409);
+    reason_phrase_.assign(request_error[code - 400]);
+  } else {
+    assert(code >= 500 && code <= 509);
+    reason_phrase_.assign(server_error[code - 500]);
+  }
 }
 
 HttpConn::HttpConn(const int fd, const std::string &ip_port) :

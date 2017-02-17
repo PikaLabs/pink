@@ -139,10 +139,11 @@ class HttpConn: public PinkConn {
   virtual WriteStatus SendReply() override;
   bool BuildResponseBuf();
 
+
+ private:
   virtual void DealMessage(const HttpRequest* req,
       HttpResponse* res) = 0;
 
- private:
   bool BuildRequestHeader();
   bool BuildRequestBody();
   void HandleMessage();

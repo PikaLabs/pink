@@ -58,13 +58,16 @@ class HttpRequest {
 
 class HttpResponse {
  public:
-  std::string content;
+  int status_code;
+  std::string reason_phrase;
+  std::map<std::string, std::string> headers;
+  std::string body;
 
   HttpResponse():
-    content() {
+    status_code(0) {
   }
   void Clear();
-  uint32_t SerializeToArray(void* data, const int size) const;
+  uint32_t SerializeToArray(char* data, size_t size);
 };
 
 class HttpConn: public PinkConn {

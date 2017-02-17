@@ -19,7 +19,7 @@ class MyHttpConn : public pink::HttpConn {
     std::cout << " + method: " << req->method << std::endl;
     std::cout << " + path: " << req->path << std::endl;
     std::cout << " + version: " << req->version << std::endl;
-    std::cout << " + content: " << req->version << std::endl;
+    std::cout << " + content: " << req->content<< std::endl;
     std::cout << " + headers: " << std::endl;
     for (auto h : req->headers) {
       std::cout << "   + " << h.first << ":" << h.second << std::endl;
@@ -28,12 +28,10 @@ class MyHttpConn : public pink::HttpConn {
     for (auto q : req->query_params) {
       std::cout << "   + " << q.first << ":" << q.second << std::endl;
     }
-    res->content.append("HTTP/1.1 200 OK\r\n");
-    if (req->path == std::string("/country")) {
-      res->content.append("Content-Length:7");
-      res->content.append("\r\n\r\n");
-      res->content.append("china\r\n");
-    }
+
+    res->status_code = 200;
+    res->reason_phrase = "OK";
+    res->body = "china";
   }
 };
 

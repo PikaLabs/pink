@@ -5,6 +5,7 @@
 #include "http_conn.h"
 #include <stdlib.h>
 #include <limits.h>
+#include <stdio.h>
 
 #include <string>
 #include <algorithm>
@@ -174,12 +175,40 @@ void HttpRequest::Clear() {
 }
 
 void HttpResponse::Clear() {
-  content.clear();
+  status_code = 0;
+  reason_phrase.clear();
+  headers.clear();
+  body.clear();
 }
 
-uint32_t HttpResponse::SerializeToArray(void* data, const int size) const {
-  memcpy(data, content.c_str(), std::min((int)content.size(), size));
-  return std::min((int)content.size(), size);
+uint32_t HttpResponse::SerializeToArray(char* data, size_t size) {
+  // memcpy(data, content.c_str(), std::min((int)content.size(), size));
+  uint32_t serial_size = 0;
+  int ret;
+
+  // Serialize statues line
+  ret = snprintf(data, size, "HTTP/1.1 %d %s\r\n",
+                 status_code, reason_phrase.c_str());
+  serial_size += ret;
+  if (serial_size == size)
+    return serial_size;
+
+  // Serialize header
+  headers["Content-Length"] = std::to_string(body.size());
+  for (auto &line : headers) {
+    ret = snprintf(data + serial_size, size - serial_size, "%s: %s\r\n",
+                   line.first.c_str(), line.second.c_str());
+    serial_size += ret;
+    if (serial_size == size)
+      return serial_size;
+  }
+
+  // Serialize body
+  ret = snprintf(data + serial_size, size - serial_size, "\r\n%s",
+                 body.c_str());
+  serial_size += ret;
+
+  return serial_size;
 }
 
 HttpConn::HttpConn(const int fd, const std::string &ip_port) :

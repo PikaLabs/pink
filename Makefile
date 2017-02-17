@@ -58,7 +58,6 @@ $(SLASH):
 
 clean: 
 	make clean -C example
-	make clean -C $(THIRD_PATH)/slash
 	rm -rf $(SRC_DIR)/*.o
 	rm -rf $(OUTPUT)/*
 	rm -rf $(OUTPUT)

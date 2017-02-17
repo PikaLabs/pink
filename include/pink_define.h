@@ -17,7 +17,7 @@ namespace pink {
 #define PINK_NAME_LEN 1024
 
 #define PB_MAX_MESSAGE 102400
-const int kProtoMaxMessage = 102400;
+const int kProtoMaxMessage = 64 * 1024 * 1024; // 64MB
 /*
  * The pb head and code length
  */
@@ -75,7 +75,7 @@ enum RetCode {
 /*
  * define the redis protocol
  */
-#define REDIS_MAX_MESSAGE 2097152
+#define REDIS_MAX_MESSAGE 67108864 // 64MB
 #define REDIS_IOBUF_LEN 16384
 #define REDIS_REQ_INLINE 1
 #define REDIS_REQ_MULTIBULK 2

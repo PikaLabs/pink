@@ -145,7 +145,7 @@ class HttpConn: public PinkConn {
       HttpResponse* res) = 0;
 
   bool BuildRequestHeader();
-  bool BuildRequestBody();
+  bool AppendRequestBody();
   void HandleMessage();
 
   ConnStatus conn_status_;
@@ -155,7 +155,7 @@ class HttpConn: public PinkConn {
   uint32_t wbuf_len_;  // length we wanna write out
   uint32_t wbuf_pos_;
   uint32_t header_len_;
-  int64_t remain_packet_len_;
+  uint64_t remain_packet_len_;
 
   HttpRequest* request_;
   HttpResponse* response_;

@@ -8,6 +8,7 @@
 #include <stdio.h>
 
 #include <string>
+#include <iostream>
 #include <algorithm>
 
 #include "slash_string.h"
@@ -159,7 +160,8 @@ bool HttpRequest::ParseHeadFromArray(const char* data, const int size) {
 }
 
 bool HttpRequest::ParseBodyFromArray(const char* data, const int size) {
-  content.assign(data, size);
+  std::cout << "append conent : " << std::string(data, size) << std::endl;
+  content.append(data, size);
   if (method == "POST") {
     return ParseParameters(content);
   }
@@ -267,8 +269,10 @@ bool HttpConn::BuildRequestHeader() {
   if (iter == request_->headers.end()) {
     remain_packet_len_ = 0;
   } else {
+    int64_t tmp = 0;
     slash::string2l(iter->second.data(), iter->second.size(),
-        static_cast<long*>(&remain_packet_len_));
+        static_cast<long*>(&tmp));
+    remain_packet_len_ = tmp;
   }
 
   if (rbuf_pos_ > header_len_) {
@@ -277,9 +281,9 @@ bool HttpConn::BuildRequestHeader() {
   return true;
 }
 
-bool HttpConn::BuildRequestBody() {
+bool HttpConn::AppendRequestBody() {
   return request_->ParseBodyFromArray(rbuf_ + header_len_,
-      rbuf_pos_ + remain_packet_len_ - header_len_);
+      rbuf_pos_  - header_len_);
 }
 
 void HttpConn::HandleMessage() {
@@ -315,12 +319,10 @@ ReadStatus HttpConn::GetRequest() {
         break;
       }
       case kPacket: {
-        if (remain_packet_len_ > kHttpMaxMessage - rbuf_pos_) {
-          // message too long
-          return kReadError;
-        }
         if (remain_packet_len_ > 0) {
-          nread = read(fd(), rbuf_ + rbuf_pos_, remain_packet_len_);
+          nread = read(fd(), rbuf_ + rbuf_pos_,
+              (kHttpMaxMessage - rbuf_pos_ > remain_packet_len_)
+              ? remain_packet_len_ : kHttpMaxMessage - rbuf_pos_);
           if (nread == -1 && errno == EAGAIN) {
             return kReadHalf;
           } else if (nread <= 0) {
@@ -330,9 +332,14 @@ ReadStatus HttpConn::GetRequest() {
             remain_packet_len_ -= nread;
           }
         }
-        if (remain_packet_len_ <= 0) {
-          BuildRequestBody();
-          conn_status_ = kComplete;
+        if (remain_packet_len_ == 0 || // no more content
+            rbuf_pos_ == kHttpMaxMessage) { // buffer full
+          AppendRequestBody();
+          if (remain_packet_len_ == 0) {
+            conn_status_ = kComplete;
+          } else {
+            rbuf_pos_ = header_len_ = 0; // read more packet content from begin
+          }
         }
         break;
       }

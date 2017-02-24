@@ -8,7 +8,6 @@
 #include <stdio.h>
 
 #include <string>
-#include <iostream>
 #include <algorithm>
 
 #include "slash_string.h"
@@ -160,7 +159,6 @@ bool HttpRequest::ParseHeadFromArray(const char* data, const int size) {
 }
 
 bool HttpRequest::ParseBodyFromArray(const char* data, const int size) {
-  std::cout << "append conent : " << std::string(data, size) << std::endl;
   content.append(data, size);
   if (method == "POST") {
     return ParseParameters(content);

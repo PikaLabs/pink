@@ -172,6 +172,7 @@ void HttpRequest::Clear() {
   method.clear();
   query_params.clear();
   headers.clear();
+  content.clear();
 }
 
 void HttpResponse::Clear() {

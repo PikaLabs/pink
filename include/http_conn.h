@@ -62,7 +62,11 @@ class HttpResponse {
     status_code_(0) {
   }
   void Clear();
-  uint32_t SerializeToArray(char* data, size_t size);
+  int SerializeHeaderToArray(char* data, size_t size);
+  int SerializeBodyToArray(char* data, size_t size, int *pos);
+  bool HasMoreBody(size_t pos) {
+    return pos < body_.size();
+  }
 
   void SetStatusCode(int code);
 
@@ -137,7 +141,6 @@ class HttpConn: public PinkConn {
 
   virtual ReadStatus GetRequest() override;
   virtual WriteStatus SendReply() override;
-  bool BuildResponseBuf();
 
 
  private:
@@ -146,6 +149,7 @@ class HttpConn: public PinkConn {
 
   bool BuildRequestHeader();
   bool AppendRequestBody();
+  bool FillResponseBuf();
   void HandleMessage();
 
   ConnStatus conn_status_;
@@ -158,6 +162,7 @@ class HttpConn: public PinkConn {
   uint64_t remain_packet_len_;
 
   HttpRequest* request_;
+  int response_pos_;
   HttpResponse* response_;
 };
 

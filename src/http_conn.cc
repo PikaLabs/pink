@@ -182,34 +182,48 @@ void HttpResponse::Clear() {
   body_.clear();
 }
 
-uint32_t HttpResponse::SerializeToArray(char* data, size_t size) {
-  // memcpy(data, content.c_str(), std::min((int)content.size(), size));
-  uint32_t serial_size = 0;
+// Return bytes actual be writen, should be less than size
+int HttpResponse::SerializeHeaderToArray(char* data, size_t size) {
+  int serial_size = 0;
   int ret;
 
   // Serialize statues line
   ret = snprintf(data, size, "HTTP/1.1 %d %s\r\n",
                  status_code_, reason_phrase_.c_str());
+  if (ret < 0 || ret == static_cast<int>(size)) {
+    return ret;
+  }
   serial_size += ret;
-  if (serial_size == size)
-    return serial_size;
 
   // Serialize header
   SetHeaders("Content-Length", body_.size());
   for (auto &line : headers_) {
     ret = snprintf(data + serial_size, size - serial_size, "%s: %s\r\n",
                    line.first.c_str(), line.second.c_str());
+    if (ret < 0) {
+      return ret;
+    }
     serial_size += ret;
-    if (serial_size == size)
+    if (serial_size == static_cast<int>(size)) {
       return serial_size;
+    }
   }
 
-  // Serialize body
-  ret = snprintf(data + serial_size, size - serial_size, "\r\n%s",
-                 body_.c_str());
+  ret = snprintf(data + serial_size, size - serial_size, "\r\n");
   serial_size += ret;
-
   return serial_size;
+}
+
+// Serialize body begin from 'pos', return the new pos
+int HttpResponse::SerializeBodyToArray(char* data, size_t size, int* pos) {
+  // Serialize body
+  int actual = size;
+  if (body_.size() - *pos < size) {
+    actual = body_.size() - *pos;
+  }
+  memcpy(data, body_.data() + *pos, actual);
+  *pos += actual;
+  return actual;
 }
 
 void HttpResponse::SetStatusCode(int code) {
@@ -236,7 +250,8 @@ HttpConn::HttpConn(const int fd, const std::string &ip_port) :
   wbuf_len_(0),
   wbuf_pos_(0),
   header_len_(0),
-  remain_packet_len_(0) {
+  remain_packet_len_(0),
+  response_pos_(-1) {
   rbuf_ = (char *)malloc(sizeof(char) * kHttpMaxMessage);
   wbuf_ = (char *)malloc(sizeof(char) * kHttpMaxMessage);
   request_ = new HttpRequest();
@@ -248,11 +263,6 @@ HttpConn::~HttpConn() {
   free(wbuf_);
   delete request_;
   delete response_;
-}
-
-bool HttpConn::BuildResponseBuf() {
-  wbuf_len_ = response_->SerializeToArray(wbuf_, kHttpMaxMessage);
-  return true;
 }
 
 /*
@@ -289,7 +299,6 @@ void HttpConn::HandleMessage() {
   response_->Clear();
   DealMessage(request_, response_);
   set_is_reply(true);
-  BuildResponseBuf();
 }
 
 ReadStatus HttpConn::GetRequest() {
@@ -356,31 +365,53 @@ ReadStatus HttpConn::GetRequest() {
   }
 }
 
+bool HttpConn::FillResponseBuf() {
+  if (response_pos_ < 0) {
+    // Not ever serialize response header
+    int actual = response_->SerializeHeaderToArray(wbuf_ + wbuf_len_,
+        kHttpMaxMessage - wbuf_len_);
+    if (actual < 0) {
+      return false;
+    }
+    wbuf_len_ += actual;
+    response_pos_ = 0; // Serialize body next time
+  }
+  while (response_->HasMoreBody(response_pos_)
+      && wbuf_len_ < kHttpMaxMessage) {
+    // Has more body and more space in wbuf_
+    wbuf_len_ += response_->SerializeBodyToArray(wbuf_ + wbuf_len_,
+        kHttpMaxMessage - wbuf_len_, &response_pos_);
+  }
+  return true;
+}
+
 WriteStatus HttpConn::SendReply() {
+  // Fill as more as content into the buf
+  if (!FillResponseBuf()) {
+    return kWriteError;
+  }
+  
   ssize_t nwritten = 0;
   while (wbuf_len_ > 0) {
     nwritten = write(fd(), wbuf_ + wbuf_pos_, wbuf_len_ - wbuf_pos_);
-    if (nwritten <= 0) {
-      break;
+    if (nwritten == -1 && errno == EAGAIN) {
+      return kWriteHalf;
+    } else if (nwritten <= 0) {
+      return kWriteError;
     }
     wbuf_pos_ += nwritten;
     if (wbuf_pos_ == wbuf_len_) {
+      // Send all in wbuf_ and Try to fill more
       wbuf_len_ = 0;
       wbuf_pos_ = 0;
+      if (!FillResponseBuf()) {
+        return kWriteError;
+      }
     }
   }
-  if (nwritten == -1) {
-    if (errno == EAGAIN) {
-      return kWriteHalf;
-    } else {
-      return kWriteError;
-    }
-  }
-  if (wbuf_len_ == 0) {
-    return kWriteAll;
-  } else {
-    return kWriteHalf;
-  }
+  response_pos_ = -1; // fill header first next time
+  
+  return kWriteAll;
 }
 
 }  // namespace pink

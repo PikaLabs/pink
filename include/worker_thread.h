@@ -169,9 +169,8 @@ private:
             continue;
           }
 
+          in_conn = static_cast<Conn *>(iter->second);
           if (pfe->mask_ & EPOLLIN) {
-
-            in_conn = static_cast<Conn *>(iter->second);
             ReadStatus getRes = in_conn->GetRequest();
             in_conn->set_last_interaction(now);
             log_info("now: %d, %d", now.tv_sec, now.tv_usec);
@@ -186,7 +185,6 @@ private:
             }
           }
           if (pfe->mask_ & EPOLLOUT) {
-            in_conn = static_cast<Conn *>(iter->second);
             log_info("in work thead SendReply before");
             WriteStatus write_status = in_conn->SendReply();
             log_info("in work thead SendReply after");

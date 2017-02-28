@@ -170,8 +170,8 @@ public:
             continue;
           }
 
+          in_conn = static_cast<Conn *>(iter->second);
           if (pfe->mask_ & EPOLLIN) {
-            in_conn = static_cast<Conn *>(iter->second);
             ReadStatus getRes = in_conn->GetRequest();
             in_conn->set_last_interaction(now);
             if (getRes != kReadAll && getRes != kReadHalf) {
@@ -184,8 +184,6 @@ public:
             }
           }
           if (pfe->mask_ & EPOLLOUT) {
-
-            in_conn = static_cast<Conn *>(iter->second);
             WriteStatus write_status = in_conn->SendReply();
             if (write_status == kWriteAll) {
               in_conn->set_is_reply(false);

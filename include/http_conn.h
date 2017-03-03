@@ -11,7 +11,7 @@
 #include <string>
 
 #include "src/csapp.h"
-#include "third/slash/include/slash_status.h"
+#include "include/slash_status.h"
 
 #include "include/pink_define.h"
 #include "include/worker_thread.h"

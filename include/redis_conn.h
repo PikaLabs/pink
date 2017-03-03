@@ -9,7 +9,7 @@
 #include <map>
 #include <vector>
 
-#include "third/slash/include/slash_status.h"
+#include "include/slash_status.h"
 
 #include "src/csapp.h"
 #include "include/pink_define.h"

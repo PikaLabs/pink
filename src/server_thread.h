@@ -12,7 +12,7 @@
 #include <vector>
 
 #include "src/csapp.h"
-#include "third/slash/include/slash_status.h"
+#include "include/slash_status.h"
 #include "include/pink_define.h"
 #include "include/pink_thread.h"
 #include "src/server_socket.h"

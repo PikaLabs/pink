@@ -10,7 +10,7 @@
 #include <queue>
 
 #include "include/pink_thread.h"
-#include "third/slash/output/include/slash_mutex.h"
+#include "include/slash_mutex.h"
 
 namespace pink {
 

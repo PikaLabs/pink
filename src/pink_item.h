@@ -6,7 +6,7 @@
 #ifndef PINK_ITEM_H_
 #define PINK_ITEM_H_
 
-#include "third/slash/include/slash_status.h"
+#include "include/slash_status.h"
 
 #include "pink_define.h"
 

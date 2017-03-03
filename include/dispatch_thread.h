@@ -12,7 +12,7 @@
 
 #include "include/xdebug.h"
 #include "include/worker_thread.h"
-#include "src/server_thread.h"
+#include "include/server_thread.h"
 #include "src/pink_epoll.h"
 
 namespace pink {

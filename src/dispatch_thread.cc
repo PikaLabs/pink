@@ -7,32 +7,32 @@
 namespace pink {
 
 DispatchThread::DispatchThread(int port,
-    int work_num, WorkerThread **worker_thread,
+    int work_num, Thread **worker_thread,
     int cron_interval) :
   ServerThread::ServerThread(port, cron_interval),
   last_thread_(0),
   work_num_(work_num),
-  worker_thread_(worker_thread) {
+  worker_thread_(reinterpret_cast<WorkerThread **>(worker_thread)) {
   StartWorkerThreads();
 }
 
 DispatchThread::DispatchThread(const std::string &ip, int port,
-    int work_num, WorkerThread **worker_thread,
+    int work_num, Thread **worker_thread,
     int cron_interval) :
   ServerThread::ServerThread(ip, port, cron_interval),
   last_thread_(0),
   work_num_(work_num),
-  worker_thread_(worker_thread) {
+  worker_thread_(reinterpret_cast<WorkerThread **>(worker_thread)) {
   StartWorkerThreads();
 }
 
 DispatchThread::DispatchThread(const std::set<std::string>& ips, int port,
-    int work_num, WorkerThread **worker_thread,
+    int work_num, Thread **worker_thread,
     int cron_interval) :
   ServerThread::ServerThread(ips, port, cron_interval),
   last_thread_(0),
   work_num_(work_num),
-  worker_thread_(worker_thread) {
+  worker_thread_(reinterpret_cast<WorkerThread **>(worker_thread)) {
   StartWorkerThreads();
 }
 
@@ -53,5 +53,27 @@ void DispatchThread::StartWorkerThreads() {
     worker_thread_[i]->StartThread();
   }
 }
+
+extern ServerThread *NewDispatchThread(
+    int port,
+    int work_num, Thread **worker_thread,
+    int cron_interval) {
+  return new DispatchThread(port, work_num, worker_thread, cron_interval);
+}
+
+extern ServerThread *NewDispatchThread(
+    const std::string &ip, int port,
+    int work_num, Thread **worker_thread,
+    int cron_interval) {
+  return new DispatchThread(ip, port, work_num, worker_thread, cron_interval);
+}
+
+extern ServerThread *NewDispatchThread(
+    const std::set<std::string>& ips, int port,
+    int work_num, Thread **worker_thread,
+    int cron_interval) {
+  return new DispatchThread(ips, port, work_num, worker_thread, cron_interval);
+}
+
 
 };  // namespace pink

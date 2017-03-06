@@ -22,7 +22,7 @@ LIBS = -lpink \
 			 -lpthread
 
 INCLUDE_PATH = -I../include/ \
-							 -I../third/slash/ \
+							 -I../third/ \
 							 -I../
 
 .PHONY: all clean version
@@ -43,25 +43,25 @@ all: $(OBJECT)
 	@echo "Success, go, go, go..."
 
 
-pink: pink.cc bada_thread.cc pink.pb.cc
+pink: pink.cc pink.pb.cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
-holy: holy.cc holy_test.cc pink.pb.cc
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+# holy: holy.cc holy_test.cc pink.pb.cc
+#   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
-pika: pika.cc pika_thread.cc
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+# pika: pika.cc pika_thread.cc
+#   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
-pika_holy: pika_holy.cc pika_holy_thread.cc
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+# pika_holy: pika_holy.cc pika_holy_thread.cc
+#   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
-redis_cli: redis_cli_test.cc
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+# redis_cli: redis_cli_test.cc
+#   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
-bg_thread: bg_thread.cc
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
-http_server: http_server.cc
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+# bg_thread: bg_thread.cc
+#   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+# http_server: http_server.cc
+#   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
 pink.pb.cc: pink.proto
 	protoc -I=$(SRC_DIR) --cpp_out=$(SRC_DIR) ./$^

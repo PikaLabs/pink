@@ -5,10 +5,11 @@
 
 #include "include/pink_define.h"
 #include "include/xdebug.h"
+#include "include/redis_conn.h"
 #include "src/worker_thread.h"
-#include "src/redis_conn.h"
 
 namespace pink {
+
 static bool IsHexDigit(char ch) {
   return (ch>='0' && ch<='9') || (ch>='a' && ch<='f') || (ch>='A' && ch<'F');
 }

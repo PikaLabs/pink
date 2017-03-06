@@ -24,13 +24,13 @@ class DispatchThread : public ServerThread {
   // This type Dispatch thread just get Connection and then Dispatch the fd to
   // worker thead
   DispatchThread(int port,
-                 int work_num, WorkerThread **worker_thread,
+                 int work_num, Thread **worker_thread,
                  int cron_interval = 0);
   DispatchThread(const std::string &ip, int port,
-                 int work_num, WorkerThread **worker_thread,
+                 int work_num, Thread **worker_thread,
                  int cron_interval = 0);
   DispatchThread(const std::set<std::string>& ips, int port,
-                 int work_num, WorkerThread **worker_thread,
+                 int work_num, Thread **worker_thread,
                  int cron_interval = 0);
 
   virtual ~DispatchThread() {

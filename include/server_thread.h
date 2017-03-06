@@ -22,6 +22,7 @@ class ServerSocket;
 class PinkEpoll;
 struct PinkFiredEvent;
 class ConnFactory;
+class WorkerThread;
 
 class ServerThread : public Thread {
  public:
@@ -97,7 +98,18 @@ class ServerThread : public Thread {
 extern ServerThread *NewHolyThread(int port, ConnFactory *conn_factory, int cron_interval);
 extern ServerThread *NewHolyThread(const std::string &bind_ip, int port, ConnFactory *conn_factory, int cron_interval);
 extern ServerThread *NewHolyThread(const std::set<std::string>& bind_ips, int port, ConnFactory *conn_factory, int cron_interval);
-extern ServerThread *NewDispatchThread();
+extern ServerThread *NewDispatchThread(
+    int port,
+    int work_num, Thread **worker_thread,
+    int cron_interval = 0);
+extern ServerThread *NewDispatchThread(
+    const std::string &ip, int port,
+    int work_num, Thread **worker_thread,
+    int cron_interval = 0);
+extern ServerThread *NewDispatchThread(
+    const std::set<std::string>& ips, int port,
+    int work_num, Thread **worker_thread,
+    int cron_interval = 0);
 
 } // namespace pink
 

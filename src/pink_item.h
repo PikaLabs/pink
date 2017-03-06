@@ -8,7 +8,7 @@
 
 #include "include/slash_status.h"
 
-#include "pink_define.h"
+#include "include/pink_define.h"
 
 namespace pink {
   

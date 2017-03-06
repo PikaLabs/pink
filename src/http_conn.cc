@@ -10,7 +10,7 @@
 #include <string>
 #include <algorithm>
 
-#include "slash_string.h"
+#include "include/slash_string.h"
 #include "pink_define.h"
 #include "worker_thread.h"
 #include "xdebug.h"

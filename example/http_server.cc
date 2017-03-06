@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 #include <string>
-#include "slash_status.h"
+#include "include/slash_status.h"
 #include "pink_thread.h"
 #include "worker_thread.h"
 #include "dispatch_thread.h"

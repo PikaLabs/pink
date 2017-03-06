@@ -14,8 +14,6 @@ OUTPUT = ./output
 
 INCLUDE_PATH = -I./ \
 							 -I./include/ \
-							 -I./src/ \
-							 -I$(THIRD_PATH)/slash/include \
 							 -I$(THIRD_PATH)/slash
 
 LIB_PATH = -L./ \

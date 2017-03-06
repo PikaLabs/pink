@@ -9,12 +9,12 @@
 #include <map>
 #include <vector>
 
-#include "include/slash_status.h"
+#include "slash/include/slash_status.h"
 
 #include "src/csapp.h"
 #include "include/pink_define.h"
 #include "src/pink_util.h"
-#include "src/pink_conn.h"
+#include "include/pink_conn.h"
 #include "include/xdebug.h"
 
 namespace pink {

@@ -2,7 +2,8 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
-#include "http_conn.h"
+#include "include/http_conn.h"
+
 #include <stdlib.h>
 #include <limits.h>
 #include <stdio.h>
@@ -10,10 +11,11 @@
 #include <string>
 #include <algorithm>
 
-#include "slash_string.h"
-#include "pink_define.h"
-#include "worker_thread.h"
-#include "xdebug.h"
+#include "slash/include/slash_string.h"
+
+#include "include/pink_define.h"
+#include "include/xdebug.h"
+#include "src/pink_util.h"
 
 namespace pink {
 

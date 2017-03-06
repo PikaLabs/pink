@@ -2,17 +2,19 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
-#ifndef PINK_CONN_H_
-#define PINK_CONN_H_
+#ifndef INCLUDE_PINK_CONN_H_
+#define INCLUDE_PINK_CONN_H_
 
 #include <sys/time.h>
 #include <string>
-#include "pink_define.h"
+
+#include "include/pink_define.h"
 
 namespace pink {
 
-class PinkConn
-{
+class Thread;
+
+class PinkConn {
 public:
   PinkConn(const int fd, const std::string &ip_port);
   virtual ~PinkConn();
@@ -22,13 +24,12 @@ public:
    */
   bool SetNonblock();
 
-  int flags() const { 
-    return flags_; 
-  };
-
   virtual ReadStatus GetRequest() = 0;
   virtual WriteStatus SendReply() = 0;
 
+  int flags() const { 
+    return flags_; 
+  };
   void set_fd(const int fd) { 
     fd_ = fd; 
   }
@@ -70,6 +71,16 @@ private:
   PinkConn(const PinkConn&);
   void operator=(const PinkConn&);
 };
+
+class ConnFactory {
+ public:
+  virtual ~ConnFactory() {};
+  virtual PinkConn* NewPinkConn(int connfd, const std::string &ip_port, Thread *pink_thread) const = 0;
+};
+
+extern ConnFactory *NewRedisConnFactory(int connfd, const std::string &ip_port, Thread *thread);
+extern ConnFactory *NewPbConnFactory();
+
 }
 
-#endif
+#endif   // INCLUDE_PINK_CONN_H_

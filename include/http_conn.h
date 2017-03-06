@@ -11,13 +11,12 @@
 #include <string>
 
 #include "src/csapp.h"
-#include "include/slash_status.h"
+#include "slash/include/slash_status.h"
 
 #include "include/pink_define.h"
-#include "include/worker_thread.h"
+#include "src/worker_thread.h"
 #include "include/xdebug.h"
-#include "src/pink_util.h"
-#include "src/pink_conn.h"
+#include "include/pink_conn.h"
 
 namespace pink {
 

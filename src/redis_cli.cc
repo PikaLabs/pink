@@ -380,6 +380,9 @@ int RedisCli::GetReplyFromReader() {
   }
 }
 
+extern PinkCli *NewRedisCli() {
+  return new RedisCli();
+}
 //
 // Redis protocol related funcitons
 //

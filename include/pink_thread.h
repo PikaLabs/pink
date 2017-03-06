@@ -3,14 +3,16 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef PINK_THREAD_H_
-#define PINK_THREAD_H_
+#ifndef INCLUDE_PINK_THREAD_H_
+#define INCLUDE_PINK_THREAD_H_
 
 #include <string>
 #include <atomic>
 #include <pthread.h>
 
 namespace pink {
+
+class ConnFactory;
 
 class Thread {
  public:
@@ -55,6 +57,8 @@ class Thread {
   void operator=(const Thread&);
 };
 
+extern Thread *NewWorkerThread(ConnFactory *conn_factory, int cron_interval = 0);
+
 }  // namespace pink
 
-#endif
+#endif  // INCLUDE_PINK_THREAD_H_

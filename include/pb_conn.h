@@ -11,20 +11,18 @@
 
 #include <google/protobuf/message.h>
 
-#include "include/slash_status.h"
-#include "src/csapp.h"
-#include "src/pink_conn.h"
+#include "slash/include/slash_status.h"
+#include "include/pink_conn.h"
 #include "include/pink_define.h"
-#include "src/pink_util.h"
 
 namespace pink {
+
 using slash::Status;
 
 class PbConn: public PinkConn {
  public:
   PbConn(const int fd, const std::string &ip_port);
-  ~PbConn();
-  void InitPara();
+  virtual ~PbConn();
 
   ReadStatus GetRequest() override;
   WriteStatus SendReply() override;
@@ -45,11 +43,12 @@ class PbConn: public PinkConn {
 
   google::protobuf::Message *res_;
 
+ private:
+
+
   char* wbuf_;
   uint32_t wbuf_len_;
   uint32_t wbuf_pos_;
-
- private:
   virtual Status BuildObuf();
 };
 

@@ -4,8 +4,8 @@
 #include <arpa/inet.h>
 
 #include "message.pb.h"
-#include "pb_cli.h"
-#include "pink_define.h"
+#include "include/pink_cli.h"
+#include "include/pink_define.h"
 
 using namespace pink;
 
@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
   std::string ip(argv[1]);
   int port = atoi(argv[2]);
   
-  PbCli* cli = new PbCli();
+  PinkCli* cli = NewPbCli();
 
   for (int i = 0; i < 10; i++) {
     Status s = cli->Connect(ip, port);

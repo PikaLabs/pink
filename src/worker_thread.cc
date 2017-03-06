@@ -1,81 +1,14 @@
-// Copyright (c) 2015-present, Qihoo, Inc.  All rights reserved.
-// This source code is licensed under the BSD-style license found in the
-// LICENSE file in the root directory of this source tree. An additional grant
-// of patent rights can be found in the PATENTS file in the same directory.
+#include "src/worker_thread.h"
 
-#ifndef PINK_INCLUDE_WORKER_THREAD_H_
-#define PINK_INCLUDE_WORKER_THREAD_H_
-
-#include <sys/epoll.h>
-
-#include <string>
-#include <functional>
-#include <queue>
-#include <map>
-
-#include <google/protobuf/message.h>
-
-#include "include/pink_thread.h"
+#include "include/pink_conn.h"
 #include "src/pink_item.h"
 #include "src/pink_epoll.h"
-#include "include/pink_mutex.h"
-#include "include/pink_define.h"
 #include "src/csapp.h"
-#include "include/xdebug.h"
 
 namespace pink {
 
-template <typename Conn>
-class WorkerThread : public Thread {
- public:
-  explicit WorkerThread(int cron_interval = 0);
-  virtual ~WorkerThread();
-
-  /*
-   * The PbItem queue is the fd queue, receive from dispatch thread
-   */
-  std::queue<PinkItem> conn_queue_;
-
-  int notify_receive_fd() {
-    return notify_receive_fd_;
-  }
-  int notify_send_fd() {
-    return notify_send_fd_;
-  }
-  PinkEpoll* pink_epoll() {
-    return pink_epoll_;
-  }
-  Mutex mutex_;
-
-  /*
-   *  public for external statistics
-   */
-  pthread_rwlock_t rwlock_;
-  std::map<int, void *> conns_;
-
-
- private:
-  int cron_interval_;
-  /*
-   * These two fd receive the notify from dispatch thread
-   */
-  int notify_receive_fd_;
-  int notify_send_fd_;
-
-  /*
-   * The epoll handler
-   */
-  PinkEpoll *pink_epoll_;
-
-  virtual void *ThreadMain() override;
-
-  // clean conns
-  void Cleanup();
-
-};  // class WorkerThread
-
-template <typename Conn>
-WorkerThread<Conn>::WorkerThread(int cron_interval) :
+WorkerThread::WorkerThread(ConnFactory *conn_factory, int cron_interval) :
+  conn_factory_(conn_factory),
   cron_interval_(cron_interval) {
   /*
    * install the protobuf handler here
@@ -91,18 +24,16 @@ WorkerThread<Conn>::WorkerThread(int cron_interval) :
   pink_epoll_->PinkAddEvent(notify_receive_fd_, EPOLLIN | EPOLLERR | EPOLLHUP);
 }
 
-template <typename Conn>
-WorkerThread<Conn>::~WorkerThread() {
+WorkerThread::~WorkerThread() {
   delete(pink_epoll_);
 }
 
-template <typename Conn>
-void *WorkerThread<Conn>::ThreadMain() {
+void *WorkerThread::ThreadMain() {
   int nfds;
   PinkFiredEvent *pfe = NULL;
   char bb[1];
   PinkItem ti;
-  Conn *in_conn = NULL;
+  PinkConn *in_conn = NULL;
 
   struct timeval when;
   gettimeofday(&when, NULL);
@@ -140,7 +71,7 @@ void *WorkerThread<Conn>::ThreadMain() {
             ti = conn_queue_.front();
             conn_queue_.pop();
           }
-          Conn *tc = new Conn(ti.fd(), ti.ip_port(), this);
+          PinkConn *tc = conn_factory_->NewPinkConn(ti.fd(), ti.ip_port(), this);
           tc->SetNonblock();
           {
             RWLock l(&rwlock_, true);
@@ -153,7 +84,7 @@ void *WorkerThread<Conn>::ThreadMain() {
       } else {
         in_conn = NULL;
         int should_close = 0;
-        std::map<int, void *>::iterator iter = conns_.begin();
+        std::map<int, PinkConn *>::iterator iter = conns_.begin();
         if (pfe == NULL) {
           continue;
         }
@@ -164,7 +95,7 @@ void *WorkerThread<Conn>::ThreadMain() {
         }
 
         if (pfe->mask & EPOLLIN) {
-          in_conn = static_cast<Conn *>(iter->second);
+          in_conn = iter->second;
           ReadStatus getRes = in_conn->GetRequest();
           in_conn->set_last_interaction(now);
           if (getRes != kReadAll && getRes != kReadHalf) {
@@ -177,7 +108,7 @@ void *WorkerThread<Conn>::ThreadMain() {
           }
         }
         if (pfe->mask & EPOLLOUT) {
-          in_conn = static_cast<Conn *>(iter->second);
+          in_conn = iter->second;
           WriteStatus write_status = in_conn->SendReply();
           if (write_status == kWriteAll) {
             in_conn->set_is_reply(false);
@@ -207,18 +138,19 @@ void *WorkerThread<Conn>::ThreadMain() {
   return NULL;
 }
 
-template <typename Conn>
-void WorkerThread<Conn>::Cleanup() {
+void WorkerThread::Cleanup() {
   RWLock l(&rwlock_, true);
-  Conn *in_conn;
-  std::map<int, void *>::iterator iter = conns_.begin();
+  PinkConn *in_conn;
+  std::map<int, PinkConn *>::iterator iter = conns_.begin();
   for (; iter != conns_.end(); iter++) {
     close(iter->first);
-    in_conn = static_cast<Conn *>(iter->second);
+    in_conn = iter->second;
     delete in_conn;
   }
 }
 
-}  // namespace pink
+extern Thread *NewWorkerThread(ConnFactory *conn_factory, int cron_interval) {
+  return new WorkerThread(conn_factory, cron_interval);
+}
 
-#endif  // PINK_INCLUDE_WORKER_THREAD_H_
+};

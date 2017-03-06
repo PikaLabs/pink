@@ -11,15 +11,17 @@
 #include <set>
 #include <vector>
 
-#include "src/csapp.h"
-#include "include/slash_status.h"
+#include "slash/include/slash_status.h"
 #include "include/pink_define.h"
 #include "include/pink_thread.h"
-#include "src/server_socket.h"
-#include "src/pink_epoll.h"
 #include "include/pink_mutex.h"
 
 namespace pink {
+
+class ServerSocket;
+class PinkEpoll;
+struct PinkFiredEvent;
+class ConnFactory;
 
 class ServerThread : public Thread {
  public:
@@ -31,7 +33,7 @@ class ServerThread : public Thread {
    * @param worker_thread the worker thred we define
    * @param cron_interval the cron job interval
    */
-  explicit ServerThread(int port, int cron_interval);
+  ServerThread(int port, int cron_interval);
 
   /**
    * @brief
@@ -91,6 +93,11 @@ class ServerThread : public Thread {
   virtual void HandleNewConn(const int connfd, const std::string& ip_port) = 0;
   virtual void HandleConnEvent(PinkFiredEvent *pfe) = 0;
 };
+
+extern ServerThread *NewHolyThread(int port, ConnFactory *conn_factory, int cron_interval);
+extern ServerThread *NewHolyThread(const std::string &bind_ip, int port, ConnFactory *conn_factory, int cron_interval);
+extern ServerThread *NewHolyThread(const std::set<std::string>& bind_ips, int port, ConnFactory *conn_factory, int cron_interval);
+extern ServerThread *NewDispatchThread();
 
 } // namespace pink
 

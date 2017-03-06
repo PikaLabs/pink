@@ -3,10 +3,10 @@
 
 #include <string>
 
-#include "redis_conn.h"
-#include "pink_define.h"
-#include "worker_thread.h"
-#include "xdebug.h"
+#include "include/pink_define.h"
+#include "include/xdebug.h"
+#include "src/worker_thread.h"
+#include "src/redis_conn.h"
 
 namespace pink {
 static bool IsHexDigit(char ch) {

@@ -3,8 +3,11 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#include "xdebug.h"
+#include "include/xdebug.h"
 #include "include/server_thread.h"
+#include "src/pink_epoll.h"
+#include "src/server_socket.h"
+#include "src/csapp.h"
 
 namespace pink {
 

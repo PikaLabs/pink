@@ -8,8 +8,9 @@
 #include <string>
 
 #include "include/pink_define.h"
-#include "include/worker_thread.h"
 #include "include/xdebug.h"
+#include "src/worker_thread.h"
+#include "src/csapp.h"
 
 namespace pink {
 

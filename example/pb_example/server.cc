@@ -1,21 +1,20 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "holy_thread.h"
-#include "pb_conn.h"
+#include "include/server_thread.h"
+#include "include/pink_conn.h"
+#include "include/pb_conn.h"
+#include "include/pink_thread.h"
 #include "message.pb.h"
 
 using namespace pink;
 
-class ServerThread;
-
-class PingConn : public pink::PbConn {
+class PingConn : public PbConn {
  public:
-  PingConn(int fd, std::string ip_port, pink::Thread* pself_thread = NULL) : PbConn(fd, ip_port) {
-   // self_thread_ = dynamic_cast<ServerThread*>(pself_thread);
-    //res_ = dynamic_cast<google::protobuf::Message*>(&message_);
+  PingConn(int fd, std::string ip_port, pink::Thread* pself_thread = NULL) : 
+    PbConn(fd, ip_port) {
   }
-  ~PingConn() {}
+  virtual ~PingConn() {}
 
   int DealMessage() {
     request_.ParseFromArray(rbuf_ + cur_pos_ - header_len_, header_len_);
@@ -30,7 +29,7 @@ class PingConn : public pink::PbConn {
   }
 
  private:
-  ServerThread* self_thread_;
+  Thread* self_thread_;
 
   Ping request_;
   Pong response_;
@@ -41,17 +40,14 @@ class PingConn : public pink::PbConn {
   PingConn& operator=(PingConn&);
 };
 
-class ServerThread : public HolyThread<PingConn> {
- public:
-  ServerThread(int port, int cron_interval = 0) : HolyThread(port, cron_interval) {
-  }
-  virtual ~ServerThread() {
-  }
-  virtual void CronHandle() {
-  }
 
- private:
+class PingConnFactory : public ConnFactory {
+ public:
+  virtual PinkConn *NewPinkConn(int connfd, const std::string &ip_port, Thread *thread) const {
+    return new PingConn(connfd, ip_port, thread);
+  }
 };
+
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
@@ -61,11 +57,13 @@ int main(int argc, char* argv[]) {
 
   int my_port = (argc > 1) ? atoi(argv[1]) : 8221;
 
-  ServerThread* server_thread = new ServerThread(my_port, 1000);
-  server_thread->StartThread();
+  ConnFactory *conn_factory = new PingConnFactory();
 
-  server_thread->JoinThread();
+  ServerThread* my_thread = NewHolyThread(my_port, conn_factory, 1000);
+  my_thread->StartThread();
+  my_thread->JoinThread();
 
-  delete server_thread;
+  delete my_thread;
+
   return 0;
 }

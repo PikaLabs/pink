@@ -1,7 +1,7 @@
 #ifndef PINK_INCLUDE_PINK_CLI_H_
 #define PINK_INCLUDE_PINK_CLI_H_
 
-#include "include/slash_status.h"
+#include "slash/include/slash_status.h"
 
 using slash::Status;
 

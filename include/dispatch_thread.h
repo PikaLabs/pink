@@ -36,12 +36,16 @@ public:
    * @param work_num
    * @param worker_thread the worker thred we define
    * @param cron_interval the cron job interval
+   * @param queue_limit   the size limit of workers' connection queue
    */
-  DispatchThread(int port, int work_num, WorkerThread<T> **worker_thread, int cron_interval = 0) :
+  DispatchThread(int port, int work_num, WorkerThread<T> **worker_thread,
+                 int cron_interval = 0,
+                 int queue_limit = 0) :
     Thread::Thread(cron_interval),
     port_(port),
     work_num_(work_num),
-    worker_thread_(worker_thread)
+    worker_thread_(worker_thread),
+    queue_limit_(queue_limit)
   {
     ips_.insert("0.0.0.0");
   }
@@ -54,23 +58,28 @@ public:
    * @param work_num
    * @param worker_thread the worker thred we define
    * @param cron_interval the cron job interval
+   * @param queue_limit   the size limit of workers' connection queue
    */
 
-  DispatchThread(const std::string &ip, int port, int work_num, WorkerThread<T> **worker_thread, int cron_interval = 0) :
-    Thread::Thread(cron_interval),
-    port_(port),
-    work_num_(work_num),
-    worker_thread_(worker_thread)
-  {
+  DispatchThread(const std::string &ip, int port, int work_num, WorkerThread<T> **worker_thread,
+                 int cron_interval = 0,
+                 int queue_limit = 0)
+      : Thread::Thread(cron_interval),
+        port_(port),
+        work_num_(work_num),
+        worker_thread_(worker_thread),
+        queue_limit_(queue_limit) {
     ips_.insert(ip);
   }
 
-  DispatchThread(const std::set<std::string>& ips, int port, int work_num, WorkerThread<T> **worker_thread, int cron_interval = 0) :
-      Thread::Thread(cron_interval),
-      port_(port),
-      work_num_(work_num),
-      worker_thread_(worker_thread)
-  {
+  DispatchThread(const std::set<std::string>& ips, int port, int work_num, WorkerThread<T> **worker_thread,
+                 int cron_interval = 0,
+                 int queue_limit = 0)
+      : Thread::Thread(cron_interval),
+        port_(port),
+        work_num_(work_num),
+        worker_thread_(worker_thread),
+        queue_limit_(queue_limit) {
     ips_ = ips;
   }
 
@@ -197,15 +206,36 @@ public:
             ip_port.append(":");
             snprintf(port_buf, sizeof(port_buf), "%d", ntohs(cliaddr.sin_port));
             ip_port.append(port_buf);
-            std::queue<PinkItem> *q = &(worker_thread_[last_thread_]->conn_queue_);
             PinkItem ti(connfd, ip_port);
-            {
-              MutexLock l(&worker_thread_[last_thread_]->mutex_);
-              q->push(ti);
+
+            // Slow workers may consume many fds.
+            // We simply loop to find next legal worker.
+            int next_thread = last_thread_;
+            bool find = false;
+            for (int cnt = 0; cnt < work_num_; cnt++) {
+              {
+                MutexLock l(&worker_thread_[next_thread]->mutex_);
+                std::queue<PinkItem> *q = &(worker_thread_[next_thread]->conn_queue_);
+                if (q->size() < queue_limit_) {
+                  q->push(ti);
+                  find = true;
+                  break;
+                }
+              }
+              next_thread = (next_thread + 1) % work_num_;
             }
-            write(worker_thread_[last_thread_]->notify_send_fd(), "", 1);
-            last_thread_++;
-            last_thread_ %= work_num_;
+
+            if (find) {
+              write(worker_thread_[next_thread]->notify_send_fd(), "", 1);
+              last_thread_ = (next_thread + 1) % work_num_;
+              log_info("find worker(%d), refresh the last_thread_ to %d", next_thread, last_thread_);
+            } else {
+              log_info("all workers are full, queue limit is %d", queue_limit_);
+              // every worker is full 
+              // TODO(anan) maybe add log
+              close(connfd);
+              continue;
+            }
           } else if (pfe->mask_ & (EPOLLERR | EPOLLHUP)) {
             /*
              * this branch means there is error on the listen fd
@@ -247,6 +277,7 @@ public:
    */
   WorkerThread<T> **worker_thread_;
   std::set<std::string> ips_;
+  int queue_limit_;
 
   // No copying allowed
   DispatchThread(const DispatchThread&);

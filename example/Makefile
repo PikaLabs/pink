@@ -21,9 +21,8 @@ LIBS = -lpink \
 			 -lslash \
 			 -lpthread
 
-INCLUDE_PATH = -I../output/ \
-							 -I../output/include/ \
-							 -I../third/slash/include/ \
+INCLUDE_PATH = -I../include/ \
+							 -I../third/slash/ \
 							 -I../
 
 .PHONY: all clean version

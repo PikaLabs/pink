@@ -78,8 +78,7 @@ bool HttpRequest::ParseHeadLine(const char* data, int line_start,
         if (data[i] != '\r' && data[i] != '\n') {
           param_value.push_back(data[i]);
         } else if (data[i] == '\r') {
-          *parseStatus = kHeaderParamKey;
-          headers[param_key] = param_value;
+          headers[slash::StringToLower(param_key)] = param_value;
           *parseStatus = kHeaderParamKey;
         }
         break;
@@ -142,15 +141,16 @@ bool HttpRequest::ParseHeadFromArray(const char* data, const int size) {
   int line_end = 0;
   ParseStatus parseStatus = kHeaderMethod;
   while (remain_size > 4) {
-    line_end += find_lf(data + line_start, remain_size) + 1;
+    line_end += find_lf(data + line_start, remain_size);
     if (line_end < line_start) {
       return false;
     }
     if (!ParseHeadLine(data, line_start, line_end, &parseStatus)) {
       return false;
     }
-    remain_size -= line_end - line_start;
-    line_start = line_end + 1;
+    remain_size -= (line_end - line_start + 1);
+		line_end++;
+    line_start = line_end;
   }
   
   // Parse query parameter from GET url
@@ -276,7 +276,7 @@ bool HttpConn::BuildRequestHeader() {
     return false;  
   }
   auto iter = request_->headers.begin();
-  iter = request_->headers.find("Content-Length");
+  iter = request_->headers.find("content-length");
   if (iter == request_->headers.end()) {
     remain_packet_len_ = 0;
   } else {

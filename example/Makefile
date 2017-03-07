@@ -5,8 +5,8 @@ else
 	CXXFLAGS = -O2 -pipe -fPIC -W -Wwrite-strings -Wpointer-arith -Wreorder -Wswitch -Wsign-promo -Wredundant-decls -Wformat -Wall -D_GNU_SOURCE -D__STDC_FORMAT_MACROS -std=c++11 -Wno-unused-variable -Wno-maybe-uninitialized -Wno-unused-parameter
 	# CXXFLAGS = -Wall -W -DDEBUG -g -O0 -D__XDEBUG__ 
 endif
-OBJECT = pink holy pika pika_holy bg_thread http_server
-# OBJECT = pink
+# OBJECT = holy_srv myproto_cli pika pika_holy bg_thread http_server
+OBJECT = holy_srv dispatch_srv myproto_cli
 
 SRC_DIR = ./
 
@@ -43,9 +43,13 @@ all: $(OBJECT)
 	@echo "Success, go, go, go..."
 
 
-pink: pink.cc pink.pb.cc
+holy_srv: myholy_srv.cc myproto.pb.cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
+dispatch_srv: mydispatch_srv.cc myproto.pb.cc
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+myproto_cli: myproto_cli.cc myproto.pb.cc
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 # holy: holy.cc holy_test.cc pink.pb.cc
 #   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
@@ -63,7 +67,7 @@ pink: pink.cc pink.pb.cc
 # http_server: http_server.cc
 #   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
-pink.pb.cc: pink.proto
+myproto.pb.cc: myproto.proto
 	protoc -I=$(SRC_DIR) --cpp_out=$(SRC_DIR) ./$^
 
 $(OBJS): %.o : %.cc

@@ -20,8 +20,8 @@ int main(int argc, char* argv[]) {
   
   PinkCli* cli = NewPbCli();
 
-  for (int i = 0; i < 10; i++) {
-    Status s = cli->Connect(ip, port);
+  Status s = cli->Connect(ip, port);
+  for (int i = 0; i < 100000000; i++) {
     if (!s.ok()) {
       printf ("Connect (%s:%d) failed, %s\n", ip.c_str(), port, s.ToString().c_str());
     }
@@ -44,11 +44,8 @@ int main(int argc, char* argv[]) {
     }
     printf ("Recv (%s)\n", req.pong().c_str());
 
-    cli->Close();
-
-    char ch;
-    scanf ("%c", &ch);
   }
+  cli->Close();
 
   delete cli;
   return 0;

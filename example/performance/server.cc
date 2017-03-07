@@ -21,8 +21,6 @@ class PingConn : public PbConn {
 
     response_.Clear();
     response_.set_pong("hello " + request_.ping());
-
-    printf ("DealMessage receive (%s)\n", request_.ping().c_str());
     res_ = &response_;
 
     set_is_reply(true);
@@ -33,8 +31,6 @@ class PingConn : public PbConn {
 
   Ping request_;
   Pong response_;
-  //google::protobuf::Message request_;
-  //google::protobuf::Message response_;
 
   PingConn(PingConn&);
   PingConn& operator=(PingConn&);
@@ -51,19 +47,28 @@ class PingConnFactory : public ConnFactory {
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
-    printf ("Usage: ./server port\n");
+    printf ("Usage: ./server ip port\n");
     exit(0);
+  }
+
+  std::string ip(argv[1]);
+  int port = atoi(argv[2]);
+
+  Thread *my_worker[24];
+  ConnFactory *my_conn_factory = new PingConnFactory();
+  for (int i = 0; i < 24; i++) {
+    my_worker[i] = NewWorkerThread(my_conn_factory, 1000);
   }
 
   int my_port = (argc > 1) ? atoi(argv[1]) : 8221;
 
   ConnFactory *conn_factory = new PingConnFactory();
 
-  ServerThread* my_thread = NewHolyThread(my_port, conn_factory, 1000);
-  my_thread->StartThread();
-  my_thread->JoinThread();
+  ServerThread *st = NewDispatchThread(ip, port, 24, my_worker, 1000);
+  st->StartThread();
+  st->JoinThread();
 
-  delete my_thread;
+  delete st;
 
   return 0;
 }

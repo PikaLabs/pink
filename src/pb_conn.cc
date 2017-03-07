@@ -58,6 +58,7 @@ ReadStatus PbConn::GetRequest() {
             remain_packet_len_ = header_len_;
             cur_pos_ += COMMAND_HEADER_LENGTH;
             connStatus_ = kPacket;
+            continue;
           }
           return kReadHalf;
         }
@@ -83,6 +84,7 @@ ReadStatus PbConn::GetRequest() {
           if (remain_packet_len_ == 0) {
             cur_pos_ = rbuf_len_;
             connStatus_ = kComplete;
+            continue;
           }
           return kReadHalf;
         }

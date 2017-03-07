@@ -95,9 +95,13 @@ class ServerThread : public Thread {
   virtual void HandleConnEvent(PinkFiredEvent *pfe) = 0;
 };
 
-extern ServerThread *NewHolyThread(int port, ConnFactory *conn_factory, int cron_interval);
-extern ServerThread *NewHolyThread(const std::string &bind_ip, int port, ConnFactory *conn_factory, int cron_interval);
-extern ServerThread *NewHolyThread(const std::set<std::string>& bind_ips, int port, ConnFactory *conn_factory, int cron_interval);
+extern ServerThread *NewHolyThread(int port, ConnFactory *conn_factory, int
+    cron_interval);
+extern ServerThread *NewHolyThread(const std::string &bind_ip, int port,
+    ConnFactory *conn_factory, int cron_interval);
+extern ServerThread *NewHolyThread(const std::set<std::string>& bind_ips, int
+    port, ConnFactory *conn_factory, int cron_interval);
+
 extern ServerThread *NewDispatchThread(
     int port,
     int work_num, Thread **worker_thread,

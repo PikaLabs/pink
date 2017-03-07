@@ -5,7 +5,7 @@
 #include "include/server_thread.h"
 #include "include/xdebug.h"
 
-#include "pink.pb.h"
+#include "myproto.pb.h"
 #include "include/pb_conn.h"
 
 #include <google/protobuf/message.h>
@@ -15,14 +15,14 @@
 using namespace pink;
 
 class MyConn: public PbConn {
-public:
+ public:
   MyConn(int fd, std::string ip_port, Thread *thread);
   virtual ~MyConn();
   virtual int DealMessage();
 
-private:
-  pink::Ping ping_;
-  pink::PingRes pingRes_;
+ private:
+  myproto::Ping ping_;
+  myproto::PingRes ping_res_;
 };
 
 MyConn::MyConn(int fd, ::std::string ip_port, Thread *thread) :
@@ -36,16 +36,14 @@ MyConn::~MyConn()
 
 int MyConn::DealMessage()
 {
+  printf("In the myconn DealMessage branch\n");
+  ping_.ParseFromArray(rbuf_ + cur_pos_ - header_len_, header_len_);
+  ping_res_.Clear();
+  ping_res_.set_res(11234);
+  ping_res_.set_mess("heiheidfdfdf");
+  printf ("DealMessage receive (%s)\n", ping_res_.mess().c_str());
+  res_ = &ping_res_;
   set_is_reply(true);
-  log_info("In the badaconn DealMessage branch");
-  ping_.ParseFromArray(rbuf_ + 4, header_len_);
-  pingRes_.set_res(11234);
-  pingRes_.set_mess("heiheidfdfdf");
-
-  res_ = &pingRes_;
-
-  int wbuf_len_ = res_->ByteSize();
-
   return 0;
 }
 
@@ -56,32 +54,6 @@ class MyConnFactory : public ConnFactory {
   }
   
 };
-
-// class BadaThread
-// {
-// public:
-//   BadaThread(int cron_interval = 0);
-//   virtual ~BadaThread();
-
-//   int PrintNum();
-
-// private:
-//   int bada_num_;
-// };
-
-// BadaThread::BadaThread(int cron_interval):
-//   WorkerThread::WorkerThread(cron_interval) {
-//   bada_num_ = 10;
-// }
-
-// int BadaThread::PrintNum() {
-//   log_info("BadaThread num %d", bada_num_);
-//   return 0;
-// }
-
-// BadaThread::~BadaThread() {
-
-// }
 
 int main()
 {
@@ -94,9 +66,7 @@ int main()
   ServerThread *st = NewDispatchThread(9211, 10, my_worker, 1000);
 
   st->StartThread();
-
-
-  sleep(1000);
+  st->JoinThread();
 
   return 0;
 }

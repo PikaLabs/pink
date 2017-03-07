@@ -9,7 +9,6 @@ PikaConn::PikaConn(int fd, std::string ip_port, Thread *thread) :
   RedisConn(fd, ip_port) {
   pika_thread_ = reinterpret_cast<PikaHolyThread *>(thread);
 }
-
 PikaConn::~PikaConn() {
 }
 
@@ -17,7 +16,7 @@ int PikaConn::DealMessage() {
 
   std::string res;
   std::vector<std::string>::iterator iter = argv_.begin();
-  for (iter; iter != argv_.end(); iter++) {
+  for (; iter != argv_.end(); iter++) {
     res.append(*iter);
     res.append(" ");
   }
@@ -43,6 +42,7 @@ int PikaHolyThread::PrintNum() {
 PikaHolyThread::~PikaHolyThread() {
 
 }
+
 void PikaHolyThread::CronHandle() {
   log_info("======PikaHolyThread Cron======");
 }

@@ -1,4 +1,4 @@
-package pink;
+package myproto;
 
 message Ping {
   required string address = 2;
@@ -7,5 +7,5 @@ message Ping {
 
 message PingRes {
   required int32 res = 1;
-  required bytes mess = 2;
+  required string mess = 2;
 }

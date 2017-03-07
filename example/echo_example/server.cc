@@ -2,6 +2,7 @@
 #include <unistd.h>
 
 #include "pink_thread.h"
+#include "pink_define.h"
 #include "worker_thread.h"
 #include "dispatch_thread.h"
 #include "pb_conn.h"
@@ -18,7 +19,7 @@ public:
     message_.set_name("hello " + message_.name());
     uint32_t u =htonl( message_.ByteSize());
     memcpy(static_cast<void*>(wbuf_), static_cast<void*>(&u), COMMAND_HEADER_LENGTH);
-    message_.SerializeToArray(wbuf_ + COMMAND_HEADER_LENGTH, PB_MAX_MESSAGE);
+    message_.SerializeToArray(wbuf_ + COMMAND_HEADER_LENGTH, pink::kProtoMaxMessage);
     set_is_reply(true);
   }
  private:
@@ -57,9 +58,9 @@ int main(int argc, char* argv[]) {
   }
   MyDispatchThread *dispatch_thread = new MyDispatchThread(my_port, my_worker_threads_num, my_worker_threads_ptr, dispatch_cron_interval);
   dispatch_thread->StartThread();
-  dispatch_thread->JoinThread();
   for (int i = 0; i != my_worker_threads_num; i++) {
     delete my_worker_threads_ptr[i];  
   }
   free(my_worker_threads_ptr);
+  delete(dispatch_thread);
 }

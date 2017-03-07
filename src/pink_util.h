@@ -2,21 +2,13 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
-
-#include "include/period_thread.h"
-
-#include <unistd.h>
+#ifndef PINK_UTIL_H_
+#define PINK_UTIL_H_
 
 namespace pink {
 
-PeriodThread::PeriodThread(struct timeval period) :
-  period_(period) {
+int Setnonblocking(int sockfd);
+
 }
 
-void *PeriodThread::ThreadMain() {
-  PeriodMain();
-  select(0, NULL, NULL, NULL, &period_);
-  return NULL;
-}
-
-}  // namespace pink
+#endif

@@ -1,19 +1,66 @@
-#include "redis_cli.h"
+// Copyright (c) 2015-present, Qihoo, Inc.  All rights reserved.
+// This source code is licensed under the BSD-style license found in the
+// LICENSE file in the root directory of this source tree. An additional grant
+// of patent rights can be found in the PATENTS file in the same directory.
+#include "include/redis_cli.h"
 
 #include <netinet/in.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdarg.h>
 
-#include "pink_define.h"
-#include "pink_cli_socket.h"
-#include "xdebug.h"
+#include <string>
+#include <vector>
+
+#include "include/pink_define.h"
+#include "include/pink_cli.h"
 
 
 namespace pink {
 
+class RedisCli : public PinkCli {
+ public:
+  RedisCli();
+  virtual ~RedisCli();
+
+  // msg should have been parsed
+  virtual Status Send(void *msg);
+
+  // Read, parse and store the reply
+  virtual Status Recv(void *result = NULL);
+
+  RedisCmdArgsType argv_;   // The parsed result 
+
+ private:
+
+  char *rbuf_;
+  int32_t rbuf_size_;
+  int32_t rbuf_pos_;
+  int32_t rbuf_offset_;
+  int elements_;    // the elements number of this current reply
+  int err_;
+
+  int GetReply();
+  int GetReplyFromReader();
+
+  int ProcessLineItem();
+  int ProcessBulkItem();
+  int ProcessMultiBulkItem();
+
+  ssize_t BufferRead();
+  char* ReadBytes(unsigned int bytes);
+  char* ReadLine(int *_len);
+
+  // No copyable
+  RedisCli(const RedisCli&);
+  void operator=(const RedisCli&);
+};
+
 enum REDIS_STATUS {
-  REDIS_ETIMEOUT = -2,
+  REDIS_ETIMEOUT = -5,
+  REDIS_EREAD_NULL = -4,
+  REDIS_EREAD = -3,     // errno is set
+  REDIS_EPARSE_TYPE = -2,
   REDIS_ERR = -1,
   REDIS_OK = 0,
   REDIS_HALF,
@@ -39,12 +86,13 @@ RedisCli::~RedisCli() {
 
 // We use passed-in send buffer here
 Status RedisCli::Send(void *msg) {
-  log_info("The Send function");
   Status s;
 
+  // TODO anan use socket_->SendRaw instead
   std::string* storage = reinterpret_cast<std::string *>(msg);
   const char *wbuf = storage->data();
   size_t nleft = storage->size();
+
   int wbuf_pos = 0;
 
   ssize_t nwritten;
@@ -56,10 +104,10 @@ Status RedisCli::Send(void *msg) {
         continue;
         // block will EAGAIN ?
       } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
-        s = Status::Timeout("");
+        s = Status::Timeout("Send timeout");
         //s = Status::IOError("ETIMEOUT", "send timeout");
       } else {
-        s = Status::IOError(strerror(errno));
+        s = Status::IOError("write error " + std::string(strerror(errno)));
       }
       return s;
     }
@@ -73,7 +121,6 @@ Status RedisCli::Send(void *msg) {
 
 // The result is useless
 Status RedisCli::Recv(void *trival) {
-  log_info("The Recv function");
 
   argv_.clear();
   int result = GetReply();
@@ -82,9 +129,14 @@ Status RedisCli::Recv(void *trival) {
       return Status::OK();
     case REDIS_ETIMEOUT:
       return Status::Timeout("");
-      //return Status::IOError("ETIMEOUT", "recv timeout");
-    default:
-      return Status::IOError(strerror(errno));
+    case REDIS_EREAD_NULL:
+      return Status::IOError("Read null");
+    case REDIS_EREAD:
+      return Status::IOError("read failed caz " + std::string(strerror(errno)));
+    case REDIS_EPARSE_TYPE:
+      return Status::IOError("invalid type");
+    default: // other error
+      return Status::IOError("other error, maybe " + std::string(strerror(errno)));
   }
 }
 
@@ -108,11 +160,10 @@ ssize_t RedisCli::BufferRead() {
       } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
         return REDIS_ETIMEOUT;
       } else {
-        log_info("read error, %s", strerror(errno));
-        return REDIS_ERR;
+        return REDIS_EREAD;
       }
     } else if (nread == 0) {    // we consider read null an error 
-      return REDIS_ERR;
+      return REDIS_EREAD_NULL;
     }
 
     rbuf_offset_ += nread;
@@ -236,7 +287,6 @@ int RedisCli::GetReply() {
     // Should read again
     if (rbuf_offset_ == 0 || result == REDIS_HALF) {
       if ((result = BufferRead()) < 0) {
-        break;
         return result;
       }
     }
@@ -309,7 +359,7 @@ int RedisCli::GetReplyFromReader() {
       type = REDIS_REPLY_ARRAY;
       break;
     default:
-      return REDIS_ERR;
+      return REDIS_EPARSE_TYPE;
   }
 
   switch (type) {
@@ -326,10 +376,13 @@ int RedisCli::GetReplyFromReader() {
       // need processMultiBulkItem();
       return ProcessMultiBulkItem();
     default:
-      return REDIS_ERR; // Avoid warning.
+      return REDIS_EPARSE_TYPE; // Avoid warning.
   }
 }
 
+extern PinkCli *NewRedisCli() {
+  return new RedisCli();
+}
 //
 // Redis protocol related funcitons
 //
@@ -553,7 +606,7 @@ int redisFormatCommandArgv(RedisCmdArgsType argv, std::string *cmd) {
   return REDIS_OK;
 }
 
-int RedisCli::SerializeCommand(std::string *cmd, const char *format, ...) {
+extern int SerializeCommand(std::string *cmd, const char *format, ...) {
   va_list ap;
   va_start(ap, format);
   int result = redisvAppendCommand(cmd, format, ap);
@@ -561,7 +614,7 @@ int RedisCli::SerializeCommand(std::string *cmd, const char *format, ...) {
   return result;
 }
 
-int RedisCli::SerializeCommand(RedisCmdArgsType argv, std::string *cmd)  {
+extern int SerializeCommand(RedisCmdArgsType argv, std::string *cmd)  {
   return redisFormatCommandArgv(argv, cmd);
 }
 

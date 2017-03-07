@@ -1,156 +1,89 @@
-#include "pb_cli.h"
-#include "pink_define.h"
-#include "xdebug.h"
+// Copyright (c) 2015-present, Qihoo, Inc.  All rights reserved.
+// This source code is licensed under the BSD-style license found in the
+// LICENSE file in the root directory of this source tree. An additional grant
+// of patent rights can be found in the PATENTS file in the same directory.
 
 #include <netinet/in.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <google/protobuf/message.h>
+
+#include "include/pink_cli.h"
+#include "include/pink_define.h"
+#include "include/xdebug.h"
 
 namespace pink {
 
-PbCli::PbCli() :
-  packet_len_(0),
-  rbuf_len_(0),
-  rbuf_pos_(0),
-  wbuf_len_(0),
-  wbuf_pos_(0)
-{
-  rbuf_ = (char *)malloc(sizeof(char) * PB_MAX_MESSAGE);
-  wbuf_ = (char *)malloc(sizeof(char) * PB_MAX_MESSAGE);
-  scratch_ = (char *)malloc(sizeof(char) * PB_MAX_MESSAGE);
+// Default PBCli is block IO;
+class PbCli : public PinkCli {
+ public:
+  PbCli();
+  virtual ~PbCli();
+
+  // msg should have been parsed
+  virtual Status Send(void *msg_req) override;
+
+  // Read, parse and store the reply
+  virtual Status Recv(void *msg_res) override;
+
+
+ private:
+  // BuildWbuf need to access rbuf_, wbuf_;
+  char *rbuf_;
+  char *wbuf_;
+
+  PbCli(const PbCli&);
+  void operator= (const PbCli&);
+};
+
+PbCli::PbCli() {
+  rbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * kProtoMaxMessage));
+  wbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * kProtoMaxMessage));
 }
 
-PbCli::~PbCli()
-{
-  free(scratch_);
+PbCli::~PbCli() {
   free(wbuf_);
   free(rbuf_);
 }
 
+Status PbCli::Send(void *msg) {
+  google::protobuf::Message *req = reinterpret_cast<google::protobuf::Message *>(msg);
 
-void PbCli::BuildWbuf()
-{
-  wbuf_len_ = msg_->ByteSize();
-  msg_->SerializeToArray(wbuf_ + COMMAND_HEADER_LENGTH, wbuf_len_);
-  uint32_t len;
-  len = htonl(wbuf_len_);
+  int wbuf_len = req->ByteSize();
+  req->SerializeToArray(wbuf_ + kCommandHeaderLength, wbuf_len);
+  uint32_t len = htonl(wbuf_len);
   memcpy(wbuf_, &len, sizeof(uint32_t));
-  wbuf_len_ += COMMAND_HEADER_LENGTH;
+  wbuf_len += kCommandHeaderLength;
 
+  return PinkCli::SendRaw(wbuf_, wbuf_len);
 }
 
-Status PbCli::Send(void *msg)
-{
-  log_info("The Send function");
-  msg_ = reinterpret_cast<google::protobuf::Message *>(msg);
+Status PbCli::Recv(void *msg_res) {
+  google::protobuf::Message *res = reinterpret_cast<google::protobuf::Message *>(msg_res);
 
-  BuildWbuf();
-
-  msg_->SerializeToArray(wbuf_ + sizeof(uint32_t), sizeof(wbuf_));
-
-  Status s;
-
-  /*
-   * because the fd in PbCli is block so we just use rio_written
-   */
-  wbuf_pos_ = 0;
-  log_info("wbuf_len_ %d", wbuf_len_);
-  size_t nleft = wbuf_len_;
-  ssize_t nwritten;
-  while (nleft > 0) {
-    if ((nwritten = write(fd(), wbuf_ + wbuf_pos_, nleft)) <= 0) {
-      if (errno == EINTR) {
-        nwritten = 0;
-        continue;
-      } else {
-        s = Status::IOError(wbuf_, "write bada context error");
-        return s;
-      }
-    }
-    nleft -= nwritten;
-    wbuf_pos_ += nwritten;
-  }
-
-  return s;
-}
-
-Status PbCli::Recv(void *msg_res)
-{
-  log_info("The Recv function");
-  msg_res_ = reinterpret_cast<google::protobuf::Message *>(msg_res);
-  int ret = ReadHeader();
-  if(ret == 0 || ret == -1)
-    return Status::Corruption("read header error");
-  log_info("packet_len_ %d", packet_len_);
-  ret = ReadPacket();
-  if(ret == 0 )
-    return Status::Corruption("read packet error");
-  msg_res_->ParseFromArray(rbuf_, packet_len_);
-
-  return Status::OK();
-}
-
-int PbCli::ReadHeader()
-{
-  int nread = 0;
-  rbuf_pos_ = 0;
-  size_t nleft = COMMAND_HEADER_LENGTH;
-  log_info("nleft %d", nleft);
-  while (nleft > 0) {
-    nread = read(fd(), rbuf_ + rbuf_pos_, nleft);
-    log_info("nread %d", nread);
-    if (nread == -1) {
-      log_err("nread %d", nread);
-      if (errno == EINTR) {
-        continue;
-      } else {
-        return -1;
-      }
-    } else if (nread == 0) {
-      /*
-       * we read end of file here, but in our protocol we need more data
-       * so this must be an incomplete packet
-       */
-      return 0;
-    } else {
-      break;
-    }
-    nleft -= nread;
-    rbuf_pos_ += nread;
+  // Read Header
+  size_t read_len = kCommandHeaderLength;
+  Status s = RecvRaw((void *)rbuf_, &read_len);
+  if (!s.ok()) {
+    return s;
   }
 
   uint32_t integer;
   memcpy((char *)(&integer), rbuf_, sizeof(uint32_t));
-  packet_len_ = ntohl(integer);
-  return COMMAND_HEADER_LENGTH;
-}
+  size_t packet_len = ntohl(integer);
 
-int PbCli::ReadPacket()
-{
-  int nread = 0;
-  rbuf_pos_ = 0;
-  size_t nleft = packet_len_;
-  while (nleft > 0) {
-    nread = read(fd(), rbuf_ + rbuf_pos_, nleft);
-    if (nread == -1) {
-      if (errno == EINTR) {
-        continue;
-      } else {
-        return 0;
-      }
-    } else if (nread == 0) {
-      /*
-       * we read end of file here, but in our protocol we need more data
-       * so this must be an incomplete packet, so we return an error
-       */
-      return 0;
-    } else {
-      break;
-    }
-    nleft -= nread;
-    rbuf_pos_ += nread;
+  // Read Packet
+  s = RecvRaw((void *)rbuf_, &packet_len);
+  if (!s.ok()) {
+    return s;
   }
 
-  return packet_len_;
+  res->ParseFromArray(rbuf_, packet_len);
+  return Status::OK();
 }
+
+extern PinkCli *NewPbCli() {
+  return new PbCli();
+}
+
 };

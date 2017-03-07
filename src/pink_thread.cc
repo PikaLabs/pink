@@ -1,39 +1,46 @@
+// Copyright (c) 2015-present, Qihoo, Inc.  All rights reserved.
+// This source code is licensed under the BSD-style license found in the
+// LICENSE file in the root directory of this source tree. An additional grant
+// of patent rights can be found in the PATENTS file in the same directory.
+
 #include "pink_thread.h"
+#include "pink_thread_name.h"
 #include "xdebug.h"
+#include "pink_define.h"
 
 namespace pink {
 
-Thread::Thread(int cron_interval)
-  : cron_interval_(cron_interval),
-    should_exit_(false),
-    thread_id_(0)
-{
+Thread::Thread()
+  : running_(false),
+    thread_id_(0) {
 }
 
-Thread::~Thread()
-{
+Thread::~Thread() {
+  set_running(false);
+  JoinThread();
 }
 
-void Thread::CronHandle() {
-//  log_info("Come in thread cronhandle");
-}
-
-void Thread::StartThread()
-{
-  should_exit_ = false;
-  pthread_create(&thread_id_, NULL, RunThread, (void *)this);
-}
-
-void Thread::JoinThread()
-{
-  if (thread_id_ != 0)
-    pthread_join(thread_id_, NULL);
-}
-
-void *Thread::RunThread(void *arg)
-{
-  reinterpret_cast<Thread*>(arg)->ThreadMain();
+void* Thread::RunThread(void *arg) {
+  Thread* thread = reinterpret_cast<Thread*>(arg);
+  if (!(thread->thread_name().empty())) {
+    SetThreadName(pthread_self(), thread->thread_name());
+  }
+  thread->ThreadMain();
   return NULL;
 }
 
+int Thread::StartThread() {
+  printf("start thread\n");
+  bool expect = false;
+  if (!running_.compare_exchange_strong(expect, true)) {
+    return -1;
+  }
+  return pthread_create(&thread_id_, NULL, RunThread, (void *)this);
 }
+
+int Thread::JoinThread() {
+    return pthread_join(thread_id_, NULL);
+}
+
+
+}  // namespace pink

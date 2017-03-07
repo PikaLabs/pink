@@ -1,19 +1,30 @@
-#ifndef PINK_SOCKET_H_
-#define PINK_SOCKET_H_
+// Copyright (c) 2011-present, Facebook, Inc.  All rights reserved.
+// This source code is licensed under the BSD-style license found in the
+// LICENSE file in the root directory of this source tree. An additional grant
+// of patent rights can be found in the PATENTS file in the same directory.
+
+#ifndef PINK_SRC_SERVER_SOCKET_H_
+#define PINK_SRC_SERVER_SOCKET_H_
 
 #include <netinet/in.h>
 #include <sys/socket.h>
 
+#include <string>
+#include <iostream>
+
 namespace pink {
 
-class ServerSocket
-{
-public:
-  ServerSocket(int port, bool is_block = false);
+class ServerSocket {
+ public:
+  explicit ServerSocket(int port, bool is_block = false);
 
-  ~ServerSocket();
+  virtual ~ServerSocket();
 
-  void Listen();
+  /*
+   * Listen to a specific ip addr on a multi eth machine
+   * Return 0 if Listen success, <0 other wise
+   */
+  int Listen(const std::string &bind_ip = std::string());
 
   void Close();
 
@@ -27,39 +38,37 @@ public:
   int port() {
     return port_;
   }
-  
+
   void set_keep_alive(bool keep_alive) {
     keep_alive_ = keep_alive;
   }
-  bool keep_alive() {
+  bool keep_alive() const {
     return keep_alive_;
   }
 
   void set_send_timeout(int send_timeout) {
     send_timeout_ = send_timeout;
   }
-  int send_timeout() {
+  int send_timeout() const {
     return send_timeout_;
   }
 
   void set_recv_timeout(int recv_timeout) {
     recv_timeout_ = recv_timeout;
   }
-  int recv_timeout() {
+  int recv_timeout() const {
     return recv_timeout_;
   }
 
-  int sockfd() {
+  int sockfd() const{
     return sockfd_;
   }
   void set_sockfd(int sockfd) {
     sockfd_ = sockfd;
   }
 
-private:
-
+ private:
   int SetNonBlock();
-
   /*
    * The tcp server port and address
    */
@@ -74,7 +83,7 @@ private:
   bool keep_alive_;
   bool listening_;
   bool is_block_;
-  
+
   struct sockaddr_in servaddr_;
   int sockfd_;
 
@@ -84,9 +93,8 @@ private:
 
   ServerSocket(const ServerSocket&);
   void operator=(const ServerSocket&);
-
 };
 
-};
+}  // namespace pink
 
-#endif
+#endif  // PINK_SRC_SERVER_SOCKET_H_

@@ -5,23 +5,27 @@ else
 	CXXFLAGS = -O2 -pipe -fPIC -W -Wwrite-strings -Wpointer-arith -Wreorder -Wswitch -Wsign-promo -Wredundant-decls -Wformat -Wall -D_GNU_SOURCE -D__STDC_FORMAT_MACROS -std=c++11 -Wno-unused-variable -Wno-maybe-uninitialized -Wno-unused-parameter
 	# CXXFLAGS = -Wall -W -DDEBUG -g -O0 -D__XDEBUG__ 
 endif
-OBJECT = pink holy pika pika_holy pika_simple pcli redis_cli bg_thread
-# OBJECT = pcli pink
+# OBJECT = holy_srv myproto_cli pika pika_holy bg_thread http_server
+OBJECT = holy_srv dispatch_srv myproto_cli
 
 SRC_DIR = ./
 
 OUTPUT = ./output
 
 LIB_PATH = -L../ \
-		   -L../output/lib/
+					 -L../output/lib/ \
+					 -L../third/slash/output/lib/
 
 LIBS = -lpink \
 			 -lprotobuf \
+			 -lslash \
 			 -lpthread
 
-INCLUDE_PATH = -I../output/include/
+INCLUDE_PATH = -I../include/ \
+							 -I../third/ \
+							 -I../
 
-.PHONY: all clean version pcli redis_cli
+.PHONY: all clean version
 
 
 BASE_BOJS := $(wildcard $(SRC_DIR)/*.cc)
@@ -39,29 +43,32 @@ all: $(OBJECT)
 	@echo "Success, go, go, go..."
 
 
-pink: pink.cc bada_thread.cc pink.pb.cc
+holy_srv: myholy_srv.cc myproto.pb.cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
-holy: holy.cc holy_test.cc pink.pb.cc
+dispatch_srv: mydispatch_srv.cc myproto.pb.cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+myproto_cli: myproto_cli.cc myproto.pb.cc
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+# holy: holy.cc holy_test.cc pink.pb.cc
+#   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
-pika: pika.cc pika_thread.cc
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+# pika: pika.cc pika_thread.cc
+#   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
-pika_holy: pika_holy.cc pika_holy_thread.cc
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+# pika_holy: pika_holy.cc pika_holy_thread.cc
+#   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
-pika_simple: pika_simple.cc pika_simple_thread.cc
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+# redis_cli: redis_cli_test.cc
+#   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
-pcli: cli_test.cc pink.pb.cc
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+# bg_thread: bg_thread.cc
+#   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+# http_server: http_server.cc
+#   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
-redis_cli: redis_cli_test.cc
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
-
-bg_thread: bg_thread.cc
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+myproto.pb.cc: myproto.proto
+	protoc -I=$(SRC_DIR) --cpp_out=$(SRC_DIR) ./$^
 
 $(OBJS): %.o : %.cc
 	$(CXX) $(CXXFLAGS) -c $< -o $@ $(INCLUDE_PATH) 

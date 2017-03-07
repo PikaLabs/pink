@@ -1,3 +1,8 @@
+// Copyright (c) 2015-present, Qihoo, Inc.  All rights reserved.
+// This source code is licensed under the BSD-style license found in the
+// LICENSE file in the root directory of this source tree. An additional grant
+// of patent rights can be found in the PATENTS file in the same directory.
+
 #ifndef PINK_DEFINE_H__
 #define PINK_DEFINE_H__
 
@@ -12,13 +17,14 @@ namespace pink {
 #define PINK_NAME_LEN 1024
 
 #define PB_MAX_MESSAGE 102400
-
+const int kProtoMaxMessage = 64 * 1024 * 1024; // 64MB
 /*
  * The pb head and code length
  */
 #define COMMAND_HEADER_LENGTH 4
 #define COMMAND_CODE_LENGTH 4
 
+const int kCommandHeaderLength = 4;
 
 /*
  * The socket block type
@@ -58,10 +64,18 @@ enum WriteStatus {
   kWriteError = 2,
 };
 
+enum RetCode {
+  kSuccess = 0,
+  kBindError = 1,
+  kCreateThreadError = 2,
+  kListenError = 3,
+  kSetSockOptError = 4,
+};
+
 /*
  * define the redis protocol
  */
-#define REDIS_MAX_MESSAGE 2097152
+#define REDIS_MAX_MESSAGE 67108864 // 64MB
 #define REDIS_IOBUF_LEN 16384
 #define REDIS_REQ_INLINE 1
 #define REDIS_REQ_MULTIBULK 2

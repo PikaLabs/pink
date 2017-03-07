@@ -1,49 +1,51 @@
-#ifndef PINK_CLI_H_
-#define PINK_CLI_H_
+#ifndef PINK_INCLUDE_PINK_CLI_H_
+#define PINK_INCLUDE_PINK_CLI_H_
 
-#include <string>
+#include "slash/include/slash_status.h"
 
-#include "pink_cli_socket.h"
-#include "status.h"
+using slash::Status;
 
 namespace pink {
 
-class CliSocket;
-
 class PinkCli {
-
-public:
+ public:
   PinkCli();
   virtual ~PinkCli();
 
-  Status Connect(const std::string &peer_ip, const int peer_port);
-  Status Close();
+  Status Connect(const std::string &peer_ip, const int peer_port, 
+      const std::string& bind_ip = "");
+  // Compress and write the message
   virtual Status Send(void *msg) = 0;
-  virtual Status Recv(void *msg_res) = 0;
 
-  int fd();
+  // Read, parse and store the reply
+  virtual Status Recv(void *result = NULL) = 0;
 
-  virtual int set_send_timeout(int send_timeout) {
-    return cli_socket_->set_send_timeout(send_timeout);
-  }
+  void Close();
 
-  virtual int set_recv_timeout(int recv_timeout) {
-    return cli_socket_->set_recv_timeout(recv_timeout);
-  }
+  // TODO(baotiao): delete after redis_cli use RecvRaw
+  int fd() const;
 
-  virtual void set_connect_timeout(int connect_timeout) {
-    cli_socket_->set_connect_timeout(connect_timeout);
-  }
+  // Set timeout in miliseconds, default send and recv timeout is 0,
+  // default connect timeout is 1000ms
+  int set_send_timeout(int send_timeout);
+  int set_recv_timeout(int recv_timeout);
+  void set_connect_timeout(int connect_timeout);
 
-private:
+ protected:
+  Status SendRaw(void* buf, size_t len);
+  Status RecvRaw(void* buf, size_t* len);
 
-  std::string peer_ip_;
-  int peer_port_;
-
-  CliSocket *cli_socket_;
-
+ private:
+  struct Rep;
+  Rep* rep_;
+  PinkCli(const PinkCli&);
+  void operator=(const PinkCli&);
 };
 
-};
+extern PinkCli *NewPbCli();
 
-#endif
+extern PinkCli *NewRedisCli();
+
+}  // namespace pink
+
+#endif  // PINK_INCLUDE_PINK_CLI_H_

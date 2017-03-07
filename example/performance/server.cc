@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <atomic>
+#include <sys/time.h>
+#include <stdint.h>
 
 #include "include/server_thread.h"
 #include "include/pink_conn.h"
@@ -8,6 +11,15 @@
 #include "message.pb.h"
 
 using namespace pink;
+using namespace std;
+
+uint64_t NowMicros() {
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return static_cast<uint64_t>(tv.tv_sec) * 1000000 + tv.tv_usec;
+}
+
+static atomic<int> num(0);
 
 class PingConn : public PbConn {
  public:
@@ -17,6 +29,7 @@ class PingConn : public PbConn {
   virtual ~PingConn() {}
 
   int DealMessage() {
+    num++;
     request_.ParseFromArray(rbuf_ + cur_pos_ - header_len_, header_len_);
 
     response_.Clear();
@@ -64,11 +77,22 @@ int main(int argc, char* argv[]) {
 
   ConnFactory *conn_factory = new PingConnFactory();
 
-  ServerThread *st = NewDispatchThread(ip, port, 24, my_worker, 1000);
-  st->StartThread();
-  st->JoinThread();
+  ServerThread *st_thread = NewDispatchThread(ip, port, 24, my_worker, 1000);
+  st_thread->StartThread();
+  uint64_t st, ed;
 
-  delete st;
+  while (1) {
+    st = NowMicros();
+    int prv = num.load();
+    sleep(1);
+    printf("num %d\n", num.load());
+    ed = NowMicros();
+    printf("mmap cost time microsecond(us) %lld\n", ed - st);
+    printf("average qps %lf\n", (double)(num.load() - prv) / ((double)(ed - st) / 1000000));
+  }
+  st_thread->JoinThread();
+
+  delete st_thread;
 
   return 0;
 }

@@ -93,9 +93,9 @@ void *WorkerThread::ThreadMain() {
           pink_epoll_->PinkDelEvent(pfe->fd);
           continue;
         }
-
+        
+        in_conn = iter->second;
         if (pfe->mask & EPOLLIN) {
-          in_conn = iter->second;
           ReadStatus getRes = in_conn->GetRequest();
           in_conn->set_last_interaction(now);
           if (getRes != kReadAll && getRes != kReadHalf) {
@@ -108,7 +108,6 @@ void *WorkerThread::ThreadMain() {
           }
         }
         if (pfe->mask & EPOLLOUT) {
-          in_conn = iter->second;
           WriteStatus write_status = in_conn->SendReply();
           if (write_status == kWriteAll) {
             in_conn->set_is_reply(false);

@@ -53,9 +53,8 @@ void HolyThread::HandleConnEvent(PinkFiredEvent *pfe) {
       return;
     }
   }
-
+  in_conn = iter->second;
   if (pfe->mask & EPOLLIN) {
-    in_conn = iter->second;
     ReadStatus getRes = in_conn->GetRequest();
     struct timeval now;
     gettimeofday(&now, NULL);
@@ -70,7 +69,6 @@ void HolyThread::HandleConnEvent(PinkFiredEvent *pfe) {
     }
   }
   if (pfe->mask & EPOLLOUT) {
-    in_conn = iter->second;
     WriteStatus write_status = in_conn->SendReply();
     if (write_status == kWriteAll) {
       in_conn->set_is_reply(false);

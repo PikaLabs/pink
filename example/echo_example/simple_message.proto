@@ -1,4 +1,0 @@
-package simple_message;
-message SimpleMessage {
-  required string name = 1;
-}

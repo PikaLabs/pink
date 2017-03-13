@@ -31,7 +31,6 @@ class RedisConn: public PinkConn {
   virtual ReadStatus GetRequest();
   virtual WriteStatus SendReply();
 
-  virtual int DealMessage() = 0;
 
   ConnStatus connStatus_;
 
@@ -39,6 +38,7 @@ class RedisConn: public PinkConn {
   char* wbuf_;
   uint32_t wbuf_len_;
   RedisCmdArgsType argv_;
+  virtual int DealMessage() = 0;
 
  private:
   ReadStatus ProcessInputBuffer();

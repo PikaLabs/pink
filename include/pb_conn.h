@@ -27,7 +27,6 @@ class PbConn: public PinkConn {
   ReadStatus GetRequest() override;
   WriteStatus SendReply() override;
 
-  virtual int DealMessage() = 0;
 
   /*
    * The Variable need by read the buf,
@@ -42,6 +41,10 @@ class PbConn: public PinkConn {
   ConnStatus connStatus_;
 
   google::protobuf::Message *res_;
+
+ protected:
+
+  virtual int DealMessage() = 0;
 
  private:
 

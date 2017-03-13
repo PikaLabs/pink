@@ -18,6 +18,7 @@ class MyConn: public PbConn {
  public:
   MyConn(int fd, std::string ip_port, Thread *thread);
   virtual ~MyConn();
+ protected:
   virtual int DealMessage();
 
  private:

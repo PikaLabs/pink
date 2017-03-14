@@ -13,6 +13,8 @@
 
 namespace pink {
 
+static const int kPinkMaxClients = 10240;
+
 PinkEpoll::PinkEpoll() : timeout_(1000) {
 #if defined(EPOLL_CLOEXEC)
     epfd_ = epoll_create1(EPOLL_CLOEXEC);
@@ -26,9 +28,9 @@ PinkEpoll::PinkEpoll() : timeout_(1000) {
     log_err("epoll create fail");
     exit(1);
   }
-  events_ = (struct epoll_event *)malloc(sizeof(struct epoll_event) * PINK_MAX_CLIENTS);
+  events_ = (struct epoll_event *)malloc(sizeof(struct epoll_event) * kPinkMaxClients);
 
-  firedevent_ = (PinkFiredEvent *)malloc(sizeof(PinkFiredEvent) * PINK_MAX_CLIENTS);
+  firedevent_ = (PinkFiredEvent *)malloc(sizeof(PinkFiredEvent) * kPinkMaxClients);
 }
 
 PinkEpoll::~PinkEpoll() {
@@ -37,36 +39,30 @@ PinkEpoll::~PinkEpoll() {
   close(epfd_);
 }
 
-int PinkEpoll::PinkAddEvent(int fd, int mask) {
+int PinkEpoll::PinkAddEvent(const int fd, const int mask) {
   struct epoll_event ee;
   ee.data.fd = fd;
   ee.events = mask;
-  if (epoll_ctl(epfd_, EPOLL_CTL_ADD, fd, &ee) == -1) {
-    return -1;
-  }
-  return 0;
+  return epoll_ctl(epfd_, EPOLL_CTL_ADD, fd, &ee);
 }
 
-int PinkEpoll::PinkModEvent(int fd, int oMask, int mask) {
+int PinkEpoll::PinkModEvent(const int fd, const int old_mask, const int mask) {
   struct epoll_event ee;
   ee.data.fd = fd;
-  ee.events = (oMask | mask);
-  if (epoll_ctl(epfd_, EPOLL_CTL_MOD, fd, &ee) == -1) {
-    return -1;
-  }
-  return 0;
+  ee.events = (old_mask | mask);
+  return epoll_ctl(epfd_, EPOLL_CTL_MOD, fd, &ee);
 }
 
-void PinkEpoll::PinkDelEvent(int fd) {
+int PinkEpoll::PinkDelEvent(const int fd) {
   /*
    * Kernel < 2.6.9 need a non null event point to EPOLL_CTL_DEL
    */
   struct epoll_event ee;
   ee.data.fd = fd;
-  epoll_ctl(epfd_, EPOLL_CTL_DEL, fd, &ee);
+  return epoll_ctl(epfd_, EPOLL_CTL_DEL, fd, &ee);
 }
 
-int PinkEpoll::PinkPoll(int timeout) {
+int PinkEpoll::PinkPoll(const int timeout) {
   int retval, numevents = 0;
   retval = epoll_wait(epfd_, events_, PINK_MAX_CLIENTS, timeout);
   if (retval > 0) {

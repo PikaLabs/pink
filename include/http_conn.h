@@ -135,7 +135,7 @@ const char *server_error[] = {
 
 class HttpConn: public PinkConn {
  public:
-  HttpConn(const int fd, const std::string &ip_port);
+  HttpConn(const int fd, const std::string &ip_port, Thread *thread);
   virtual ~HttpConn();
 
   virtual ReadStatus GetRequest() override;

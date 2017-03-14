@@ -30,7 +30,6 @@ void* Thread::RunThread(void *arg) {
 }
 
 int Thread::StartThread() {
-  printf("start thread\n");
   bool expect = false;
   if (!running_.compare_exchange_strong(expect, true)) {
     return -1;

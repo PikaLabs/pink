@@ -23,7 +23,7 @@ class MyConn: public PbConn {
 };
 
 MyConn::MyConn(int fd, ::std::string ip_port, Thread *thread) :
-  PbConn(fd, ip_port)
+  PbConn(fd, ip_port, thread)
 {
 }
 

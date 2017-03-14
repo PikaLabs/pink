@@ -16,15 +16,14 @@ struct PinkFiredEvent {
 
 class PinkEpoll
 {
-
-public:
+ public:
   PinkEpoll();
   ~PinkEpoll();
-  int PinkAddEvent(int fd, int mask);
-  void PinkDelEvent(int fd);
-  int PinkModEvent(int fd, int oMask, int mask);
+  int PinkAddEvent(const int fd, const int mask);
+  int PinkDelEvent(const int fd);
+  int PinkModEvent(const int fd, const int old_mask, const int mask);
 
-  int PinkPoll(int timeout);
+  int PinkPoll(const int timeout);
 
   PinkFiredEvent *firedevent() const { return firedevent_; }
 

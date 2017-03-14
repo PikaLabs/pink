@@ -24,7 +24,7 @@ static atomic<int> num(0);
 class PingConn : public PbConn {
  public:
   PingConn(int fd, std::string ip_port, pink::Thread* pself_thread = NULL) : 
-    PbConn(fd, ip_port) {
+    PbConn(fd, ip_port, pself_thread) {
   }
   virtual ~PingConn() {}
 
@@ -40,7 +40,6 @@ class PingConn : public PbConn {
   }
 
  private:
-  Thread* self_thread_;
 
   Ping request_;
   Pong response_;

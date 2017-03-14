@@ -124,8 +124,8 @@ static int split2args(const std::string& req_buf, RedisCmdArgsType& argv) {
   }
 }
 
-RedisConn::RedisConn(const int fd, const std::string &ip_port) :
-  PinkConn(fd, ip_port),
+RedisConn::RedisConn(const int fd, const std::string &ip_port, Thread *thread) :
+  PinkConn(fd, ip_port, thread),
   wbuf_size_(REDIS_MAX_MESSAGE),
   wbuf_len_(0),
   last_read_pos_(-1),
@@ -274,7 +274,7 @@ void RedisConn::ResetClient() {
 }
 
 bool RedisConn::ExpandWbuf() {
-  if (wbuf_size_ >= REDIS_MAX_MESSAGE * 32) {
+  if (wbuf_size_ >= (uint32_t)(REDIS_MAX_MESSAGE * (uint32_t)32)) {
     wbuf_pos_ = 0;
     return false;
   }

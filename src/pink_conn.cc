@@ -12,10 +12,11 @@
 
 namespace pink {
 
-PinkConn::PinkConn(const int fd, const std::string &ip_port):
+PinkConn::PinkConn(const int fd, const std::string &ip_port, Thread *thread):
   fd_(fd),
   ip_port_(ip_port),
-  is_reply_(false)
+  is_reply_(false),
+  thread_(thread)
 {
   gettimeofday(&last_interaction_, NULL);
 }

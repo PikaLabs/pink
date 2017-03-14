@@ -245,8 +245,8 @@ void HttpResponse::SetStatusCode(int code) {
   }
 }
 
-HttpConn::HttpConn(const int fd, const std::string &ip_port) :
-  PinkConn(fd, ip_port),
+HttpConn::HttpConn(const int fd, const std::string &ip_port, Thread *thread) :
+  PinkConn(fd, ip_port, thread),
   conn_status_(kHeader),
   rbuf_pos_(0),
   wbuf_len_(0),

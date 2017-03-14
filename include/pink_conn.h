@@ -15,7 +15,7 @@ class Thread;
 
 class PinkConn {
 public:
-  PinkConn(const int fd, const std::string &ip_port);
+  PinkConn(const int fd, const std::string &ip_port, Thread *thread);
   virtual ~PinkConn();
   
   /*
@@ -56,6 +56,10 @@ public:
     return last_interaction_;
   };
 
+  Thread *thread() const {
+    return thread_;
+  }
+
 private:
   
   int fd_;
@@ -63,6 +67,8 @@ private:
   bool is_reply_;
   struct timeval last_interaction_;
   int flags_;
+  // the thread this conn belong to
+  Thread *thread_;
 
   /*
    * No allowed copy and copy assign operator
@@ -71,14 +77,15 @@ private:
   void operator=(const PinkConn&);
 };
 
+
+/*
+ * for every conn, we need create a corresponding ConnFactory
+ */
 class ConnFactory {
  public:
   virtual ~ConnFactory() {};
   virtual PinkConn* NewPinkConn(int connfd, const std::string &ip_port, Thread *pink_thread) const = 0;
 };
-
-extern ConnFactory *NewRedisConnFactory(int connfd, const std::string &ip_port, Thread *thread);
-extern ConnFactory *NewPbConnFactory();
 
 }
 

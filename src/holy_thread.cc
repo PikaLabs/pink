@@ -80,7 +80,6 @@ void HolyThread::HandleConnEvent(PinkFiredEvent *pfe) {
     }
   }
   if ((pfe->mask & EPOLLERR) || (pfe->mask & EPOLLHUP) || should_close) {
-    log_info("close pfe fd here");
     pink_epoll_->PinkDelEvent(pfe->fd);
     close(pfe->fd);
     delete(in_conn);
@@ -107,11 +106,13 @@ extern ServerThread *NewHolyThread(int port, ConnFactory *conn_factory, int cron
   return new HolyThread(port, conn_factory, cron_interval);
 }
 
-extern ServerThread *NewHolyThread(const std::string &bind_ip, int port, ConnFactory *conn_factory, int cron_interval) {
+extern ServerThread *NewHolyThread(const std::string &bind_ip, int port,
+    ConnFactory *conn_factory, int cron_interval) {
   return new HolyThread(bind_ip, port, conn_factory, cron_interval);
 }
 
-extern ServerThread *NewHolyThread(const std::set<std::string>& bind_ips, int port, ConnFactory *conn_factory, int cron_interval) {
+extern ServerThread *NewHolyThread(const std::set<std::string>& bind_ips, 
+    int port, ConnFactory *conn_factory, int cron_interval) {
   return new HolyThread(bind_ips, port, conn_factory, cron_interval);
 }
 };  // namespace pink

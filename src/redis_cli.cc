@@ -102,10 +102,10 @@ Status RedisCli::Send(void *msg) {
       if (errno == EINTR) {
         nwritten = 0;
         continue;
-        // block will EAGAIN ?
+      // blocking fd after setting setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO,...)
+      // will return EAGAIN | EWOULDBLOCK for timeout
       } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
         s = Status::Timeout("Send timeout");
-        //s = Status::IOError("ETIMEOUT", "send timeout");
       } else {
         s = Status::IOError("write error " + std::string(strerror(errno)));
       }
@@ -157,6 +157,8 @@ ssize_t RedisCli::BufferRead() {
     if (nread == -1) {
       if (errno == EINTR) {
         continue;
+      // blocking fd after setting setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO,...)
+      // will return EAGAIN for timeout
       } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
         return REDIS_ETIMEOUT;
       } else {

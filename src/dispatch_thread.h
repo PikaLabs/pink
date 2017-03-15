@@ -56,11 +56,6 @@ class DispatchThread : public ServerThread {
    */
   WorkerThread **worker_thread_;
 
-  void CronHandle() override {}
-  virtual bool AccessHandle(std::string& ip) override {
-    return true;
-  }
-
   void HandleNewConn(const int connfd, const std::string& ip_port) override;
   void HandleConnEvent(PinkFiredEvent *pfe) override {}
 

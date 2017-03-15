@@ -22,8 +22,10 @@ class HolyThread: public ServerThread {
  public:
   // This type thread thread will listen and work self list redis thread
   HolyThread(int port, ConnFactory *conn_factory, int cron_interval = 0);
-  HolyThread(const std::string& bind_ip, int port, ConnFactory *conn_factory, int cron_interval = 0);
-  HolyThread(const std::set<std::string>& bind_ips, int port, ConnFactory *conn_factory, int cron_interval = 0);
+  HolyThread(const std::string& bind_ip, int port, ConnFactory *conn_factory,
+      int cron_interval = 0);
+  HolyThread(const std::set<std::string>& bind_ips, int port, 
+      ConnFactory *conn_factory, int cron_interval = 0);
   virtual ~HolyThread();
 
   /*
@@ -33,11 +35,6 @@ class HolyThread: public ServerThread {
   std::map<int, PinkConn *> conns_;
 
  private:
-  void CronHandle() override {}
-  bool AccessHandle(std::string& ip) override {
-    return true;
-  }
-
   ConnFactory *conn_factory_;
   void HandleNewConn(const int connfd, const std::string &ip_port) override;
   void HandleConnEvent(PinkFiredEvent *pfe) override;

@@ -177,6 +177,8 @@ Status PinkCli::RecvRaw(void *buf, size_t *count) {
     if ((nread = read(r->sockfd, rbuf + pos, nleft)) <= 0) {
       if (errno == EINTR) {
         continue;
+      // blocking fd after setting setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO,...)
+      // will return EAGAIN for timeout
       } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
         return Status::Timeout("Send timeout");
       } else {

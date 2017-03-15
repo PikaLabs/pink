@@ -122,9 +122,8 @@ void *ServerThread::ThreadMain() {
         if (pfe->mask & EPOLLIN) {
           connfd = accept(fd, (struct sockaddr *) &cliaddr, &clilen);
           if (connfd == -1) {
-            if (errno != EWOULDBLOCK) {
-              continue;
-            }
+            log_warn("accept error, errno numberis %d, error reason", errno, strerror(errno));
+            continue;
           }
           fcntl(connfd, F_SETFD, fcntl(connfd, F_GETFD) | FD_CLOEXEC);
 

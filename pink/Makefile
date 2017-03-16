@@ -6,19 +6,19 @@ else
 	# CXXFLAGS = -Wall -W -DDEBUG -g -O0 -D__XDEBUG__ -D__STDC_FORMAT_MACROS -fPIC -std=c++11 -gdwarf-2
 endif
 
-OBJECT = pink
+ifndef SLASH_DIR
+SLASH_PATH = ./third/slash
+endif
+
 SRC_DIR = ./src
-THIRD_PATH = ./third
-OUTPUT = ./output
+LIB_DIR = ./lib
 
 
 INCLUDE_PATH = -I./ \
-							 -I./include/ \
-							 -I./src/ \
-							 -I$(THIRD_PATH)/ 
+							 -I$(SLASH_PATH)/ 
 
 LIB_PATH = -L./ \
-					 -L$(THIRD_PATH)/slash/output/lib
+					 -L$(SLASH_PATH)/slash/lib
 
 
 LIBS = -lslash \
@@ -36,14 +36,12 @@ BASE_OBJS += $(wildcard $(SRC_DIR)/*.c)
 BASE_OBJS += $(wildcard $(SRC_DIR)/*.cpp)
 OBJS = $(patsubst %.cc,%.o,$(BASE_OBJS))
 
-SLASH = $(THIRD_PATH)/slash/output/lib/libslash.a
+SLASH = $(SLASH_PATH)/slash/lib/libslash.a
 
 all: $(LIBRARY)
-	rm -rf $(OUTPUT)
-	mkdir -p $(OUTPUT)/include
-	mkdir -p $(OUTPUT)/lib
-	cp -r ./include $(OUTPUT)/
-	mv $(LIBRARY) $(OUTPUT)/lib/
+	rm -rf $(LIB_DIR)
+	mkdir $(LIB_DIR)
+	mv $(LIBRARY) $(LIB_DIR)/
 	@echo "Success, go, go, go..."
 
 $(LIBRARY): $(SLASH) $(OBJS)
@@ -54,13 +52,12 @@ $(OBJS): %.o : %.cc
 	$(CXX) $(CXXFLAGS) -c $< -o $@ $(INCLUDE_PATH) 
 
 $(SLASH):
-	make -C $(THIRD_PATH)/slash/ __PERF=$(__PERF)
+	make -C $(SLASH_PATH)/slash/ __PERF=$(__PERF)
 
 clean: 
 	make clean -C example
 	rm -rf $(SRC_DIR)/*.o
-	rm -rf $(OUTPUT)/*
-	rm -rf $(OUTPUT)
+	rm -rf $(LIB_DIR)
 
 distclean: clean
-	make -C $(THIRD_PATH)/slash/ clean
+	make -C $(SLASH_PATH)/slash/ clean

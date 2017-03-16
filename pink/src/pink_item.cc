@@ -2,28 +2,25 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
-#include "pink_util.h"
-#include <fcntl.h>
-#include <netinet/in.h>
+
+#include "pink_item.h"
+#include "include/pink_define.h"
+#include <sys/stat.h>
 #include <sys/socket.h>
+#include <fcntl.h>
 #include <unistd.h>
-#include "pink_define.h"
+#include "csapp.h"
 
 namespace pink {
 
-int Setnonblocking(int sockfd)
+PinkItem::PinkItem(const int fd, const std::string &ip_port) :
+    fd_(fd),
+    ip_port_(ip_port)
 {
-  int flags;
-  if ((flags = fcntl(sockfd, F_GETFL, 0)) < 0) {
-    close(sockfd);
-    return -1;
-  }
-  flags |= O_NONBLOCK;
-  if (fcntl(sockfd, F_SETFL, flags) < 0) {
-    close(sockfd);
-    return -1;
-  }
-  return flags;
+}
+
+PinkItem::~PinkItem()
+{
 }
 
 }

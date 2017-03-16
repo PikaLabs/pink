@@ -15,7 +15,7 @@
 
 #include "include/pink_define.h"
 #include "src/worker_thread.h"
-#include "include/xdebug.h"
+#include "slash/include/xdebug.h"
 #include "include/pink_conn.h"
 
 namespace pink {

@@ -10,7 +10,7 @@
 #include <set>
 #include <string>
 
-#include "include/xdebug.h"
+#include "slash/include/xdebug.h"
 #include "include/server_thread.h"
 #include "include/pink_conn.h"
 #include "include/pink_mutex.h"

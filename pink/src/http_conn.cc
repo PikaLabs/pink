@@ -12,9 +12,9 @@
 #include <algorithm>
 
 #include "slash/include/slash_string.h"
+#include "slash/include/xdebug.h"
 
 #include "include/pink_define.h"
-#include "include/xdebug.h"
 #include "src/pink_util.h"
 
 namespace pink {

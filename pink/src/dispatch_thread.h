@@ -10,7 +10,7 @@
 #include <queue>
 #include <string>
 
-#include "include/xdebug.h"
+#include "slash/include/xdebug.h"
 #include "include/server_thread.h"
 
 namespace pink {

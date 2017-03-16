@@ -4,10 +4,10 @@
 // of patent rights can be found in the PATENTS file in the same directory.
 
 #include "include/bg_thread.h"
-
 #include <sys/time.h>
+#include "slash/include/xdebug.h"
 
-#include "include/xdebug.h"
+
 namespace pink {
 
 void BGThread::Schedule(void (*function)(void*), void* arg) {

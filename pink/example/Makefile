@@ -8,22 +8,24 @@ endif
 # OBJECT = holy_srv myproto_cli pika pika_holy bg_thread http_server
 OBJECT = holy_srv dispatch_srv myproto_cli
 
+ifndef SLASH_PATH
+SLASH_PATH = ../third/slash
+endif
+
 SRC_DIR = ./
 
 OUTPUT = ./output
 
-LIB_PATH = -L../ \
-					 -L../output/lib/ \
-					 -L../third/slash/output/lib/
+LIB_PATH = -L../lib/ \
+					 -L$(SLASH_PATH)/slash/lib/
 
-LIBS = -lpink \
+LIBS = -lslash \
+			 -lpink \
 			 -lprotobuf \
-			 -lslash \
 			 -lpthread
 
-INCLUDE_PATH = -I../include/ \
-							 -I../third/ \
-							 -I../
+INCLUDE_PATH = -I../ \
+							 -I$(SLASH_PATH)/
 
 .PHONY: all clean version
 

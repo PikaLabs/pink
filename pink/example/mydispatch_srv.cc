@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include "slash/include/xdebug.h"
 #include "include/pink_thread.h"
 #include "include/server_thread.h"
-#include "include/xdebug.h"
 
 #include "myproto.pb.h"
 #include "include/pb_conn.h"

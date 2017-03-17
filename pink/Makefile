@@ -6,7 +6,7 @@ else
 	# CXXFLAGS = -Wall -W -DDEBUG -g -O0 -D__XDEBUG__ -D__STDC_FORMAT_MACROS -fPIC -std=c++11 -gdwarf-2
 endif
 
-ifndef SLASH_DIR
+ifndef SLASH_PATH
 SLASH_PATH = ./third/slash
 endif
 
@@ -42,6 +42,7 @@ all: $(LIBRARY)
 	rm -rf $(LIB_DIR)
 	mkdir $(LIB_DIR)
 	mv $(LIBRARY) $(LIB_DIR)/
+	make -C example SLASH_PATH=../$(SLASH_PATH)
 	@echo "Success, go, go, go..."
 
 $(LIBRARY): $(SLASH) $(OBJS)

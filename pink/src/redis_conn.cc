@@ -4,9 +4,9 @@
 #include <string>
 
 #include "slash/include/xdebug.h"
-#include "include/pink_define.h"
-#include "include/redis_conn.h"
-#include "src/worker_thread.h"
+#include "pink/include/pink_define.h"
+#include "pink/include/redis_conn.h"
+#include "worker_thread.h"
 
 namespace pink {
 

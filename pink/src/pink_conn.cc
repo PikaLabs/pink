@@ -6,9 +6,9 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "include/pink_conn.h"
+#include "pink/include/pink_conn.h"
+#include "pink/include/pink_thread.h"
 #include "pink_util.h"
-#include "include/pink_thread.h"
 
 namespace pink {
 

@@ -17,9 +17,9 @@
 
 #include "slash/include/xdebug.h"
 
-#include "include/pink_thread.h"
-#include "include/pink_mutex.h"
-#include "include/pink_define.h"
+#include "pink/include/pink_thread.h"
+#include "pink/include/pink_mutex.h"
+#include "pink/include/pink_define.h"
 
 namespace pink {
 
@@ -31,7 +31,7 @@ class ConnFactory;
 
 class WorkerThread : public Thread {
  public:
-  explicit WorkerThread(ConnFactory *conn_factory, int cron_interval = 0);
+  explicit WorkerThread(ConnFactory *conn_factory, int cron_interval = 0, void* (*call_hook)(void* arg) = NULL);
   virtual ~WorkerThread();
 
   /*
@@ -72,6 +72,8 @@ class WorkerThread : public Thread {
   PinkEpoll *pink_epoll_;
 
   virtual void *ThreadMain() override;
+
+	void* (*call_hook_)(void* arg);
 
   // clean conns
   void Cleanup();

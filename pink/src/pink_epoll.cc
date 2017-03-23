@@ -3,12 +3,12 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#include "src/pink_epoll.h"
+#include "pink_epoll.h"
 
 #include <linux/version.h>
 #include <fcntl.h>
 
-#include "include/pink_define.h"
+#include "pink/include/pink_define.h"
 #include "slash/include/xdebug.h"
 
 namespace pink {

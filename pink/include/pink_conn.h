@@ -7,7 +7,7 @@
 
 #include <sys/time.h>
 #include <string>
-#include "include/pink_define.h"
+#include "pink/include/pink_define.h"
 
 namespace pink {
 

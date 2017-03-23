@@ -14,7 +14,7 @@ SRC_DIR = ./src
 LIB_DIR = ./lib
 
 
-INCLUDE_PATH = -I./ \
+INCLUDE_PATH = -I../ \
 							 -I$(SLASH_PATH)/ 
 
 LIB_PATH = -L./ \

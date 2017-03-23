@@ -2,11 +2,11 @@
 #include <unistd.h>
 
 #include "slash/include/xdebug.h"
-#include "include/pink_thread.h"
-#include "include/server_thread.h"
+#include "pink/include/pink_thread.h"
+#include "pink/include/server_thread.h"
 
 #include "myproto.pb.h"
-#include "include/pb_conn.h"
+#include "pink/include/pb_conn.h"
 
 #include <google/protobuf/message.h>
 #include <google/protobuf/io/coded_stream.h>

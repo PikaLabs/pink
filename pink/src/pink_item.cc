@@ -4,7 +4,7 @@
 // of patent rights can be found in the PATENTS file in the same directory.
 
 #include "pink_item.h"
-#include "include/pink_define.h"
+#include "pink/include/pink_define.h"
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <fcntl.h>

@@ -7,7 +7,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include "include/pink_define.h"
+#include "pink/include/pink_define.h"
 
 namespace pink {
 

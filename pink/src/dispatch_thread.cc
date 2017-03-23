@@ -1,8 +1,8 @@
-#include "src/dispatch_thread.h"
+#include "dispatch_thread.h"
 
-#include "src/pink_item.h"
-#include "src/pink_epoll.h"
-#include "src/worker_thread.h"
+#include "pink_item.h"
+#include "pink_epoll.h"
+#include "worker_thread.h"
 
 namespace pink {
 

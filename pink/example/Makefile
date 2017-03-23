@@ -24,7 +24,7 @@ LIBS = -lslash \
 			 -lprotobuf \
 			 -lpthread
 
-INCLUDE_PATH = -I../ \
+INCLUDE_PATH = -I../../ \
 							 -I$(SLASH_PATH)/
 
 .PHONY: all clean version

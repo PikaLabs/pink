@@ -10,13 +10,13 @@
 #include <vector>
 #include <string>
 
-#include "src/csapp.h"
+#include "pink/src/csapp.h"
 #include "slash/include/slash_status.h"
 
-#include "include/pink_define.h"
-#include "src/worker_thread.h"
+#include "pink/include/pink_define.h"
+#include "pink/src/worker_thread.h"
 #include "slash/include/xdebug.h"
-#include "include/pink_conn.h"
+#include "pink/include/pink_conn.h"
 
 namespace pink {
 

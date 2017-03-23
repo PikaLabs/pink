@@ -12,8 +12,8 @@
 #include "slash/include/slash_status.h"
 #include "slash/include/xdebug.h"
 
-#include "include/pink_define.h"
-#include "include/pink_conn.h"
+#include "pink/include/pink_define.h"
+#include "pink/include/pink_conn.h"
 
 namespace pink {
 

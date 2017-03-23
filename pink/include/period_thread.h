@@ -8,7 +8,7 @@
 
 #include <sys/time.h>
 
-#include "include/pink_thread.h"
+#include "pink/include/pink_thread.h"
 
 namespace pink {
 

@@ -11,7 +11,7 @@
 #include <string>
 
 #include "slash/include/xdebug.h"
-#include "include/server_thread.h"
+#include "pink/include/server_thread.h"
 
 namespace pink {
 

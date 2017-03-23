@@ -9,7 +9,7 @@
 #include <atomic>
 #include <queue>
 
-#include "include/pink_thread.h"
+#include "pink/include/pink_thread.h"
 
 #include "slash/include/slash_mutex.h"
 

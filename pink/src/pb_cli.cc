@@ -9,8 +9,8 @@
 #include <google/protobuf/message.h>
 
 #include "slash/include/xdebug.h"
-#include "include/pink_cli.h"
-#include "include/pink_define.h"
+#include "pink/include/pink_cli.h"
+#include "pink/include/pink_define.h"
 
 namespace pink {
 

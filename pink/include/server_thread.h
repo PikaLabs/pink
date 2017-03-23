@@ -12,9 +12,9 @@
 #include <vector>
 
 #include "slash/include/slash_status.h"
-#include "include/pink_define.h"
-#include "include/pink_thread.h"
-#include "include/pink_mutex.h"
+#include "pink/include/pink_define.h"
+#include "pink/include/pink_thread.h"
+#include "pink/include/pink_mutex.h"
 
 namespace pink {
 

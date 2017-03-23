@@ -1,8 +1,8 @@
-#include "src/holy_thread.h"
+#include "holy_thread.h"
 
-#include "src/pink_epoll.h"
-#include "src/pink_item.h"
-#include "include/pink_conn.h"
+#include "pink_epoll.h"
+#include "pink_item.h"
+#include "pink/include/pink_conn.h"
 
 namespace pink {
 

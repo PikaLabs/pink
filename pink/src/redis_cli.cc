@@ -2,7 +2,7 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
-#include "include/redis_cli.h"
+#include "pink/include/redis_cli.h"
 
 #include <netinet/in.h>
 #include <fcntl.h>
@@ -12,8 +12,8 @@
 #include <string>
 #include <vector>
 
-#include "include/pink_define.h"
-#include "include/pink_cli.h"
+#include "pink/include/pink_define.h"
+#include "pink/include/pink_cli.h"
 
 
 namespace pink {

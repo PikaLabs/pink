@@ -4,10 +4,10 @@
 // of patent rights can be found in the PATENTS file in the same directory.
 
 #include "slash/include/xdebug.h"
-#include "include/server_thread.h"
-#include "src/pink_epoll.h"
-#include "src/server_socket.h"
-#include "src/csapp.h"
+#include "pink/include/server_thread.h"
+#include "pink_epoll.h"
+#include "server_socket.h"
+#include "csapp.h"
 
 namespace pink {
 

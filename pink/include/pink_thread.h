@@ -57,7 +57,7 @@ class Thread {
   void operator=(const Thread&);
 };
 
-extern Thread *NewWorkerThread(ConnFactory *conn_factory, int cron_interval = 0, void* (*call_hook)(void* arg) = NULL);
+extern Thread *NewWorkerThread(ConnFactory *conn_factory, int cron_interval = 0);
 
 }  // namespace pink
 

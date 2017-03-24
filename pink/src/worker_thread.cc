@@ -7,10 +7,9 @@
 
 namespace pink {
 
-WorkerThread::WorkerThread(ConnFactory *conn_factory, int cron_interval, void* (call_hook)(void* arg)) :
+WorkerThread::WorkerThread(ConnFactory *conn_factory, int cron_interval) :
   conn_factory_(conn_factory),
-  cron_interval_(cron_interval),
-	call_hook_(call_hook) {
+  cron_interval_(cron_interval) {
   /*
    * install the protobuf handler here
    */
@@ -79,9 +78,6 @@ void *WorkerThread::ThreadMain() {
             conns_[ti.fd()] = tc;
           }
           pink_epoll_->PinkAddEvent(ti.fd(), EPOLLIN);
-					if (call_hook_) {
-						call_hook_(tc);
-					}
         } else {
           continue;
         }
@@ -152,7 +148,7 @@ void WorkerThread::Cleanup() {
   }
 }
 
-extern Thread *NewWorkerThread(ConnFactory *conn_factory, int cron_interval, void* (call_hook)(void* arg)) {
+extern Thread *NewWorkerThread(ConnFactory *conn_factory, int cron_interval) {
   return new WorkerThread(conn_factory, cron_interval);
 }
 

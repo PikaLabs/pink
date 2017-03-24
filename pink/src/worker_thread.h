@@ -31,7 +31,7 @@ class ConnFactory;
 
 class WorkerThread : public Thread {
  public:
-  explicit WorkerThread(ConnFactory *conn_factory, int cron_interval = 0, void* (*call_hook)(void* arg) = NULL);
+  explicit WorkerThread(ConnFactory *conn_factory, int cron_interval = 0);
   virtual ~WorkerThread();
 
   /*
@@ -72,8 +72,6 @@ class WorkerThread : public Thread {
   PinkEpoll *pink_epoll_;
 
   virtual void *ThreadMain() override;
-
-	void* (*call_hook_)(void* arg);
 
   // clean conns
   void Cleanup();

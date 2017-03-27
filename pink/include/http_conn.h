@@ -5,18 +5,18 @@
 
 #ifndef PINK_INCLUDE_HTTP_CONN_H_
 #define PINK_INCLUDE_HTTP_CONN_H_
-
 #include <map>
 #include <vector>
 #include <string>
 
-#include "pink/src/csapp.h"
 #include "slash/include/slash_status.h"
-
-#include "pink/include/pink_define.h"
-#include "pink/src/worker_thread.h"
 #include "slash/include/xdebug.h"
+
 #include "pink/include/pink_conn.h"
+#include "pink/include/pink_define.h"
+#include "pink/src/csapp.h"
+#include "pink/src/worker_thread.h"
+#include "pink/src/pink_util.h"
 
 namespace pink {
 
@@ -88,59 +88,13 @@ class HttpResponse {
   std::string body_;
 };
 
-namespace {
-const char *message_phrase[] = {
-  "Continue",             // 100
-  "Switching Protocols",  // 101
-  "Processing",           // 102
-};
-
-const char *success_phrase[] = {
-  "OK",                             // 200
-  "Created",                        // 201
-  "Accepted",                       // 202
-  "Non-Authoritative Information",  // 203
-  "No Content",                     // 204
-  "Reset Content",                  // 205
-  "Partial Content",                // 206
-  "Multi-Status",                   // 207
-};
-
-const char *request_error[] = {
-  "Bad Request",                    // 400
-  "Unauthorized",                   // 401
-  "",                               // 402 reserve
-  "Forbidden",                      // 403
-  "Not Found",                      // 404
-  "Method Not Allowed",             // 405
-  "Not Acceptable",                 // 406
-  "Proxy Authentication Required",  // 407
-  "Request Timeout",                // 408
-  "Conflict",                       // 409
-};
-
-const char *server_error[] = {
-  "Internal Server Error",        // 500
-  "Not Implemented",              // 501
-  "Bad Gateway",                  // 502
-  "Service Unavailable",          // 503
-  "Gateway Timeout",              // 504
-  "HTTP Version Not Supported",   // 505
-  "Variant Also Negotiates",      // 506
-  "Insufficient Storage",         // 507
-  "Bandwidth Limit Exceeded",     // 508
-  "Not Extended",                 // 509
-};
-}
-
 class HttpConn: public PinkConn {
  public:
-  HttpConn(const int fd, const std::string &ip_port, Thread *thread);
+  HttpConn(const int fd, const std::string &ip_port);
   virtual ~HttpConn();
 
   virtual ReadStatus GetRequest() override;
   virtual WriteStatus SendReply() override;
-
 
  private:
   virtual void DealMessage(const HttpRequest* req,

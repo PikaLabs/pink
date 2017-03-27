@@ -3,7 +3,6 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 #include "pink/include/http_conn.h"
-
 #include <stdlib.h>
 #include <limits.h>
 #include <stdio.h>
@@ -11,16 +10,53 @@
 #include <string>
 #include <algorithm>
 
-#include "slash/include/slash_string.h"
 #include "slash/include/xdebug.h"
-
+#include "slash/include/slash_string.h"
 #include "pink/include/pink_define.h"
-#include "pink/src/pink_util.h"
+#include "pink/src/worker_thread.h"
 
 namespace pink {
 
 static const uint32_t kHttpMaxMessage = 1024 * 1024 * 8;
 static const uint32_t kHttpMaxHeader = 1024 * 64;
+
+static const std::map<int, std::string> http_status_map = {
+  {100, "Continue"},
+  {101, "Switching Protocols"},
+  {102, "Processing"},
+
+  {200, "OK"},
+  {201, "Created"},
+  {202, "Accepted"},
+  {203, "Non-Authoritative Information"},
+  {204, "No Content"},
+  {205, "Reset Content"},
+  {206, "Partial Content"},
+  {207, "Multi-Status"},
+
+  {400, "Bad Request"},
+  {401, "Unauthorized"},
+  {402, ""},  // reserve
+  {403, "Forbidden"},
+  {404, "Not Found"},
+  {405, "Method Not Allowed"},
+  {406, "Not Acceptable"},
+  {407, "Proxy Authentication Required"},
+  {408, "Request Timeout"},
+  {409, "Conflict"},
+  {416, "Requested Range not satisfiable"},
+
+  {500, "Internal Server Error"},
+  {501, "Not Implemented"},
+  {502, "Bad Gateway"},
+  {503, "Service Unavailable"},
+  {504, "Gateway Timeout"},
+  {505, "HTTP Version Not Supported"},
+  {506, "Variant Also Negotiates"},
+  {507, "Insufficient Storage"},
+  {508, "Bandwidth Limit Exceeded"},
+  {509, "Not Extended"},
+};
 
 HttpRequest::HttpRequest():
   method("GET"),
@@ -91,6 +127,12 @@ bool HttpRequest::ParseHeadLine(const char* data, int line_start,
 }
 
 bool HttpRequest::ParseGetUrl() {
+  // Format path
+  if (path.find(headers["host"]) != std::string::npos &&
+      path.size() > (7 + headers["host"].size())) {
+    // http://www.xxx.xxx/path/to
+    path.assign(path.substr(7 + headers["host"].size()));
+  }
   size_t n = path.find('?');
   if (n == std::string::npos) {
     return true; // no parameter
@@ -149,12 +191,11 @@ bool HttpRequest::ParseHeadFromArray(const char* data, const int size) {
       return false;
     }
     remain_size -= (line_end - line_start + 1);
-		line_end++;
-    line_start = line_end;
+    line_start = ++line_end;
   }
   
-  // Parse query parameter from GET url
-  if (method == "GET" && !ParseGetUrl()) {
+  // Parse query parameter from url
+  if (!ParseGetUrl()) {
     return false;
   }
   return true;
@@ -162,9 +203,9 @@ bool HttpRequest::ParseHeadFromArray(const char* data, const int size) {
 
 bool HttpRequest::ParseBodyFromArray(const char* data, const int size) {
   content.append(data, size);
-  if (method == "POST") {
-    return ParseParameters(content);
-  }
+  // if (method == "POST") {
+  //   return ParseParameters(content);
+  // }
   return true;
 }
 
@@ -229,24 +270,17 @@ int HttpResponse::SerializeBodyToArray(char* data, size_t size, int* pos) {
 }
 
 void HttpResponse::SetStatusCode(int code) {
+  assert((code >= 100 && code <= 102) ||
+         (code >= 200 && code <= 207) ||
+         (code >= 400 && code <= 409) ||
+         (code == 416) ||
+         (code >= 500 && code <= 509));
   status_code_ = code;
-  if (code < 200) {
-    assert(code >= 100 && code <= 102);
-    reason_phrase_.assign(message_phrase[code - 100]);
-  } else if (code < 300) {
-    assert(code >= 200 && code <= 207);
-    reason_phrase_.assign(success_phrase[code - 200]);
-  } else if (code < 500) {
-    assert(code >= 400&& code <= 409);
-    reason_phrase_.assign(request_error[code - 400]);
-  } else {
-    assert(code >= 500 && code <= 509);
-    reason_phrase_.assign(server_error[code - 500]);
-  }
+  reason_phrase_.assign(http_status_map.at(code));
 }
 
-HttpConn::HttpConn(const int fd, const std::string &ip_port, Thread *thread) :
-  PinkConn(fd, ip_port, thread),
+HttpConn::HttpConn(const int fd, const std::string &ip_port) :
+  PinkConn(fd, ip_port),
   conn_status_(kHeader),
   rbuf_pos_(0),
   wbuf_len_(0),

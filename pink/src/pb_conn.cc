@@ -90,7 +90,9 @@ ReadStatus PbConn::GetRequest() {
         }
       }
       case kComplete: {
-        DealMessage();
+        if (DealMessage() != 0) {
+          return kReadError;
+        }
         connStatus_ = kHeader;
         cur_pos_ = 0;
         rbuf_len_ = 0;

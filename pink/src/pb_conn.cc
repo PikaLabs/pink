@@ -9,8 +9,8 @@
 
 #include "slash/include/xdebug.h"
 #include "pink/include/pink_define.h"
-#include "worker_thread.h"
-#include "csapp.h"
+#include "pink/src/worker_thread.h"
+#include "pink/src/csapp.h"
 
 namespace pink {
 

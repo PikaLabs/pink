@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "pink_thread.h"
-#include "worker_thread.h"
-#include "dispatch_thread.h"
+#include "pink/include/pink_thread.h"
+#include "pink/include/worker_thread.h"
+#include "pink/src/dispatch_thread.h"
 #include "pika_thread.h"
 
 using namespace pink;

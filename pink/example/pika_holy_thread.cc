@@ -1,5 +1,5 @@
 #include "pika_holy_thread.h"
-#include "xdebug.h"
+#include "slash/include/xdebug.h"
 
 #include <functional>
 #include <string>

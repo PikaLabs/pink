@@ -15,7 +15,7 @@
 #include "slash/include/xdebug.h"
 
 #include "pink/include/pink_define.h"
-#include "pink_util.h"
+#include "pink/src/pink_util.h"
 
 namespace pink {
 

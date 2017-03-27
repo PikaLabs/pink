@@ -1,9 +1,9 @@
 #include "worker_thread.h"
 
 #include "pink/include/pink_conn.h"
-#include "pink_item.h"
-#include "pink_epoll.h"
-#include "csapp.h"
+#include "pink/src/pink_item.h"
+#include "pink/src/pink_epoll.h"
+#include "pink/src/csapp.h"
 
 namespace pink {
 

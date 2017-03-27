@@ -5,9 +5,9 @@
 
 #include "slash/include/xdebug.h"
 #include "pink/include/server_thread.h"
-#include "pink_epoll.h"
-#include "server_socket.h"
-#include "csapp.h"
+#include "pink/src/pink_epoll.h"
+#include "pink/src/server_socket.h"
+#include "pink/src/csapp.h"
 
 namespace pink {
 

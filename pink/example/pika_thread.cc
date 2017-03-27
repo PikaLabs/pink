@@ -1,8 +1,8 @@
 #include "pika_thread.h"
-#include "xdebug.h"
 
 #include <functional>
 #include <string>
+#include "slash/include/xdebug.h"
 
 using namespace pink;
 

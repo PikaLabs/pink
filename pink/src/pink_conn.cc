@@ -8,7 +8,7 @@
 
 #include "pink/include/pink_conn.h"
 #include "pink/include/pink_thread.h"
-#include "pink_util.h"
+#include "pink/src/pink_util.h"
 
 namespace pink {
 

@@ -1,9 +1,9 @@
+#include <stdio.h>
+#include <errno.h>
+#include "slash/include/xdebug.h"
 #include "include/pink_cli.h"
 #include "include/redis_cli.h"
 
-#include <stdio.h>
-#include <errno.h>
-#include "xdebug.h"
 
 using namespace pink;
 

@@ -3,13 +3,14 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#include "pink_item.h"
-#include "pink/include/pink_define.h"
+#include "pink/src/pink_item.h"
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include "csapp.h"
+
+#include "pink/include/pink_define.h"
+#include "pink/src/csapp.h"
 
 namespace pink {
 

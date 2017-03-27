@@ -42,7 +42,6 @@ all: $(LIBRARY)
 	rm -rf $(LIB_DIR)
 	mkdir $(LIB_DIR)
 	mv $(LIBRARY) $(LIB_DIR)/
-	make -C example SLASH_PATH=../$(SLASH_PATH)
 	@echo "Success, go, go, go..."
 
 $(LIBRARY): $(SLASH) $(OBJS)
@@ -56,7 +55,6 @@ $(SLASH):
 	make -C $(SLASH_PATH)/slash/ __PERF=$(__PERF)
 
 clean: 
-	make clean -C example
 	rm -rf $(SRC_DIR)/*.o
 	rm -rf $(LIB_DIR)
 

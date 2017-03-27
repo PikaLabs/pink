@@ -57,10 +57,10 @@ myproto_cli: myproto_cli.cc myproto.pb.cc
 
 # pika: pika.cc pika_thread.cc
 #   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
-
+# 
 # pika_holy: pika_holy.cc pika_holy_thread.cc
 #   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
-
+# 
 # redis_cli: redis_cli_test.cc
 #   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 

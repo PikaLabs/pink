@@ -4,7 +4,7 @@
 // of patent rights can be found in the PATENTS file in the same directory.
 
 #include "pink/include/pink_thread.h"
-#include "pink_thread_name.h"
+#include "pink/src/pink_thread_name.h"
 #include "slash/include/xdebug.h"
 #include "pink/include/pink_define.h"
 

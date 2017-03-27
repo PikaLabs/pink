@@ -1,8 +1,8 @@
 #ifndef PIKA_HOLY_THREAD_H_
 #define PIKA_HOLY_THREAD_H_
 
-#include "holy_thread.h"
-#include "redis_conn.h"
+#include "pink/src/holy_thread.h"
+#include "pink/include/redis_conn.h"
 
 using namespace pink;
 class PikaHolyThread;

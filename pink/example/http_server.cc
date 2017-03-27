@@ -3,11 +3,12 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 #include <string>
-#include "include/slash_status.h"
-#include "pink_thread.h"
-#include "worker_thread.h"
-#include "dispatch_thread.h"
-#include "http_conn.h"
+#include "slash/include/slash_status.h"
+#include "pink/include/pink_thread.h"
+#include "pink/src/worker_thread.h"
+#include "pink/src/dispatch_thread.h"
+#include "pink/include/http_conn.h"
+
 class MyHttpConn : public pink::HttpConn {
  public:
   MyHttpConn(const int fd, const std::string &ip_port,

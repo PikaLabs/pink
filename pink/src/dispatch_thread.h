@@ -25,13 +25,13 @@ class DispatchThread : public ServerThread {
   // worker thead
   DispatchThread(int port,
                  int work_num, Thread **worker_thread,
-                 int cron_interval = 0);
+                 int cron_interval = 0, const ServerHandle* handle = NULL);
   DispatchThread(const std::string &ip, int port,
                  int work_num, Thread **worker_thread,
-                 int cron_interval = 0);
+                 int cron_interval = 0, const ServerHandle* handle = NULL);
   DispatchThread(const std::set<std::string>& ips, int port,
                  int work_num, Thread **worker_thread,
-                 int cron_interval = 0);
+                 int cron_interval = 0, const ServerHandle* handle = NULL);
 
   virtual ~DispatchThread() {
   }

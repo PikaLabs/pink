@@ -6,20 +6,23 @@
 
 namespace pink {
 
-HolyThread::HolyThread(int port, ConnFactory *conn_factory, int cron_interval) :
-  ServerThread::ServerThread(port, cron_interval),
+HolyThread::HolyThread(int port, ConnFactory *conn_factory,
+    int cron_interval, const ServerHandle* handle) :
+  ServerThread::ServerThread(port, cron_interval, handle),
   conn_factory_(conn_factory) {
   pthread_rwlock_init(&rwlock_, NULL);
 }
 
-HolyThread::HolyThread(const std::string& bind_ip, int port, ConnFactory *conn_factory, int cron_interval) :
-  ServerThread::ServerThread(bind_ip, port, cron_interval),
+HolyThread::HolyThread(const std::string& bind_ip, int port, ConnFactory *conn_factory,
+    int cron_interval, const ServerHandle* handle) :
+  ServerThread::ServerThread(bind_ip, port, cron_interval, handle),
   conn_factory_(conn_factory) {
   pthread_rwlock_init(&rwlock_, NULL);
 }
 
-HolyThread::HolyThread(const std::set<std::string>& bind_ips, int port, ConnFactory *conn_factory, int cron_interval) :
-  ServerThread::ServerThread(bind_ips, port, cron_interval),
+HolyThread::HolyThread(const std::set<std::string>& bind_ips, int port, ConnFactory *conn_factory,
+    int cron_interval, const ServerHandle* handle) :
+  ServerThread::ServerThread(bind_ips, port, cron_interval, handle),
   conn_factory_(conn_factory) {
   pthread_rwlock_init(&rwlock_, NULL);
 }
@@ -102,17 +105,29 @@ void HolyThread::Cleanup() {
   }
 }
 
-extern ServerThread *NewHolyThread(int port, ConnFactory *conn_factory, int cron_interval) {
-  return new HolyThread(port, conn_factory, cron_interval);
+extern ServerThread *NewHolyThread(
+    int port,
+    ConnFactory *conn_factory,
+    int cron_interval,
+    const ServerHandle* handle) {
+  return new HolyThread(port, conn_factory, cron_interval,
+      handle);
+}
+extern ServerThread *NewHolyThread(
+    const std::string &bind_ip, int port,
+    ConnFactory *conn_factory,
+    int cron_interval,
+    const ServerHandle* handle) {
+  return new HolyThread(bind_ip, port, conn_factory, cron_interval,
+      handle);
+}
+extern ServerThread *NewHolyThread(
+    const std::set<std::string>& bind_ips, int port,
+    ConnFactory *conn_factory,
+    int cron_interval,
+    const ServerHandle* handle) {
+  return new HolyThread(bind_ips, port, conn_factory, cron_interval,
+      handle);
 }
 
-extern ServerThread *NewHolyThread(const std::string &bind_ip, int port,
-    ConnFactory *conn_factory, int cron_interval) {
-  return new HolyThread(bind_ip, port, conn_factory, cron_interval);
-}
-
-extern ServerThread *NewHolyThread(const std::set<std::string>& bind_ips, 
-    int port, ConnFactory *conn_factory, int cron_interval) {
-  return new HolyThread(bind_ips, port, conn_factory, cron_interval);
-}
 };  // namespace pink

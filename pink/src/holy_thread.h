@@ -21,11 +21,14 @@ class PinkConn;
 class HolyThread: public ServerThread {
  public:
   // This type thread thread will listen and work self list redis thread
-  HolyThread(int port, ConnFactory *conn_factory, int cron_interval = 0);
-  HolyThread(const std::string& bind_ip, int port, ConnFactory *conn_factory,
-      int cron_interval = 0);
+  HolyThread(int port, ConnFactory *conn_factory,
+      int cron_interval = 0, const ServerHandle* handle = NULL);
+  HolyThread(const std::string& bind_ip, int port,
+      ConnFactory *conn_factory,
+      int cron_interval = 0, const ServerHandle* handle = NULL);
   HolyThread(const std::set<std::string>& bind_ips, int port, 
-      ConnFactory *conn_factory, int cron_interval = 0);
+      ConnFactory *conn_factory,
+      int cron_interval = 0, const ServerHandle* handle = NULL);
   virtual ~HolyThread();
 
   /*

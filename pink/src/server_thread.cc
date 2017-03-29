@@ -3,8 +3,9 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#include "slash/include/xdebug.h"
 #include "pink/include/server_thread.h"
+
+#include "slash/include/xdebug.h"
 #include "pink/src/pink_epoll.h"
 #include "pink/src/server_socket.h"
 #include "pink/src/csapp.h"
@@ -13,22 +14,44 @@ namespace pink {
 
 using slash::Status;
 
-ServerThread::ServerThread(int port, int cron_interval = 0)
+class DefaultServerHandle : public ServerHandle {
+public:
+  virtual void CronHandle() const override {}
+  virtual bool AccessHandle(std::string& ip) const override {
+    return true;
+  }
+};
+
+static const ServerHandle* SanitizeHandle(const ServerHandle* raw_handle) {
+  if (raw_handle == NULL) {
+    return new DefaultServerHandle();
+  }
+  return raw_handle;
+}
+
+ServerThread::ServerThread(int port,
+    int cron_interval, const ServerHandle* handle)
   : cron_interval_(cron_interval),
+    handle_(SanitizeHandle(handle)),
+    own_handle_(handle_ != handle),
     port_(port) {
   ips_.insert("0.0.0.0");
 }
 
 ServerThread::ServerThread(const std::string& bind_ip, int port,
-                           int cron_interval = 0)
+    int cron_interval, const ServerHandle* handle)
   : cron_interval_(cron_interval),
+    handle_(SanitizeHandle(handle)),
+    own_handle_(handle_ != handle),
     port_(port) {
   ips_.insert(bind_ip);
 }
 
-ServerThread::ServerThread(const std::set<std::string>& bind_ips,
-                           int port, int cron_interval = 0)
+ServerThread::ServerThread(const std::set<std::string>& bind_ips, int port,
+    int cron_interval, const ServerHandle* handle)
   : cron_interval_(cron_interval),
+    handle_(SanitizeHandle(handle)),
+    own_handle_(handle_ != handle),
     port_(port) {
   ips_ = bind_ips;
 }
@@ -39,6 +62,9 @@ ServerThread::~ServerThread() {
        iter != server_sockets_.end();
        ++iter) {
     delete *iter;
+  }
+  if (own_handle_) {
+    delete handle_;
   }
 }
 
@@ -106,7 +132,7 @@ void *ServerThread::ThreadMain() {
       } else {
         when.tv_sec = now.tv_sec + (cron_interval_ / 1000);
         when.tv_usec = now.tv_usec + ((cron_interval_ % 1000) * 1000);
-        CronHandle();
+        handle_->CronHandle();
         timeout = cron_interval_;
       }
     }
@@ -129,7 +155,7 @@ void *ServerThread::ThreadMain() {
 
           ip_port = inet_ntop(AF_INET, &cliaddr.sin_addr, ip_addr, sizeof(ip_addr));
 
-          if (!AccessHandle(ip_port)) {
+          if (!handle_->AccessHandle(ip_port)) {
             close(connfd);
             continue;
           }

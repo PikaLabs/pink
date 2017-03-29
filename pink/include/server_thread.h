@@ -24,6 +24,15 @@ struct PinkFiredEvent;
 class ConnFactory;
 class WorkerThread;
 
+class ServerHandle {
+ public:
+  ServerHandle() {}
+  virtual ~ServerHandle() {}
+
+  virtual void CronHandle() const = 0;
+  virtual bool AccessHandle(std::string& ip) const = 0;
+};
+
 class ServerThread : public Thread {
  public:
   /**
@@ -34,7 +43,8 @@ class ServerThread : public Thread {
    * @param worker_thread the worker thred we define
    * @param cron_interval the cron job interval
    */
-  ServerThread(int port, int cron_interval);
+  ServerThread(int port, int cron_interval = 0,
+      const ServerHandle *handle = NULL);
 
   /**
    * @brief
@@ -45,7 +55,8 @@ class ServerThread : public Thread {
    * @param worker_thread the worker thred we define
    * @param cron_interval the cron job interval
    */
-  ServerThread(const std::string& bind_ip, int port, int cron_interval);
+  ServerThread(const std::string& bind_ip, int port, int cron_interval = 0,
+      const ServerHandle *handle = NULL);
 
   /**
    * @brief
@@ -56,7 +67,8 @@ class ServerThread : public Thread {
    * @param worker_thread the worker thred we define
    * @param cron_interval the cron job interval
    */
-  ServerThread(const std::set<std::string>& bind_ips, int port, int cron_interval);
+  ServerThread(const std::set<std::string>& bind_ips, int port,
+      int cron_interval = 0, const ServerHandle *handle = NULL);
 
   virtual ~ServerThread();
 
@@ -64,56 +76,64 @@ class ServerThread : public Thread {
 
 
  protected:
-  int cron_interval_;
-
-  /*
-   * The tcp server port and address
-   */
-  std::vector<ServerSocket*> server_sockets_;
-  std::set<int32_t> server_fds_;
-
-  int port_;
-  std::set<std::string> ips_;
-
   /*
    * The Epoll event handler
    */
   PinkEpoll *pink_epoll_;
 
+private:
+  int cron_interval_;
+  const ServerHandle *handle_;
+  bool own_handle_;
+  /*
+   * The tcp server port and address
+   */
+  int port_;
+  std::set<std::string> ips_;
+  std::vector<ServerSocket*> server_sockets_;
+  std::set<int32_t> server_fds_;
+
   virtual int InitHandle();
-  virtual void CronHandle() {}
-  virtual bool AccessHandle(std::string& ip) {
-    return true;
-  }
-
   virtual void *ThreadMain() override;
-
   /*
    * The server connection and event handle
    */
   virtual void HandleNewConn(const int connfd, const std::string& ip_port) = 0;
   virtual void HandleConnEvent(PinkFiredEvent *pfe) = 0;
+
 };
 
-extern ServerThread *NewHolyThread(int port, ConnFactory *conn_factory, int
-    cron_interval);
-extern ServerThread *NewHolyThread(const std::string &bind_ip, int port,
-    ConnFactory *conn_factory, int cron_interval);
-extern ServerThread *NewHolyThread(const std::set<std::string>& bind_ips, int
-    port, ConnFactory *conn_factory, int cron_interval);
+extern ServerThread *NewHolyThread(
+    int port,
+    ConnFactory *conn_factory,
+    int cron_interval = 0,
+    const ServerHandle* handle = NULL);
+extern ServerThread *NewHolyThread(
+    const std::string &bind_ip, int port,
+    ConnFactory *conn_factory,
+    int cron_interval = 0,
+    const ServerHandle* handle = NULL);
+extern ServerThread *NewHolyThread(
+    const std::set<std::string>& bind_ips, int port,
+    ConnFactory *conn_factory,
+    int cron_interval = 0,
+    const ServerHandle* handle = NULL);
 
 extern ServerThread *NewDispatchThread(
     int port,
     int work_num, Thread **worker_thread,
-    int cron_interval = 0);
+    int cron_interval = 0,
+    const ServerHandle* handle = NULL);
 extern ServerThread *NewDispatchThread(
     const std::string &ip, int port,
     int work_num, Thread **worker_thread,
-    int cron_interval = 0);
+    int cron_interval = 0,
+    const ServerHandle* handle = NULL);
 extern ServerThread *NewDispatchThread(
     const std::set<std::string>& ips, int port,
     int work_num, Thread **worker_thread,
-    int cron_interval = 0);
+    int cron_interval = 0,
+    const ServerHandle* handle = NULL);
 
 } // namespace pink
 

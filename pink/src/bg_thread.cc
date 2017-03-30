@@ -83,4 +83,90 @@ void BGThread::DelaySchedule(uint64_t timeout, void (*function)(void *), void* a
   mu_.Unlock();
 }
 
+/*
+ * timeout is in millionsecond
+ */
+bool Timer::Schedule(uint64_t interval, void (*function)(void *), void* arg) {
+  if (interval == 0) {
+    return false;
+  }
+  /*
+   * pthread_cond_timedwait api use absolute API
+   * so we need gettimeofday + timeout
+   */
+  struct timeval now;
+  gettimeofday(&now, NULL);
+  uint64_t exec_time = now.tv_sec * 1000000 + interval * 1000 + now.tv_usec;
+
+  slash::MutexLock l(&mu_);
+  if (task_ != NULL) {
+    return false;
+  }
+  task_ = new TimerItem(exec_time, function, arg);
+  interval_ = interval;
+  signal_.Signal();
+  return true;
+}
+
+bool Timer::IsSchedule() {
+  slash::MutexLock l(&mu_);
+  return task_ != NULL;
+}
+
+void Timer::Cancel() {
+  slash::MutexLock l(&mu_);
+  delete task_;
+  task_ = NULL;
+  signal_.Signal();
+}
+
+void Timer::Reset() {
+  struct timeval now;
+  gettimeofday(&now, NULL);
+  uint64_t exec_time = now.tv_sec * 1000000 + interval_ * 1000 + now.tv_usec;
+  slash::MutexLock l(&mu_);
+  task_->exec_time = exec_time;
+  signal_.Signal();
+}
+
+uint64_t Timer::RemainTime() {
+  struct timeval now;
+  slash::MutexLock l(&mu_);
+  gettimeofday(&now, NULL);
+  return (task_->exec_time - now.tv_sec * 1000000 - now.tv_usec) / 1000;
+}
+
+void *Timer::ThreadMain() {
+  while (running()) {
+    mu_.Lock();
+    while (task_ == NULL && running()) {
+      signal_.Wait();
+    }
+    if (!running()) {
+      mu_.Unlock();
+      break;
+    }
+    
+    // Process task
+    struct timeval now;
+    gettimeofday(&now, NULL);
+
+    uint64_t unow = now.tv_sec * 1000000 + now.tv_usec;
+    if (unow / 1000 >= task_->exec_time / 1000) {
+      void (*function)(void*) = task_->function;
+      void* arg = task_->arg;
+      mu_.Unlock();
+      (*function)(arg);
+      Reset();
+      continue;
+    } else {
+      signal_.TimedWait(static_cast<uint32_t>((task_->exec_time - unow) / 1000));
+      mu_.Unlock();
+      continue;
+    }
+  }
+  return NULL;
+}
+
+
 }

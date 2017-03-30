@@ -29,8 +29,10 @@ class ServerHandle {
   ServerHandle() {}
   virtual ~ServerHandle() {}
 
-  virtual void CronHandle() const = 0;
-  virtual bool AccessHandle(std::string& ip) const = 0;
+  virtual void CronHandle() const {};
+  virtual bool AccessHandle(std::string& ip) const {
+    return true;
+  };
 };
 
 class ServerThread : public Thread {

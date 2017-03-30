@@ -15,6 +15,19 @@
 
 namespace pink {
 
+struct TimerItem {
+  uint64_t exec_time;
+  void (*function)(void *);
+  void* arg;
+  TimerItem(uint64_t _exec_time, void (*_function)(void*), void* _arg) :
+    exec_time(_exec_time),
+    function(_function),
+    arg(_arg) {}
+  bool operator < (const TimerItem& item) const {
+    return exec_time > item.exec_time;
+  }
+};
+
 class BGThread : public Thread {
  public:
   explicit BGThread(int full = 100000) :
@@ -27,6 +40,7 @@ class BGThread : public Thread {
 
   virtual ~BGThread() {
     if (running()) {
+      set_running(false);
       rsignal_.Signal();
       wsignal_.Signal();
     }
@@ -48,19 +62,6 @@ class BGThread : public Thread {
       : function(_function), arg(_arg) {}
   };
 
-  struct TimerItem {
-    uint64_t exec_time;
-    void (*function)(void *);
-    void* arg;
-    TimerItem(uint64_t _exec_time, void (*_function)(void*), void* _arg) :
-      exec_time(_exec_time),
-      function(_function),
-      arg(_arg) {}
-    bool operator < (const TimerItem& item) const {
-      return exec_time > item.exec_time;
-    }
-  };
-
 
   std::queue<BGItem> queue_;
   std::priority_queue<TimerItem> timer_queue_;
@@ -69,6 +70,38 @@ class BGThread : public Thread {
   slash::Mutex mu_;
   slash::CondVar rsignal_;
   slash::CondVar wsignal_;
+  virtual void *ThreadMain() override;
+};
+
+class Timer : public Thread {
+ public:
+  explicit Timer() :
+    Thread::Thread(),
+    task_(NULL),
+    signal_(&mu_) {
+    }
+  
+  virtual ~Timer() {
+    if (running()) {
+      Cancel();
+      set_running(false);
+      signal_.Signal();
+    }
+    delete task_;
+  }
+  
+  bool Schedule(uint64_t interval, void (*function)(void *), void* arg);
+  bool IsSchedule();
+  void Cancel();
+  void Reset();
+  // remian time in micosecond
+  uint64_t RemainTime();
+
+ private:
+  uint64_t interval_;
+  TimerItem *task_;
+  slash::Mutex mu_;
+  slash::CondVar signal_;
   virtual void *ThreadMain() override;
 };
 

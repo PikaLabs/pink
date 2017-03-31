@@ -239,7 +239,9 @@ int HttpResponse::SerializeHeaderToArray(char* data, size_t size) {
   serial_size += ret;
 
   // Serialize header
-  SetHeaders("Content-Length", body_.size());
+  if (headers_.find("Content-Length") == headers_.end()) {
+    SetHeaders("Content-Length", body_.size());
+  }
   for (auto &line : headers_) {
     ret = snprintf(data + serial_size, size - serial_size, "%s: %s\r\n",
                    line.first.c_str(), line.second.c_str());

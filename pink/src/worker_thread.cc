@@ -67,14 +67,14 @@ void *WorkerThread::ThreadMain() {
         if (pfe->mask & EPOLLIN) {
           read(notify_receive_fd_, bb, 1);
           {
-            MutexLock l(&mutex_);
+            slash::MutexLock l(&mutex_);
             ti = conn_queue_.front();
             conn_queue_.pop();
           }
           PinkConn *tc = conn_factory_->NewPinkConn(ti.fd(), ti.ip_port(), this);
           tc->SetNonblock();
           {
-            RWLock l(&rwlock_, true);
+            slash::RWLock l(&rwlock_, true);
             conns_[ti.fd()] = tc;
           }
           pink_epoll_->PinkAddEvent(ti.fd(), EPOLLIN);
@@ -120,7 +120,7 @@ void *WorkerThread::ThreadMain() {
         }
         if ((pfe->mask & EPOLLERR) || (pfe->mask & EPOLLHUP) || should_close) {
           {
-            RWLock l(&rwlock_, true);
+            slash::RWLock l(&rwlock_, true);
             pink_epoll_->PinkDelEvent(pfe->fd);
             close(pfe->fd);
             delete(in_conn);
@@ -138,7 +138,7 @@ void *WorkerThread::ThreadMain() {
 }
 
 void WorkerThread::Cleanup() {
-  RWLock l(&rwlock_, true);
+  slash::RWLock l(&rwlock_, true);
   PinkConn *in_conn;
   std::map<int, PinkConn *>::iterator iter = conns_.begin();
   for (; iter != conns_.end(); iter++) {

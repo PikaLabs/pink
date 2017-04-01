@@ -19,8 +19,8 @@ OUTPUT = ./output
 LIB_PATH = -L../lib/ \
 					 -L$(SLASH_PATH)/slash/lib/
 
-LIBS = -lslash \
-			 -lpink \
+LIBS = -lpink \
+			 -lslash \
 			 -lprotobuf \
 			 -lpthread
 

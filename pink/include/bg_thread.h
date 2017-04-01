@@ -89,7 +89,8 @@ class Timer : public Thread {
     }
     delete task_;
   }
-  
+ 
+  // Timer will delete arg once Cancel
   bool Schedule(uint64_t interval, void (*function)(void *), void* arg);
   bool IsSchedule();
   void Cancel();

@@ -17,7 +17,7 @@ namespace pink {
 // Default PBCli is block IO;
 class PbCli : public PinkCli {
  public:
-  PbCli();
+  PbCli(const std::string& ip, const int port);
   virtual ~PbCli();
 
   // msg should have been parsed
@@ -36,7 +36,8 @@ class PbCli : public PinkCli {
   void operator= (const PbCli&);
 };
 
-PbCli::PbCli() {
+PbCli::PbCli(const std::string& ip, const int port)
+  : PinkCli(ip, port) {
   rbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * kProtoMaxMessage));
   wbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * kProtoMaxMessage));
 }
@@ -82,8 +83,8 @@ Status PbCli::Recv(void *msg_res) {
   return Status::OK();
 }
 
-extern PinkCli *NewPbCli() {
-  return new PbCli();
+PinkCli *NewPbCli(const std::string& peer_ip, const int peer_port) {
+  return new PbCli(peer_ip, peer_port);
 }
 
 };

@@ -30,11 +30,21 @@ struct PinkCli::Rep {
       connect_timeout(1000),
       keep_alive(0),
       is_block(true) {
-      };
+      }
+
+  Rep(const std::string& ip, int port)
+    : peer_ip(ip),
+      peer_port(port),
+      send_timeout(0),
+      recv_timeout(0),
+      connect_timeout(1000),
+      keep_alive(0),
+      is_block(true) {
+      }
 };
 
-PinkCli::PinkCli()
-  : rep_(new Rep()) {
+PinkCli::PinkCli(const std::string& ip, const int port)
+  : rep_(new Rep(ip, port)) {
 }
 
 PinkCli::~PinkCli() {

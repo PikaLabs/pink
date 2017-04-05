@@ -7,11 +7,9 @@
 #include <sys/time.h>
 #include "slash/include/xdebug.h"
 
-
 namespace pink {
 
-void BGThread::Schedule(void (*function)(void*), void* arg) {
-  mu_.Lock();
+void BGThread::Schedule(void (*function)(void*), void* arg) { mu_.Lock();
   while (queue_.size() >= full_ && running()) {
     wsignal_.Wait();
   }
@@ -86,38 +84,34 @@ void BGThread::DelaySchedule(uint64_t timeout, void (*function)(void *), void* a
 /*
  * timeout is in millionsecond
  */
-bool Timer::Schedule(uint64_t interval, void (*function)(void *), void* arg) {
-  if (interval == 0) {
-    return false;
-  }
-  /*
-   * pthread_cond_timedwait api use absolute API
-   * so we need gettimeofday + timeout
-   */
-  struct timeval now;
-  gettimeofday(&now, NULL);
-  uint64_t exec_time = now.tv_sec * 1000000 + interval * 1000 + now.tv_usec;
+Timer::Timer(uint64_t interval, void (*function)(void*), void* arg) :
+  Thread::Thread(),
+  signal_(&mu_) {
+    /*
+     * pthread_cond_timedwait api use absolute API
+     * so we need gettimeofday + timeout
+     */
+    struct timeval now;
+    gettimeofday(&now, NULL);
+    uint64_t exec_time = now.tv_sec * 1000000 + interval * 1000 + now.tv_usec;
 
-  slash::MutexLock l(&mu_);
-  if (task_ != NULL) {
+    task_ = new TimerItem(exec_time, function, arg);
+    interval_ = interval;
+  }
+
+bool Timer::Start() {
+  if(StartThread() != 0) {
     return false;
   }
-  task_ = new TimerItem(exec_time, function, arg);
-  interval_ = interval;
-  signal_.Signal();
   return true;
 }
 
-bool Timer::IsSchedule() {
-  slash::MutexLock l(&mu_);
-  return task_ != NULL;
-}
-
-void Timer::Cancel() {
-  slash::MutexLock l(&mu_);
-  delete task_;
-  task_ = NULL;
-  signal_.Signal();
+void Timer::Stop() {
+  if (running()) {
+    set_running(false);
+    signal_.Signal();
+    JoinThread();
+  }
 }
 
 void Timer::Reset() {

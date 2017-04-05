@@ -6,7 +6,7 @@ else
 	# CXXFLAGS = -Wall -W -DDEBUG -g -O0 -D__XDEBUG__ 
 endif
 # OBJECT = holy_srv myproto_cli pika pika_holy bg_thread http_server
-OBJECT = holy_srv holy_srv_chandle dispatch_srv myproto_cli
+OBJECT = holy_srv holy_srv_chandle dispatch_srv myproto_cli timer
 
 ifndef SLASH_PATH
 SLASH_PATH = ../third/slash
@@ -19,8 +19,8 @@ OUTPUT = ./output
 LIB_PATH = -L../lib/ \
 					 -L$(SLASH_PATH)/slash/lib/
 
-LIBS = -lslash \
-			 -lpink \
+LIBS = -lpink \
+			 -lslash \
 			 -lprotobuf \
 			 -lpthread
 
@@ -55,6 +55,9 @@ dispatch_srv: mydispatch_srv.cc myproto.pb.cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 myproto_cli: myproto_cli.cc myproto.pb.cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+timer: timer.cc
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+
 # holy: holy.cc holy_test.cc pink.pb.cc
 #   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 

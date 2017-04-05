@@ -75,24 +75,14 @@ class BGThread : public Thread {
 
 class Timer : public Thread {
  public:
-  explicit Timer() :
-    Thread::Thread(),
-    task_(NULL),
-    signal_(&mu_) {
-    }
-  
+  Timer(uint64_t interval, void (*function)(void*), void* arg); 
   virtual ~Timer() {
-    if (running()) {
-      Cancel();
-      set_running(false);
-      signal_.Signal();
-    }
+    Stop();
     delete task_;
   }
   
-  bool Schedule(uint64_t interval, void (*function)(void *), void* arg);
-  bool IsSchedule();
-  void Cancel();
+  bool Start();
+  void Stop();
   void Reset();
   // remian time in micosecond
   uint64_t RemainTime();

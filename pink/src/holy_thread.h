@@ -11,9 +11,9 @@
 #include <string>
 
 #include "slash/include/xdebug.h"
+#include "slash/include/slash_mutex.h"
 #include "pink/include/server_thread.h"
 #include "pink/include/pink_conn.h"
-#include "pink/include/pink_mutex.h"
 
 namespace pink {
 class PinkConn;

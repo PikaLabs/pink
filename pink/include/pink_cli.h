@@ -9,9 +9,10 @@ namespace pink {
 
 class PinkCli {
  public:
-  PinkCli();
+  PinkCli(const std::string& ip = "", const int port = 0);
   virtual ~PinkCli();
 
+  Status Connect(const std::string& bind_ip = "");
   Status Connect(const std::string &peer_ip, const int peer_port, 
       const std::string& bind_ip = "");
   // Compress and write the message
@@ -42,7 +43,7 @@ class PinkCli {
   void operator=(const PinkCli&);
 };
 
-extern PinkCli *NewPbCli();
+extern PinkCli *NewPbCli(const std::string& peer_ip = "", const int peer_port = 0);
 
 extern PinkCli *NewRedisCli();
 

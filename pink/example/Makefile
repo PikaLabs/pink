@@ -6,7 +6,7 @@ else
 	# CXXFLAGS = -Wall -W -DDEBUG -g -O0 -D__XDEBUG__ 
 endif
 # OBJECT = holy_srv myproto_cli pika pika_holy bg_thread http_server
-OBJECT = holy_srv holy_srv_chandle dispatch_srv myproto_cli timer
+OBJECT = holy_srv holy_srv_chandle dispatch_srv myproto_cli timer http_server
 
 ifndef SLASH_PATH
 SLASH_PATH = ../third/slash
@@ -72,8 +72,9 @@ timer: timer.cc
 
 # bg_thread: bg_thread.cc
 #   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
-# http_server: http_server.cc
-#   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+
+http_server: http_server.cc
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
 myproto.pb.cc: myproto.proto
 	protoc -I=$(SRC_DIR) --cpp_out=$(SRC_DIR) ./$^

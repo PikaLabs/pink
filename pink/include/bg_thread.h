@@ -80,7 +80,6 @@ class Timer : public Thread {
     Stop();
     delete task_;
   }
-  
   bool Start();
   void Stop();
   void Reset();

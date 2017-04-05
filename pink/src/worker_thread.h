@@ -16,9 +16,9 @@
 #include <google/protobuf/message.h>
 
 #include "slash/include/xdebug.h"
+#include "slash/include/slash_mutex.h"
 
 #include "pink/include/pink_thread.h"
-#include "pink/include/pink_mutex.h"
 #include "pink/include/pink_define.h"
 
 namespace pink {
@@ -48,7 +48,7 @@ class WorkerThread : public Thread {
   PinkEpoll* pink_epoll() {
     return pink_epoll_;
   }
-  Mutex mutex_;
+  slash::Mutex mutex_;
 
   /*
    *  public for external statistics

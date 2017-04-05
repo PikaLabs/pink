@@ -35,7 +35,7 @@ void HolyThread::HandleNewConn(const int connfd, const std::string &ip_port) {
   PinkConn *tc = conn_factory_->NewPinkConn(connfd, ip_port, this);
   tc->SetNonblock();
   {
-    RWLock l(&rwlock_, true);
+    slash::RWLock l(&rwlock_, true);
     conns_[connfd] = tc;
   }
 
@@ -50,7 +50,7 @@ void HolyThread::HandleConnEvent(PinkFiredEvent *pfe) {
   int should_close = 0;
   std::map<int, PinkConn *>::iterator iter;
   {
-    RWLock l(&rwlock_, false);
+    slash::RWLock l(&rwlock_, false);
     if ((iter = conns_.find(pfe->fd)) == conns_.end()) {
       pink_epoll_->PinkDelEvent(pfe->fd);
       return;
@@ -88,14 +88,14 @@ void HolyThread::HandleConnEvent(PinkFiredEvent *pfe) {
     delete(in_conn);
     in_conn = NULL;
 
-    RWLock l(&rwlock_, true);
+    slash::RWLock l(&rwlock_, true);
     conns_.erase(pfe->fd);
   }
 }
 
 // clean conns
 void HolyThread::Cleanup() {
-  RWLock l(&rwlock_, true);
+  slash::RWLock l(&rwlock_, true);
   PinkConn *in_conn;
   std::map<int, PinkConn *>::iterator iter = conns_.begin();
   for (; iter != conns_.end(); iter++) {

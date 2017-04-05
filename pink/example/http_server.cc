@@ -2,18 +2,21 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
+
 #include <string>
+
 #include "slash/include/slash_status.h"
 #include "pink/include/pink_thread.h"
 #include "pink/src/worker_thread.h"
 #include "pink/src/dispatch_thread.h"
 #include "pink/include/http_conn.h"
 
+using namespace pink;
+
 class MyHttpConn : public pink::HttpConn {
  public:
-  MyHttpConn(const int fd, const std::string &ip_port,
-      pink::WorkerThread<MyHttpConn>* worker) :
-    HttpConn(fd, ip_port) {
+  MyHttpConn(const int fd, const std::string& ip_port, Thread* worker) :
+    HttpConn(fd, ip_port, worker) {
   }
   virtual void DealMessage(const pink::HttpRequest* req, pink::HttpResponse* res) {
     std::cout << "handle get"<< std::endl;
@@ -35,17 +38,33 @@ class MyHttpConn : public pink::HttpConn {
   }
 };
 
-int main(int argc, char* argv[]) {
-  int work_num = 1;
-  pink::WorkerThread<MyHttpConn>* workers_[work_num];
-  for (int i = 0; i < work_num; i++) {
-    workers_[i] = new pink::WorkerThread<MyHttpConn>();
+class MyConnFactory : public ConnFactory {
+ public:
+  virtual PinkConn* NewPinkConn(int connfd, const std::string& ip_port, Thread* thread) const {
+    return new MyHttpConn(connfd, ip_port, thread);
   }
-  std::set<std::string> ips;
-  ips.insert(argv[1]);
-  ips.insert("127.0.0.1");
-  pink::DispatchThread<MyHttpConn> *t;
-  t = new pink::DispatchThread<MyHttpConn>(ips, 8089, 1, workers_, 3000);
-  t->StartThread();
-  sleep(10000);
+};
+
+int main(int argc, char* argv[]) {
+  std::string ip;
+  int port;
+  if (argc < 3) {
+    printf("Usage: ./http_server ip port");
+  } else {
+    ip.assign(argv[1]);
+    port = atoi(argv[2]);
+  }
+
+  Thread* my_worker[4];
+  ConnFactory* my_conn_factory = new MyConnFactory();
+  for (int i = 0; i < 4; i++) {
+    my_worker[i] = NewWorkerThread(my_conn_factory, 1000);
+  }
+
+  ServerThread *st = NewDispatchThread(port, 4, my_worker, 1000);
+
+  st->StartThread();
+  st->JoinThread();
+
+  return 0;
 }

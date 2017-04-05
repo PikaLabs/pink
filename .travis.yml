@@ -15,6 +15,5 @@ compiler:
 language: cpp
 
 script:
-  - make -C third/slash
-  - make
-  - make -C example
+  - make -C pink
+  - make -C pink/example

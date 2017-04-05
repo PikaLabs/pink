@@ -40,7 +40,7 @@ void DispatchThread::HandleNewConn(const int connfd, const std::string& ip_port)
   std::queue<PinkItem> *q = &(worker_thread_[last_thread_]->conn_queue_);
   PinkItem ti(connfd, ip_port);
   {
-    MutexLock l(&worker_thread_[last_thread_]->mutex_);
+    slash::MutexLock l(&worker_thread_[last_thread_]->mutex_);
     q->push(ti);
   }
   write(worker_thread_[last_thread_]->notify_send_fd(), "", 1);

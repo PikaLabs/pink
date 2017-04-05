@@ -115,6 +115,7 @@ bool Timer::IsSchedule() {
 
 void Timer::Cancel() {
   slash::MutexLock l(&mu_);
+  delete task_->arg;
   delete task_;
   task_ = NULL;
   signal_.Signal();

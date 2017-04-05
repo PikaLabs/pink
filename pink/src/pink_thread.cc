@@ -32,7 +32,7 @@ void* Thread::RunThread(void *arg) {
 int Thread::StartThread() {
   bool expect = false;
   if (!running_.compare_exchange_strong(expect, true)) {
-    return -1;
+    return 0;
   }
   return pthread_create(&thread_id_, NULL, RunThread, (void *)this);
 }

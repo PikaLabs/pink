@@ -115,6 +115,9 @@ void Timer::Stop() {
 }
 
 void Timer::Reset() {
+  if (!running()) {
+    Start();
+  }
   struct timeval now;
   gettimeofday(&now, NULL);
   uint64_t exec_time = now.tv_sec * 1000000 + interval_ * 1000 + now.tv_usec;

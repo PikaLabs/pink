@@ -24,12 +24,14 @@ struct PinkCli::Rep {
   bool keep_alive;
   bool is_block;
   int sockfd;
+  bool available;
 
   Rep() : send_timeout(0),
       recv_timeout(0),
       connect_timeout(1000),
       keep_alive(0),
-      is_block(true) {
+      is_block(true),
+      available(false) {
       }
 
   Rep(const std::string& ip, int port)
@@ -39,7 +41,8 @@ struct PinkCli::Rep {
       recv_timeout(0),
       connect_timeout(1000),
       keep_alive(0),
-      is_block(true) {
+      is_block(true),
+      available(false) {
       }
 };
 
@@ -50,6 +53,14 @@ PinkCli::PinkCli(const std::string& ip, const int port)
 PinkCli::~PinkCli() {
   Close();
   delete rep_;
+}
+
+bool PinkCli::Available() const {
+  return rep_->available;
+}
+
+Status PinkCli::Connect(const std::string &bind_ip) {
+  return Connect(rep_->peer_ip, rep_->peer_port, bind_ip);
 }
 
 Status PinkCli::Connect(const std::string &ip, const int port, 
@@ -140,6 +151,9 @@ Status PinkCli::Connect(const std::string &ip, const int port,
     flags = fcntl(r->sockfd, F_GETFL, 0);
     fcntl(r->sockfd, F_SETFL, flags & ~O_NONBLOCK);
     freeaddrinfo(servinfo);
+
+    // connect ok
+    rep_->available = true;
     return s;
   }
   if (p == NULL) {
@@ -208,9 +222,11 @@ int PinkCli::fd() const {
 }
 
 void PinkCli::Close() {
-  close(rep_->sockfd);
+  if (rep_->available) {
+    close(rep_->sockfd);
+    rep_->available = false;
+  }
 }
-
 
 void PinkCli::set_connect_timeout(int connect_timeout) {
   rep_->connect_timeout = connect_timeout;

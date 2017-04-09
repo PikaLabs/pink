@@ -26,7 +26,8 @@ class PinkCli {
   // TODO(baotiao): delete after redis_cli use RecvRaw
   int fd() const;
 
-  // Set timeout in miliseconds, default send and recv timeout is 0,
+  bool Available() const;
+
   // default connect timeout is 1000ms
   int set_send_timeout(int send_timeout);
   int set_recv_timeout(int recv_timeout);

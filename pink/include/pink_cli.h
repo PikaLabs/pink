@@ -40,6 +40,8 @@ class PinkCli {
  private:
   struct Rep;
   Rep* rep_;
+  int set_tcp_nodelay();
+
   PinkCli(const PinkCli&);
   void operator=(const PinkCli&);
 };

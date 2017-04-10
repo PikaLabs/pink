@@ -162,6 +162,7 @@ Status PinkCli::Connect(const std::string &ip, const int port,
   }
   freeaddrinfo(servinfo);
   freeaddrinfo(p);
+  set_tcp_nodelay();
   return s;
 }
 
@@ -251,6 +252,14 @@ int PinkCli::set_recv_timeout(int recv_timeout) {
     struct timeval timeout = {r->recv_timeout / 1000, (r->recv_timeout % 1000) * 1000};
     ret = setsockopt(r->sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
   }
+  return ret;
+}
+
+int PinkCli::set_tcp_nodelay() {
+  Rep* r= rep_;
+  int val = 1;
+  int ret = 0;
+  ret = setsockopt(r->sockfd, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val));
   return ret;
 }
 

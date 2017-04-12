@@ -111,7 +111,9 @@ ReadStatus PbConn::GetRequest() {
 }
 
 WriteStatus PbConn::SendReply() {
-  BuildObuf();
+  if (!BuildObuf().ok()) {
+    return kWriteError;
+  }
   ssize_t nwritten = 0;
   while (wbuf_len_ > 0) {
     nwritten = write(fd(), wbuf_ + wbuf_pos_, wbuf_len_ - wbuf_pos_);
@@ -141,7 +143,10 @@ WriteStatus PbConn::SendReply() {
 
 Status PbConn::BuildObuf() {
   wbuf_len_ = res_->ByteSize();
-  res_->SerializeToArray(wbuf_ + 4, wbuf_len_);
+  if (wbuf_len_ > PB_MAX_MESSAGE - 4
+      || !(res_->SerializeToArray(wbuf_ + 4, wbuf_len_))) {
+    return Status::Corruption("Serialize to buffer failed");
+  }
   uint32_t u;
   u = htonl(wbuf_len_);
   memcpy(wbuf_, &u, sizeof(uint32_t));

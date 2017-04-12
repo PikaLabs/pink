@@ -26,8 +26,7 @@ struct TimerItem {
   bool operator < (const TimerItem& item) const {
     return exec_time > item.exec_time;
   }
-};
-
+}; 
 class BGThread : public Thread {
  public:
   explicit BGThread(int full = 100000) :
@@ -75,7 +74,8 @@ class BGThread : public Thread {
 
 class Timer : public Thread {
  public:
-  Timer(uint64_t interval, void (*function)(void*), void* arg); 
+  Timer(uint64_t interval, void (*function)(void*), void* arg,
+      uint64_t interval_float = 0); 
   virtual ~Timer() {
     Stop();
     delete task_;
@@ -88,6 +88,7 @@ class Timer : public Thread {
 
  private:
   uint64_t interval_;
+  uint64_t interval_float_;
   TimerItem *task_;
   slash::Mutex mu_;
   slash::CondVar signal_;

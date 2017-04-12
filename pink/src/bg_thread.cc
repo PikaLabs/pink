@@ -84,8 +84,11 @@ void BGThread::DelaySchedule(uint64_t timeout, void (*function)(void *), void* a
 /*
  * timeout is in millionsecond
  */
-Timer::Timer(uint64_t interval, void (*function)(void*), void* arg) :
+Timer::Timer(uint64_t interval, void (*function)(void*), void* arg,
+    uint64_t interval_float) :
   Thread::Thread(),
+  interval_(interval),
+  interval_float_(interval_float),
   signal_(&mu_) {
     /*
      * pthread_cond_timedwait api use absolute API
@@ -96,7 +99,10 @@ Timer::Timer(uint64_t interval, void (*function)(void*), void* arg) :
     uint64_t exec_time = now.tv_sec * 1000000 + interval * 1000 + now.tv_usec;
 
     task_ = new TimerItem(exec_time, function, arg);
-    interval_ = interval;
+    
+    struct timeval seed;
+    gettimeofday(&seed, NULL);
+    srand(seed.tv_usec);
   }
 
 bool Timer::Start() {
@@ -120,7 +126,12 @@ void Timer::Reset() {
   }
   struct timeval now;
   gettimeofday(&now, NULL);
-  uint64_t exec_time = now.tv_sec * 1000000 + interval_ * 1000 + now.tv_usec;
+  uint64_t float_time = 0;;
+  if (interval_float_ > 0) {
+    float_time = rand() % interval_float_;
+  }
+  uint64_t exec_time = now.tv_sec * 1000000 + now.tv_usec +
+    (interval_ + float_time) * 1000;
   slash::MutexLock l(&mu_);
   task_->exec_time = exec_time;
   signal_.Signal();

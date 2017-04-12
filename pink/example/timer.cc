@@ -17,7 +17,7 @@ void task(void *arg) {
 
 int main() {
   int arg = 0;
-  pink::Timer* timer = new pink::Timer(200, task, static_cast<void*>(&arg));
+  pink::Timer* timer = new pink::Timer(200, task, static_cast<void*>(&arg), 20);
   std::cout << "#######Start timer" << std::endl;
   timer->Start();
   sleep(2);
@@ -36,7 +36,15 @@ int main() {
   timer->Reset();
   std::cout << "#######Has Reset timer, remain: " << timer->RemainTime() << std::endl;
   
-  sleep(1);
+  sleep(5);
+
+  for (int i=0; i < 10; i++) {
+    std::cout << "#########################################" << std::endl;
+    std::cout << "#######Reset timer, before remain: " << timer->RemainTime() << std::endl;
+    timer->Reset();
+    std::cout << "#######Reset timer, after remain: " << timer->RemainTime() << std::endl;
+    std::cout << "#########################################" << std::endl << std::endl;
+  }
 
   delete timer;
   

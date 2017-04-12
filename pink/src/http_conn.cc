@@ -144,10 +144,10 @@ bool HttpRequest::ParseGetUrl() {
   return true;
 }
 
-// Parse query parameter from GET url or POST body
+// Parse query parameter from GET url or POST application/x-www-form-urlencoded
 // format: key1=value1&key2=value2&key3=value3
 bool HttpRequest::ParseParameters(const std::string data,
-    size_t line_start) {
+    size_t line_start, bool from_url) {
   size_t pre = line_start, mid, end;
   while (pre < data.size()) {
     mid = data.find('=', pre);
@@ -160,12 +160,22 @@ bool HttpRequest::ParseParameters(const std::string data,
     }
     if (end <= mid) {
       // empty value
-      query_params[data.substr(pre, end - pre)]
-        = std::string();
+      if (from_url) {
+        query_params[data.substr(pre, end - pre)]
+          = std::string();
+      } else {
+        post_params[data.substr(pre, end - pre)]
+          = std::string();
+      }
       pre = end + 1;
     } else {
-      query_params[data.substr(pre, mid - pre)]
-        = data.substr(mid + 1, end - mid - 1);
+      if (from_url) {
+        query_params[data.substr(pre, mid - pre)]
+          = data.substr(mid + 1, end - mid - 1);
+      } else {
+        post_params[data.substr(pre, mid - pre)]
+          = data.substr(mid + 1, end - mid - 1);
+      }
       pre = end + 1;
     }
   }
@@ -203,9 +213,10 @@ bool HttpRequest::ParseHeadFromArray(const char* data, const int size) {
 
 bool HttpRequest::ParseBodyFromArray(const char* data, const int size) {
   content.append(data, size);
-  // if (method == "POST") {
-  //   return ParseParameters(content);
-  // }
+  if (method == "POST" &&
+      headers["content-type"] == "application/x-www-form-urlencoded") {
+    return ParseParameters(content, 0, false);
+  }
   return true;
 }
 
@@ -214,6 +225,7 @@ void HttpRequest::Clear() {
   path.clear();
   method.clear();
   query_params.clear();
+  post_params.clear();
   headers.clear();
   content.clear();
 }

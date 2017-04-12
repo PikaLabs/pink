@@ -30,6 +30,9 @@ class HttpRequest {
 
   // in header for Get, in content for Post Put Delete
   std::map<std::string, std::string> query_params;
+
+  // POST: content-type: application/x-www-form-urlencoded
+  std::map<std::string, std::string> post_params;
   
   // attach in content
   std::string content;
@@ -52,7 +55,7 @@ class HttpRequest {
   bool ParseGetUrl();
   bool ParseHeadLine(const char* data, int line_start,
     int line_end, ParseStatus* parseStatus);
-  bool ParseParameters(const std::string data, size_t line_start = 0);
+  bool ParseParameters(const std::string data, size_t line_start = 0, bool from_url = true);
 };
 
 class HttpResponse {

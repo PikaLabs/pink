@@ -25,11 +25,15 @@ class MyHttpConn : public pink::HttpConn {
     std::cout << " + version: " << req->version << std::endl;
     std::cout << " + content: " << req->content<< std::endl;
     std::cout << " + headers: " << std::endl;
-    for (auto h : req->headers) {
+    for (auto& h : req->headers) {
       std::cout << "   + " << h.first << ":" << h.second << std::endl;
     }
     std::cout << " + query_params: " << std::endl;
-    for (auto q : req->query_params) {
+    for (auto& q : req->query_params) {
+      std::cout << "   + " << q.first << ":" << q.second << std::endl;
+    }
+    std::cout << " + post_params: " << std::endl;
+    for (auto& q : req->post_params) {
       std::cout << "   + " << q.first << ":" << q.second << std::endl;
     }
 

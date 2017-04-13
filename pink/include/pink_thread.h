@@ -20,7 +20,7 @@ class Thread {
   virtual ~Thread();
 
   virtual int StartThread();
-  int JoinThread();
+  int StopThread();
 
   bool running() const {
     return running_.load();
@@ -41,8 +41,10 @@ class Thread {
     thread_name_ = name;
   }
 
- private:
+ protected:
+  int JoinThread();
 
+ private:
   static void* RunThread(void* arg);
   virtual void *ThreadMain() = 0; 
 

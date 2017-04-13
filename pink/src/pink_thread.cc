@@ -16,8 +16,6 @@ Thread::Thread()
 }
 
 Thread::~Thread() {
-  set_running(false);
-  JoinThread();
 }
 
 void* Thread::RunThread(void *arg) {
@@ -37,9 +35,13 @@ int Thread::StartThread() {
   return pthread_create(&thread_id_, NULL, RunThread, (void *)this);
 }
 
-int Thread::JoinThread() {
-    return pthread_join(thread_id_, NULL);
+int Thread::StopThread() {
+  set_running(false);
+  return pthread_join(thread_id_, NULL);
 }
 
+int Thread::JoinThread() {
+  return pthread_join(thread_id_, NULL);
+}
 
 }  // namespace pink

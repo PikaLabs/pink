@@ -58,20 +58,14 @@ class MyConnFactory : public ConnFactory {
 
 int main()
 {
-  Thread *my_worker[10];
   ConnFactory *my_conn_factory = new MyConnFactory();
-  for (int i = 0; i < 10; i++) {
-    my_worker[i] = NewWorkerThread(my_conn_factory, 1000);
-  }
-
-  ServerThread *st = NewDispatchThread(9211, 10, my_worker, 1000);
+  ServerThread *st = NewDispatchThread(9211, 10, my_conn_factory, 1000);
 
   st->StartThread();
-  while (true) {
-    // Server loop
-    sleep(1000);
-  }
-  st->StopThread();
+  st->JoinThread();
+
+  delete st;
+  delete my_conn_factory;
 
   return 0;
 }

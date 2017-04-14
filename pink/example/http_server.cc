@@ -59,22 +59,14 @@ int main(int argc, char* argv[]) {
     port = atoi(argv[2]);
   }
 
-  Thread* my_worker[4];
   ConnFactory* my_conn_factory = new MyConnFactory();
-  for (int i = 0; i < 4; i++) {
-    my_worker[i] = NewWorkerThread(my_conn_factory, 1000);
-  }
-
-  ServerThread *st = NewDispatchThread(port, 4, my_worker, 1000);
+  ServerThread *st = NewDispatchThread(port, 4, my_conn_factory, 1000);
 
   st->StartThread();
+  st->JoinThread();
 
-  while (true) {
-    // Server loop
-    sleep(1000);
-  }
-
-  st->StopThread();
+  delete st;
+  delete my_conn_factory;
 
   return 0;
 }

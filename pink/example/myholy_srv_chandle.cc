@@ -76,13 +76,7 @@ int main(int argc, char* argv[]) {
 
   ServerThread* my_thread = NewHolyThread(my_port, conn_factory, 1000, handle);
   my_thread->StartThread();
-
-  while (true) {
-    // Server loop
-    sleep(1000);
-  }
-
-  my_thread->StopThread();
+  my_thread->JoinThread();
 
   delete my_thread;
   delete conn_factory;

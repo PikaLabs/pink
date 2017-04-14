@@ -21,6 +21,7 @@ class Thread {
 
   virtual int StartThread();
   int StopThread();
+  int JoinThread();
 
   bool running() const {
     return running_.load();
@@ -41,9 +42,6 @@ class Thread {
     thread_name_ = name;
   }
 
- protected:
-  int JoinThread();
-
  private:
   static void* RunThread(void* arg);
   virtual void *ThreadMain() = 0; 
@@ -58,8 +56,6 @@ class Thread {
   Thread(const Thread&);
   void operator=(const Thread&);
 };
-
-extern Thread *NewWorkerThread(ConnFactory *conn_factory, int cron_interval = 0);
 
 }  // namespace pink
 

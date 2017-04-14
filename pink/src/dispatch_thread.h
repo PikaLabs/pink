@@ -24,17 +24,18 @@ class DispatchThread : public ServerThread {
   // This type Dispatch thread just get Connection and then Dispatch the fd to
   // worker thead
   DispatchThread(int port,
-                 int work_num, Thread **worker_thread,
+                 int work_num, ConnFactory *conn_factory,
                  int cron_interval = 0, const ServerHandle* handle = NULL);
   DispatchThread(const std::string &ip, int port,
-                 int work_num, Thread **worker_thread,
+                 int work_num, ConnFactory *conn_factory,
                  int cron_interval = 0, const ServerHandle* handle = NULL);
   DispatchThread(const std::set<std::string>& ips, int port,
-                 int work_num, Thread **worker_thread,
+                 int work_num, ConnFactory *conn_factory,
                  int cron_interval = 0, const ServerHandle* handle = NULL);
 
-  virtual ~DispatchThread() {
-  }
+  virtual ~DispatchThread();
+
+  int StartThread();
 
   int work_num() {
     return work_num_;
@@ -54,12 +55,10 @@ class DispatchThread : public ServerThread {
   /*
    * This is the work threads
    */
-  WorkerThread **worker_thread_;
+  WorkerThread** worker_thread_;
 
   void HandleNewConn(const int connfd, const std::string& ip_port) override;
   void HandleConnEvent(PinkFiredEvent *pfe) override {}
-
-  void StartWorkerThreads();
 
   // No copying allowed
   DispatchThread(const DispatchThread&);

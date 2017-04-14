@@ -148,8 +148,4 @@ void WorkerThread::Cleanup() {
   }
 }
 
-extern Thread *NewWorkerThread(ConnFactory *conn_factory, int cron_interval) {
-  return new WorkerThread(conn_factory, cron_interval);
-}
-
-};
+};  // namespace pink

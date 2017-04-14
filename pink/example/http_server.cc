@@ -68,7 +68,13 @@ int main(int argc, char* argv[]) {
   ServerThread *st = NewDispatchThread(port, 4, my_worker, 1000);
 
   st->StartThread();
-  st->JoinThread();
+
+  while (true) {
+    // Server loop
+    sleep(1000);
+  }
+
+  st->StopThread();
 
   return 0;
 }

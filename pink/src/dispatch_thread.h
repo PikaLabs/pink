@@ -36,6 +36,7 @@ class DispatchThread : public ServerThread {
   virtual ~DispatchThread();
 
   int StartThread();
+  int StopThread();
 
   int work_num() {
     return work_num_;

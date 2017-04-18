@@ -44,7 +44,6 @@ DispatchThread::DispatchThread(const std::set<std::string>& ips, int port,
 
 DispatchThread::~DispatchThread() {
   for (int i = 0; i < work_num_; i++) {
-    worker_thread_[i]->StopThread();
     delete worker_thread_[i];
   }
   delete worker_thread_;
@@ -58,6 +57,16 @@ int DispatchThread::StartThread() {
     }
   }
   return ServerThread::StartThread();
+}
+
+int DispatchThread::StopThread() {
+  for (int i = 0; i < work_num_; i++) {
+    int ret = worker_thread_[i]->StopThread();
+    if (ret != 0) {
+      return ret;
+    }
+  }
+  return Thread::StopThread();
 }
 
 void DispatchThread::HandleNewConn(const int connfd, const std::string& ip_port) {

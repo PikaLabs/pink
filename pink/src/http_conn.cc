@@ -372,6 +372,17 @@ ReadStatus HttpConn::GetRequest() {
           if (!BuildRequestHeader()) {
             return kReadError;
           }
+
+          std::string sign = request_->headers.count("expect") ?
+            slash::StringToLower(request_->headers.at("expect")) : "";
+          if (sign == "100-continue") {
+            // Reply 100 Continue, then receive body
+            response_->Clear();
+            response_->SetStatusCode(100);
+            set_is_reply(true);
+            conn_status_ = kPacket;
+            return kReadHalf;
+          }
           conn_status_ = kPacket;
         }
         break;

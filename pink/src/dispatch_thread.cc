@@ -58,6 +58,9 @@ int DispatchThread::StartThread() {
     if (ret != 0) {
       return ret;
     }
+    if (!thread_name().empty()) {
+      worker_thread_[i]->set_thread_name("WorkerThread");
+    }
   }
   return ServerThread::StartThread();
 }

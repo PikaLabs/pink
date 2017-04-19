@@ -14,13 +14,22 @@ namespace pink {
 
 class ConnFactory;
 
+class ThreadEnvHandle {
+ public:
+  ThreadEnvHandle() {}
+  virtual ~ThreadEnvHandle() {}
+
+  // Saved in thread's private_
+  virtual int SetEnv(void** env) const = 0;
+};
+
 class Thread {
  public:
   Thread();
   virtual ~Thread();
 
   virtual int StartThread();
-  int StopThread();
+  virtual int StopThread();
   int JoinThread();
 
   bool running() const {
@@ -38,8 +47,17 @@ class Thread {
   std::string thread_name() const {
     return thread_name_;
   }
-  void set_thread_name(const std::string &name) {
+
+  void set_thread_name(const std::string& name) {
     thread_name_ = name;
+  }
+
+  void set_env_handle(const ThreadEnvHandle* ehandle) {
+    ehandle_ = ehandle;
+  }
+
+  void* get_private() {
+    return private_;
   }
 
  private:
@@ -49,6 +67,10 @@ class Thread {
   std::atomic<bool> running_;
   pthread_t thread_id_;
   std::string thread_name_;
+
+  // User's private data
+  const ThreadEnvHandle* ehandle_;
+  void* private_;
 
   /*
    * No allowed copy and copy assign

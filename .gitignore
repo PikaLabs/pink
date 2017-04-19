@@ -27,9 +27,9 @@
 *.out
 *.app
 
-tags
-output/
-example/pink.pb.h
-example/pink.pb.cc
-example/output/
-example/cli/cli
+pink/tags
+pink/output/
+pink/example/*.pb.h
+pink/example/*.pb.cc
+pink/example/output/
+pink/example/cli/cli

@@ -18,6 +18,7 @@
 #include "slash/include/xdebug.h"
 #include "slash/include/slash_mutex.h"
 
+#include "pink/include/server_thread.h"
 #include "pink/include/pink_thread.h"
 #include "pink/include/pink_define.h"
 
@@ -31,7 +32,8 @@ class ConnFactory;
 
 class WorkerThread : public Thread {
  public:
-  explicit WorkerThread(ConnFactory *conn_factory, int cron_interval = 0);
+  explicit WorkerThread(ConnFactory *conn_factory, int cron_interval = 0,
+                        const ThreadEnvHandle* thandle = nullptr);
   virtual ~WorkerThread();
 
   /*

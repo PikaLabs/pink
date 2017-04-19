@@ -7,38 +7,41 @@
 namespace pink {
 
 DispatchThread::DispatchThread(int port,
-                               int work_num, ConnFactory *conn_factory,
-                               int cron_interval, const ServerHandle* handle)
-  : ServerThread::ServerThread(port, cron_interval, handle),
-    last_thread_(0),
-    work_num_(work_num) {
+                               int work_num, ConnFactory* conn_factory,
+                               int cron_interval, const ServerHandle* handle,
+                               const ThreadEnvHandle* ehandle)
+      : ServerThread::ServerThread(port, cron_interval, handle),
+        last_thread_(0),
+        work_num_(work_num) {
   worker_thread_ = new WorkerThread*[work_num_];
   for (int i = 0; i < work_num_; i++) {
-    worker_thread_[i] = new WorkerThread(conn_factory, cron_interval);
+    worker_thread_[i] = new WorkerThread(conn_factory, cron_interval, ehandle);
   }
 }
 
 DispatchThread::DispatchThread(const std::string &ip, int port,
-                               int work_num, ConnFactory *conn_factory,
-                               int cron_interval, const ServerHandle* handle)
+                               int work_num, ConnFactory* conn_factory,
+                               int cron_interval, const ServerHandle* handle,
+                               const ThreadEnvHandle* ehandle)
       : ServerThread::ServerThread(ip, port, cron_interval, handle),
         last_thread_(0),
         work_num_(work_num) {
   worker_thread_ = new WorkerThread*[work_num_];
   for (int i = 0; i < work_num_; i++) {
-    worker_thread_[i] = new WorkerThread(conn_factory, cron_interval);
+    worker_thread_[i] = new WorkerThread(conn_factory, cron_interval, ehandle);
   }
 }
 
 DispatchThread::DispatchThread(const std::set<std::string>& ips, int port,
-                               int work_num, ConnFactory *conn_factory,
-                               int cron_interval, const ServerHandle* handle)
+                               int work_num, ConnFactory* conn_factory,
+                               int cron_interval, const ServerHandle* handle,
+                               const ThreadEnvHandle* ehandle)
       : ServerThread::ServerThread(ips, port, cron_interval, handle),
         last_thread_(0),
         work_num_(work_num) {
   worker_thread_ = new WorkerThread*[work_num_];
   for (int i = 0; i < work_num_; i++) {
-    worker_thread_[i] = new WorkerThread(conn_factory, cron_interval);
+    worker_thread_[i] = new WorkerThread(conn_factory, cron_interval, ehandle);
   }
 }
 
@@ -66,7 +69,7 @@ int DispatchThread::StopThread() {
       return ret;
     }
   }
-  return Thread::StopThread();
+  return ServerThread::StopThread();
 }
 
 void DispatchThread::HandleNewConn(const int connfd, const std::string& ip_port) {
@@ -84,26 +87,26 @@ void DispatchThread::HandleNewConn(const int connfd, const std::string& ip_port)
 extern ServerThread *NewDispatchThread(
     int port,
     int work_num, ConnFactory* conn_factory,
-    int cron_interval,
-    const ServerHandle* handle) {
+    int cron_interval, const ServerHandle* handle,
+    const ThreadEnvHandle* ehandle) {
   return new DispatchThread(port, work_num, conn_factory,
-      cron_interval, handle);
+                            cron_interval, handle, ehandle);
 }
 extern ServerThread *NewDispatchThread(
     const std::string &ip, int port,
     int work_num, ConnFactory* conn_factory,
-    int cron_interval,
-    const ServerHandle* handle) {
+    int cron_interval, const ServerHandle* handle,
+    const ThreadEnvHandle* ehandle) {
   return new DispatchThread(ip, port, work_num, conn_factory,
-      cron_interval, handle);
+                            cron_interval, handle, ehandle);
 }
 extern ServerThread *NewDispatchThread(
     const std::set<std::string>& ips, int port,
     int work_num, ConnFactory* conn_factory,
-    int cron_interval,
-    const ServerHandle* handle) {
+    int cron_interval, const ServerHandle* handle,
+    const ThreadEnvHandle* ehandle) {
   return new DispatchThread(ips, port, work_num, conn_factory,
-      cron_interval, handle);
+                            cron_interval, handle, ehandle);
 }
 
 };  // namespace pink

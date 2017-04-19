@@ -46,7 +46,7 @@ class ServerThread : public Thread {
    * @param cron_interval the cron job interval
    */
   ServerThread(int port, int cron_interval = 0,
-      const ServerHandle *handle = NULL);
+               const ServerHandle *handle = nullptr);
 
   /**
    * @brief
@@ -58,7 +58,7 @@ class ServerThread : public Thread {
    * @param cron_interval the cron job interval
    */
   ServerThread(const std::string& bind_ip, int port, int cron_interval = 0,
-      const ServerHandle *handle = NULL);
+               const ServerHandle *handle = nullptr);
 
   /**
    * @brief
@@ -70,7 +70,7 @@ class ServerThread : public Thread {
    * @param cron_interval the cron job interval
    */
   ServerThread(const std::set<std::string>& bind_ips, int port,
-      int cron_interval = 0, const ServerHandle *handle = NULL);
+               int cron_interval = 0, const ServerHandle *handle = nullptr);
 
   virtual ~ServerThread();
 
@@ -109,33 +109,39 @@ extern ServerThread *NewHolyThread(
     int port,
     ConnFactory *conn_factory,
     int cron_interval = 0,
-    const ServerHandle* handle = NULL);
+    const ServerHandle* handle = nullptr,
+    const ThreadEnvHandle* thandle = nullptr);
 extern ServerThread *NewHolyThread(
     const std::string &bind_ip, int port,
     ConnFactory *conn_factory,
     int cron_interval = 0,
-    const ServerHandle* handle = NULL);
+    const ServerHandle* handle = nullptr,
+    const ThreadEnvHandle* thandle = nullptr);
 extern ServerThread *NewHolyThread(
     const std::set<std::string>& bind_ips, int port,
     ConnFactory *conn_factory,
     int cron_interval = 0,
-    const ServerHandle* handle = NULL);
+    const ServerHandle* handle = nullptr,
+    const ThreadEnvHandle* thandle = nullptr);
 
 extern ServerThread *NewDispatchThread(
     int port,
     int work_num, ConnFactory* conn_factory,
     int cron_interval = 0,
-    const ServerHandle* handle = NULL);
+    const ServerHandle* handle = nullptr,
+    const ThreadEnvHandle* thandle = nullptr);
 extern ServerThread *NewDispatchThread(
     const std::string &ip, int port,
     int work_num, ConnFactory* conn_factory,
     int cron_interval = 0,
-    const ServerHandle* handle = NULL);
+    const ServerHandle* handle = nullptr,
+    const ThreadEnvHandle* thandle = nullptr);
 extern ServerThread *NewDispatchThread(
     const std::set<std::string>& ips, int port,
     int work_num, ConnFactory* conn_factory,
     int cron_interval = 0,
-    const ServerHandle* handle = NULL);
+    const ServerHandle* handle = nullptr,
+    const ThreadEnvHandle* thandle = nullptr);
 
 } // namespace pink
 

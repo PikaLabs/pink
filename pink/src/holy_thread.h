@@ -21,14 +21,17 @@ class PinkConn;
 class HolyThread: public ServerThread {
  public:
   // This type thread thread will listen and work self list redis thread
-  HolyThread(int port, ConnFactory *conn_factory,
-      int cron_interval = 0, const ServerHandle* handle = NULL);
+  HolyThread(int port, ConnFactory* conn_factory,
+             int cron_interval = 0, const ServerHandle* handle = nullptr,
+             const ThreadEnvHandle* thandle = nullptr);
   HolyThread(const std::string& bind_ip, int port,
-      ConnFactory *conn_factory,
-      int cron_interval = 0, const ServerHandle* handle = NULL);
+             ConnFactory* conn_factory,
+             int cron_interval = 0, const ServerHandle* handle = nullptr,
+             const ThreadEnvHandle* thandle = nullptr);
   HolyThread(const std::set<std::string>& bind_ips, int port, 
-      ConnFactory *conn_factory,
-      int cron_interval = 0, const ServerHandle* handle = NULL);
+             ConnFactory* conn_factory,
+             int cron_interval = 0, const ServerHandle* handle = nullptr,
+             const ThreadEnvHandle* thandle = nullptr);
   virtual ~HolyThread();
 
   /*
@@ -39,6 +42,8 @@ class HolyThread: public ServerThread {
 
  private:
   ConnFactory *conn_factory_;
+  const ThreadEnvHandle* thandle_;
+
   void HandleNewConn(const int connfd, const std::string &ip_port) override;
   void HandleConnEvent(PinkFiredEvent *pfe) override;
 

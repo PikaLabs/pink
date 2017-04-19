@@ -7,9 +7,11 @@
 
 namespace pink {
 
-WorkerThread::WorkerThread(ConnFactory *conn_factory, int cron_interval) :
-  conn_factory_(conn_factory),
-  cron_interval_(cron_interval) {
+WorkerThread::WorkerThread(ConnFactory *conn_factory, int cron_interval,
+                           const ThreadEnvHandle* ehandle)
+      : conn_factory_(conn_factory),
+        cron_interval_(cron_interval) {
+  set_env_handle(ehandle);
   /*
    * install the protobuf handler here
    */

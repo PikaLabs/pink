@@ -12,7 +12,9 @@ namespace pink {
 
 Thread::Thread()
   : running_(false),
-    thread_id_(0) {
+    thread_id_(0),
+    ehandle_(nullptr),
+    private_(nullptr) {
 }
 
 Thread::~Thread() {
@@ -24,24 +26,27 @@ void* Thread::RunThread(void *arg) {
     SetThreadName(pthread_self(), thread->thread_name());
   }
   thread->ThreadMain();
-  return NULL;
+  return nullptr;
 }
 
 int Thread::StartThread() {
+  if (ehandle_ != nullptr) {
+    ehandle_->SetEnv(&private_);
+  }
   bool expect = false;
   if (!running_.compare_exchange_strong(expect, true)) {
     return 0;
   }
-  return pthread_create(&thread_id_, NULL, RunThread, (void *)this);
+  return pthread_create(&thread_id_, nullptr, RunThread, (void *)this);
 }
 
 int Thread::StopThread() {
   set_running(false);
-  return pthread_join(thread_id_, NULL);
+  return pthread_join(thread_id_, nullptr);
 }
 
 int Thread::JoinThread() {
-  return pthread_join(thread_id_, NULL);
+  return pthread_join(thread_id_, nullptr);
 }
 
 }  // namespace pink

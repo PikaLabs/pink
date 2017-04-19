@@ -1,5 +1,7 @@
 #include <stdio.h>
+#include <signal.h>
 #include <unistd.h>
+#include <atomic>
 
 #include "slash/include/xdebug.h"
 #include "pink/include/pink_thread.h"
@@ -26,17 +28,14 @@ class MyConn: public PbConn {
   myproto::PingRes ping_res_;
 };
 
-MyConn::MyConn(int fd, ::std::string ip_port, Thread *thread) :
-  PbConn(fd, ip_port, thread)
-{
+MyConn::MyConn(int fd, ::std::string ip_port, Thread *thread)
+    : PbConn(fd, ip_port, thread) {
 }
 
-MyConn::~MyConn()
-{
+MyConn::~MyConn() {
 }
 
-int MyConn::DealMessage()
-{
+int MyConn::DealMessage() {
   printf("In the myconn DealMessage branch\n");
   ping_.ParseFromArray(rbuf_ + cur_pos_ - header_len_, header_len_);
   ping_res_.Clear();
@@ -53,16 +52,38 @@ class MyConnFactory : public ConnFactory {
   virtual PinkConn *NewPinkConn(int connfd, const std::string &ip_port, Thread *thread) const {
     return new MyConn(connfd, ip_port, thread);
   }
-  
 };
 
-int main()
-{
+static std::atomic<bool> running(false);
+
+static void IntSigHandle(const int sig) {
+  printf("Catch Signal %d, cleanup...\n", sig);
+  running.store(false);
+  printf("server Exit");
+}
+
+static void SignalSetup() {
+  signal(SIGHUP, SIG_IGN);
+  signal(SIGPIPE, SIG_IGN);
+  signal(SIGINT, &IntSigHandle);
+  signal(SIGQUIT, &IntSigHandle);
+  signal(SIGTERM, &IntSigHandle);
+}
+
+int main() {
+  SignalSetup();
   ConnFactory *my_conn_factory = new MyConnFactory();
   ServerThread *st = NewDispatchThread(9211, 10, my_conn_factory, 1000);
 
-  st->StartThread();
-  st->JoinThread();
+  if (st->StartThread() != 0) {
+    printf("StartThread error happened!\n");
+    exit(-1);
+  }
+  running.store(true);
+  while (running.load()) {
+    sleep(1);
+  }
+  st->StopThread();
 
   delete st;
   delete my_conn_factory;

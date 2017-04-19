@@ -23,7 +23,7 @@ public:
 };
 
 static const ServerHandle* SanitizeHandle(const ServerHandle* raw_handle) {
-  if (raw_handle == NULL) {
+  if (raw_handle == nullptr) {
     return new DefaultServerHandle();
   }
   return raw_handle;
@@ -110,7 +110,7 @@ void *ServerThread::ThreadMain() {
   int fd, connfd;
 
   struct timeval when;
-  gettimeofday(&when, NULL);
+  gettimeofday(&when, nullptr);
   struct timeval now = when;
 
   when.tv_sec += (cron_interval_ / 1000);
@@ -126,7 +126,7 @@ void *ServerThread::ThreadMain() {
 
   while (running()) {
     if (cron_interval_ > 0) {
-      gettimeofday(&now, NULL);
+      gettimeofday(&now, nullptr);
       if (when.tv_sec > now.tv_sec || (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
         timeout = (when.tv_sec - now.tv_sec) * 1000 + (when.tv_usec - now.tv_usec) / 1000;
       } else {
@@ -148,7 +148,7 @@ void *ServerThread::ThreadMain() {
         if (pfe->mask & EPOLLIN) {
           connfd = accept(fd, (struct sockaddr *) &cliaddr, &clilen);
           if (connfd == -1) {
-            log_warn("accept error, errno numberis %d, error reason", errno, strerror(errno));
+            log_warn("accept error, errno numberis %d, error reason %s", errno, strerror(errno));
             continue;
           }
           fcntl(connfd, F_SETFD, fcntl(connfd, F_GETFD) | FD_CLOEXEC);
@@ -186,7 +186,7 @@ void *ServerThread::ThreadMain() {
       }
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 }  // namespace pink

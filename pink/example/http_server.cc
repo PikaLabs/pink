@@ -4,6 +4,8 @@
 // of patent rights can be found in the PATENTS file in the same directory.
 
 #include <string>
+#include <atomic>
+#include <signal.h>
 
 #include "slash/include/slash_status.h"
 #include "pink/include/pink_thread.h"
@@ -49,6 +51,22 @@ class MyConnFactory : public ConnFactory {
   }
 };
 
+static std::atomic<bool> running(false);
+
+static void IntSigHandle(const int sig) {
+  printf("Catch Signal %d, cleanup...\n", sig);
+  running.store(false);
+  printf("server Exit");
+}
+
+static void SignalSetup() {
+  signal(SIGHUP, SIG_IGN);
+  signal(SIGPIPE, SIG_IGN);
+  signal(SIGINT, &IntSigHandle);
+  signal(SIGQUIT, &IntSigHandle);
+  signal(SIGTERM, &IntSigHandle);
+}
+
 int main(int argc, char* argv[]) {
   std::string ip;
   int port;
@@ -59,11 +77,20 @@ int main(int argc, char* argv[]) {
     port = atoi(argv[2]);
   }
 
+  SignalSetup();
+
   ConnFactory* my_conn_factory = new MyConnFactory();
   ServerThread *st = NewDispatchThread(port, 4, my_conn_factory, 1000);
 
-  st->StartThread();
-  st->JoinThread();
+  if (st->StartThread() != 0) {
+    printf("StartThread error happened!\n");
+    exit(-1);
+  }
+  running.store(true);
+  while (running.load()) {
+    sleep(1);
+  }
+  st->StopThread();
 
   delete st;
   delete my_conn_factory;

@@ -6,25 +6,31 @@
 
 namespace pink {
 
-HolyThread::HolyThread(int port, ConnFactory *conn_factory,
-    int cron_interval, const ServerHandle* handle) :
-  ServerThread::ServerThread(port, cron_interval, handle),
-  conn_factory_(conn_factory) {
-  pthread_rwlock_init(&rwlock_, NULL);
+HolyThread::HolyThread(int port, ConnFactory* conn_factory,
+                       int cron_interval, const ServerHandle* handle,
+                       const ThreadEnvHandle* ehandle)
+    : ServerThread::ServerThread(port, cron_interval, handle),
+      conn_factory_(conn_factory) {
+  set_env_handle(ehandle);
+  pthread_rwlock_init(&rwlock_, nullptr);
 }
 
-HolyThread::HolyThread(const std::string& bind_ip, int port, ConnFactory *conn_factory,
-    int cron_interval, const ServerHandle* handle) :
-  ServerThread::ServerThread(bind_ip, port, cron_interval, handle),
-  conn_factory_(conn_factory) {
-  pthread_rwlock_init(&rwlock_, NULL);
+HolyThread::HolyThread(const std::string& bind_ip, int port, ConnFactory* conn_factory,
+                       int cron_interval, const ServerHandle* handle,
+                       const ThreadEnvHandle* ehandle)
+    : ServerThread::ServerThread(bind_ip, port, cron_interval, handle),
+      conn_factory_(conn_factory) {
+  set_env_handle(ehandle);
+  pthread_rwlock_init(&rwlock_, nullptr);
 }
 
-HolyThread::HolyThread(const std::set<std::string>& bind_ips, int port, ConnFactory *conn_factory,
-    int cron_interval, const ServerHandle* handle) :
-  ServerThread::ServerThread(bind_ips, port, cron_interval, handle),
-  conn_factory_(conn_factory) {
-  pthread_rwlock_init(&rwlock_, NULL);
+HolyThread::HolyThread(const std::set<std::string>& bind_ips, int port, ConnFactory* conn_factory,
+                       int cron_interval, const ServerHandle* handle,
+                       const ThreadEnvHandle* ehandle)
+    : ServerThread::ServerThread(bind_ips, port, cron_interval, handle),
+      conn_factory_(conn_factory) {
+  set_env_handle(ehandle);
+  pthread_rwlock_init(&rwlock_, nullptr);
 }
 
 HolyThread::~HolyThread() {
@@ -43,10 +49,10 @@ void HolyThread::HandleNewConn(const int connfd, const std::string &ip_port) {
 }
 
 void HolyThread::HandleConnEvent(PinkFiredEvent *pfe) {
-  if (pfe == NULL) {
+  if (pfe == nullptr) {
     return;
   }
-  PinkConn *in_conn = NULL;
+  PinkConn *in_conn = nullptr;
   int should_close = 0;
   std::map<int, PinkConn *>::iterator iter;
   {
@@ -60,7 +66,7 @@ void HolyThread::HandleConnEvent(PinkFiredEvent *pfe) {
   if (pfe->mask & EPOLLIN) {
     ReadStatus getRes = in_conn->GetRequest();
     struct timeval now;
-    gettimeofday(&now, NULL);
+    gettimeofday(&now, nullptr);
     in_conn->set_last_interaction(now);
     if (getRes != kReadAll && getRes != kReadHalf) {
       // kReadError kReadClose kFullError kParseError
@@ -86,7 +92,7 @@ void HolyThread::HandleConnEvent(PinkFiredEvent *pfe) {
     pink_epoll_->PinkDelEvent(pfe->fd);
     close(pfe->fd);
     delete(in_conn);
-    in_conn = NULL;
+    in_conn = nullptr;
 
     slash::RWLock l(&rwlock_, true);
     conns_.erase(pfe->fd);
@@ -108,26 +114,26 @@ void HolyThread::Cleanup() {
 extern ServerThread *NewHolyThread(
     int port,
     ConnFactory *conn_factory,
-    int cron_interval,
-    const ServerHandle* handle) {
+    int cron_interval, const ServerHandle* handle,
+    const ThreadEnvHandle* ehandle) {
   return new HolyThread(port, conn_factory, cron_interval,
-      handle);
+                        handle, ehandle);
 }
 extern ServerThread *NewHolyThread(
     const std::string &bind_ip, int port,
     ConnFactory *conn_factory,
-    int cron_interval,
-    const ServerHandle* handle) {
+    int cron_interval, const ServerHandle* handle,
+    const ThreadEnvHandle* ehandle) {
   return new HolyThread(bind_ip, port, conn_factory, cron_interval,
-      handle);
+                        handle, ehandle);
 }
 extern ServerThread *NewHolyThread(
     const std::set<std::string>& bind_ips, int port,
     ConnFactory *conn_factory,
-    int cron_interval,
-    const ServerHandle* handle) {
+    int cron_interval, const ServerHandle* handle,
+    const ThreadEnvHandle* ehandle) {
   return new HolyThread(bind_ips, port, conn_factory, cron_interval,
-      handle);
+                        handle, ehandle);
 }
 
 };  // namespace pink

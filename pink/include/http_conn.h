@@ -112,7 +112,6 @@ class HttpConn: public PinkConn {
  private:
 
   bool BuildRequestHeader();
-  bool FillResponseBuf();
 
   ConnStatus recv_status_;
   ConnStatus send_status_;

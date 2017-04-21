@@ -397,7 +397,6 @@ ReadStatus HttpConn::GetRequest() {
       }
       case kComplete: {
         response_->Clear();
-        handles_->ReqCompleteHandle(request_, response_);
         set_is_reply(true);
         recv_status_ = kHeader;
         rbuf_pos_ = 0;

@@ -18,7 +18,7 @@
 namespace pink {
 
 static const uint32_t kHttpMaxMessage = 1024 * 1024 * 8;
-static const uint32_t kHttpMaxHeader = 1024 * 64;
+static const uint32_t kHttpMaxHeader = 1024 * 1024 * 8;
 
 static const std::map<int, std::string> http_status_map = {
   {100, "Continue"},
@@ -147,7 +147,7 @@ bool HttpRequest::ParseGetUrl() {
 // Parse query parameter from GET url or POST application/x-www-form-urlencoded
 // format: key1=value1&key2=value2&key3=value3
 bool HttpRequest::ParseParameters(const std::string data,
-    size_t line_start, bool from_url) {
+                                  size_t line_start, bool from_url) {
   size_t pre = line_start, mid, end;
   while (pre < data.size()) {
     mid = data.find('=', pre);
@@ -211,14 +211,14 @@ bool HttpRequest::ParseHeadFromArray(const char* data, const int size) {
   return true;
 }
 
-bool HttpRequest::ParseBodyFromArray(const char* data, const int size) {
-  content.append(data, size);
-  if (method == "POST" &&
-      headers["content-type"] == "application/x-www-form-urlencoded") {
-    return ParseParameters(content, 0, false);
-  }
-  return true;
-}
+// bool HttpRequest::ParseBodyFromArray(const char* data, const int size) {
+//   content.append(data, size);
+//   if (method == "POST" &&
+//       headers["content-type"] == "application/x-www-form-urlencoded") {
+//     return ParseParameters(content, 0, false);
+//   }
+//   return true;
+// }
 
 void HttpRequest::Clear() {
   version.clear();
@@ -227,14 +227,13 @@ void HttpRequest::Clear() {
   query_params.clear();
   post_params.clear();
   headers.clear();
-  content.clear();
 }
 
 void HttpResponse::Clear() {
   status_code_ = 0;
   reason_phrase_.clear();
   headers_.clear();
-  body_.clear();
+  content_length = 0;
 }
 
 // Return bytes actual be writen, should be less than size
@@ -245,42 +244,34 @@ int HttpResponse::SerializeHeaderToArray(char* data, size_t size) {
   // Serialize statues line
   ret = snprintf(data, size, "HTTP/1.1 %d %s\r\n",
                  status_code_, reason_phrase_.c_str());
-  if (ret < 0 || ret == static_cast<int>(size)) {
-    return ret;
-  }
   serial_size += ret;
+  if (ret < 0 || ret == static_cast<int>(size)) {
+    return -1;
+  }
 
   // Serialize header
-  if (headers_.find("Content-Length") == headers_.end()) {
-    SetHeaders("Content-Length", body_.size());
+  if (headers_.count("Content-Length")) {
+    content_length = std::stoi(headers_.at("Content-Length"));
+  } else {
+    content_length = 0;
   }
+
   for (auto &line : headers_) {
     ret = snprintf(data + serial_size, size - serial_size, "%s: %s\r\n",
                    line.first.c_str(), line.second.c_str());
-    if (ret < 0) {
-      return ret;
-    }
     serial_size += ret;
-    if (serial_size == static_cast<int>(size)) {
-      return serial_size;
+    if (ret < 0 || serial_size == static_cast<int>(size)) {
+      return -1;
     }
   }
 
   ret = snprintf(data + serial_size, size - serial_size, "\r\n");
   serial_size += ret;
-  return serial_size;
-}
-
-// Serialize body begin from 'pos', return the new pos
-int HttpResponse::SerializeBodyToArray(char* data, size_t size, int* pos) {
-  // Serialize body
-  int actual = size;
-  if (body_.size() - *pos < size) {
-    actual = body_.size() - *pos;
+  if (ret < 0 || serial_size == static_cast<int>(size)) {
+    return -1;
   }
-  memcpy(data, body_.data() + *pos, actual);
-  *pos += actual;
-  return actual;
+
+  return serial_size;;
 }
 
 void HttpResponse::SetStatusCode(int code) {
@@ -295,14 +286,13 @@ void HttpResponse::SetStatusCode(int code) {
 
 HttpConn::HttpConn(const int fd, const std::string &ip_port,  Thread *thread) :
   PinkConn(fd, ip_port, thread),
-  conn_status_(kHeader),
+  recv_status_(kHeader),
+  send_status_(kHeader),
   rbuf_pos_(0),
-  wbuf_len_(0),
   wbuf_pos_(0),
   header_len_(0),
-  remain_packet_len_(0),
-  response_pos_(-1) {
-  rbuf_ = (char *)malloc(sizeof(char) * kHttpMaxMessage);
+  remain_recv_len_(0) {
+  rbuf_ = (char *)malloc(sizeof(char) * kHttpMaxMessage + sizeof(char));
   wbuf_ = (char *)malloc(sizeof(char) * kHttpMaxMessage);
   request_ = new HttpRequest();
   response_ = new HttpResponse();
@@ -326,40 +316,31 @@ bool HttpConn::BuildRequestHeader() {
   auto iter = request_->headers.begin();
   iter = request_->headers.find("content-length");
   if (iter == request_->headers.end()) {
-    remain_packet_len_ = 0;
+    remain_recv_len_ = 0;
   } else {
     int64_t tmp = 0;
     slash::string2l(iter->second.data(), iter->second.size(),
         static_cast<long*>(&tmp));
-    remain_packet_len_ = tmp;
+    remain_recv_len_ = tmp;
   }
 
   if (rbuf_pos_ > header_len_) {
-    remain_packet_len_ -= rbuf_pos_ - header_len_;
+    remain_recv_len_ -= rbuf_pos_ - header_len_;
   }
   return true;
 }
 
-bool HttpConn::AppendRequestBody() {
-  return request_->ParseBodyFromArray(rbuf_ + header_len_,
-      rbuf_pos_  - header_len_);
-}
-
-void HttpConn::HandleMessage() {
-  response_->Clear();
-  DealMessage(request_, response_);
-  set_is_reply(true);
-}
-
 ReadStatus HttpConn::GetRequest() {
   ssize_t nread = 0;
+  bool need_reply;
   while (true) {
-    switch (conn_status_) {
+    switch (recv_status_) {
       case kHeader: {
         nread = read(fd(), rbuf_ + rbuf_pos_, kHttpMaxHeader - rbuf_pos_);
         if (nread == -1 && errno == EAGAIN) {
           return kReadHalf;
         } else if (nread <= 0) {
+          handles_->ConnClosedHandle();
           return kReadClose;
         } else {
           rbuf_pos_ += nread;
@@ -369,44 +350,45 @@ ReadStatus HttpConn::GetRequest() {
             break;
           }
           header_len_ = sep_pos - rbuf_ + 4;
-          if (!BuildRequestHeader()) {
+          if (header_len_ > kHttpMaxHeader || !BuildRequestHeader()) {
             return kReadError;
           }
 
-          std::string sign = request_->headers.count("expect") ?
-            request_->headers.at("expect") : "";
-          if (sign == "100-continue" || sign == "100-Continue") {
-            // Reply 100 Continue, then receive body
-            response_->Clear();
-            response_->SetStatusCode(100);
-            set_is_reply(true);
-            conn_status_ = kPacket;
-            if (remain_packet_len_ > 0)
-              return kReadHalf;
+          need_reply = handles_->ReqHeadersHandle(request_);
+
+          if (remain_recv_len_ > 0) {
+            recv_status_ = kPacket;
+          } else {
+            recv_status_ = kComplete;
           }
-          conn_status_ = kPacket;
+
+          if (need_reply) {
+            set_is_reply(true);
+            return kReadHalf;
+          }
         }
         break;
       }
       case kPacket: {
-        if (remain_packet_len_ > 0) {
+        if (remain_recv_len_ > 0) {
+          size_t remain_buf_size = kHttpMaxMessage - rbuf_pos_;
           nread = read(fd(), rbuf_ + rbuf_pos_,
-              (kHttpMaxMessage - rbuf_pos_ > remain_packet_len_)
-              ? remain_packet_len_ : kHttpMaxMessage - rbuf_pos_);
+                       std::min(remain_buf_size, remain_recv_len_));
           if (nread == -1 && errno == EAGAIN) {
             return kReadHalf;
           } else if (nread <= 0) {
+            handles_->ConnClosedHandle();
             return kReadClose;
           } else {
             rbuf_pos_ += nread;
-            remain_packet_len_ -= nread;
+            remain_recv_len_ -= nread;
           }
         }
-        if (remain_packet_len_ == 0 || // no more content
+        if (remain_recv_len_ == 0 || // no more content
             rbuf_pos_ == kHttpMaxMessage) { // buffer full
-          AppendRequestBody();
-          if (remain_packet_len_ == 0) {
-            conn_status_ = kComplete;
+          handles_->ReqBodyPartHandle(rbuf_ + header_len_, rbuf_pos_ - header_len_);
+          if (remain_recv_len_ == 0) {
+            recv_status_ = kComplete;
           } else {
             rbuf_pos_ = header_len_ = 0; // read more packet content from begin
           }
@@ -414,8 +396,10 @@ ReadStatus HttpConn::GetRequest() {
         break;
       }
       case kComplete: {
-        HandleMessage();
-        conn_status_ = kHeader;
+        response_->Clear();
+        handles_->ReqCompleteHandle(request_, response_);
+        set_is_reply(true);
+        recv_status_ = kHeader;
         rbuf_pos_ = 0;
         return kReadAll;
       }
@@ -427,53 +411,71 @@ ReadStatus HttpConn::GetRequest() {
   }
 }
 
-bool HttpConn::FillResponseBuf() {
-  if (response_pos_ < 0) {
-    // Not ever serialize response header
-    int actual = response_->SerializeHeaderToArray(wbuf_ + wbuf_len_,
-        kHttpMaxMessage - wbuf_len_);
-    if (actual < 0) {
-      return false;
-    }
-    wbuf_len_ += actual;
-    response_pos_ = 0; // Serialize body next time
-  }
-  while (response_->HasMoreBody(response_pos_)
-      && wbuf_len_ < kHttpMaxMessage) {
-    // Has more body and more space in wbuf_
-    wbuf_len_ += response_->SerializeBodyToArray(wbuf_ + wbuf_len_,
-        kHttpMaxMessage - wbuf_len_, &response_pos_);
-  }
-  return true;
-}
-
 WriteStatus HttpConn::SendReply() {
-  // Fill as more as content into the buf
-  if (!FillResponseBuf()) {
-    return kWriteError;
-  }
-  
   ssize_t nwritten = 0;
-  while (wbuf_len_ > 0) {
-    nwritten = write(fd(), wbuf_ + wbuf_pos_, wbuf_len_ - wbuf_pos_);
-    if (nwritten == -1 && errno == EAGAIN) {
-      return kWriteHalf;
-    } else if (nwritten <= 0) {
-      return kWriteError;
-    }
-    wbuf_pos_ += nwritten;
-    if (wbuf_pos_ == wbuf_len_) {
-      // Send all in wbuf_ and Try to fill more
-      wbuf_len_ = 0;
-      wbuf_pos_ = 0;
-      if (!FillResponseBuf()) {
+  size_t remain_buf_size = 0;
+  size_t wbuf_len = 0;
+  int header_len = 0;
+  while (true) {
+    switch (send_status_) {
+      case kHeader:
+        handles_->RespHeaderHandle(response_);
+        header_len = response_->SerializeHeaderToArray(wbuf_, kHttpMaxHeader);
+        remain_send_len_ = response_->ContentLength();
+        if (header_len < 0 || static_cast<uint32_t>(header_len) > kHttpMaxHeader) {
+          handles_->ConnClosedHandle();
+          return kWriteError;
+        }
+
+        nwritten = write(fd(), wbuf_ + wbuf_pos_, header_len);
+        if (nwritten == -1 && errno == EAGAIN) {
+          return kWriteHalf;
+        } else if (nwritten <= 0) {
+          handles_->ConnClosedHandle();
+          return kWriteError;
+        } else {
+          wbuf_pos_ += nwritten;
+        }
+
+        if (remain_send_len_ == 0) {
+          return kWriteAll;
+        }
+        if (wbuf_pos_ == static_cast<uint32_t>(header_len)) {
+          send_status_ = kPacket;
+        }
+        if (wbuf_pos_ == kHttpMaxHeader) {
+          wbuf_pos_ = 0;
+        }
+      case kPacket:
+        remain_buf_size = kHttpMaxMessage - wbuf_pos_;
+        wbuf_len = handles_->RespBodyPartHandle(wbuf_ + wbuf_pos_,
+                                std::min(remain_buf_size, remain_send_len_));
+        nwritten = write(fd(), wbuf_ + wbuf_pos_, wbuf_len);
+        if (nwritten == -1 && errno == EAGAIN) {
+          return kWriteHalf;
+        } else if (nwritten <= 0) {
+          handles_->ConnClosedHandle();
+          return kWriteError;
+        } else {
+          wbuf_pos_ += nwritten;
+          remain_send_len_ -= nwritten;
+        }
+        if (remain_send_len_ == 0) {
+          send_status_ = kComplete;
+        }
+        if (wbuf_pos_ == kHttpMaxMessage) {
+          wbuf_pos_ = 0;
+        }
+        break;
+      case kComplete:
+        wbuf_pos_ = 0;
+        send_status_ = kHeader;
+        return kWriteAll;
+        break;
+      default:
         return kWriteError;
-      }
-    }
-  }
-  response_pos_ = -1; // fill header first next time
-  
-  return kWriteAll;
+    } // switch
+  } // while (true)
 }
 
 }  // namespace pink

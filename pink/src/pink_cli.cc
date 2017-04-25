@@ -181,6 +181,7 @@ Status PinkCli::SendRaw(void *buf, size_t count) {
       } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
         return Status::Timeout("Send timeout");
       } else {
+        rep_->available = false;
         return Status::IOError("write error " + std::string(strerror(errno)));
       }
     }
@@ -208,6 +209,7 @@ Status PinkCli::RecvRaw(void *buf, size_t *count) {
       } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
         return Status::Timeout("Send timeout");
       } else {
+        rep_->available = false;
         return Status::IOError("read error " + std::string(strerror(errno)));
       }
     }

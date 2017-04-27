@@ -43,6 +43,7 @@ class BGThread : public Thread {
       rsignal_.Signal();
       wsignal_.Signal();
     }
+    JoinThread();
   }
 
   void Schedule(void (*function)(void*), void* arg);

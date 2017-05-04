@@ -9,6 +9,7 @@
 #include <signal.h>
 
 #include "slash/include/slash_status.h"
+#include "slash/include/slash_hash.h"
 #include "pink/include/pink_thread.h"
 #include "pink/src/worker_thread.h"
 #include "pink/src/dispatch_thread.h"
@@ -16,86 +17,71 @@
 
 using namespace pink;
 
-class MyHttpConn : public pink::HttpConn {
+class MyHttpHandle : public pink::HttpHandles {
  public:
-  class MyHttpHandle : public pink::HttpConn::HttpHandles {
-   public:
-    std::string resp_body;
-    std::chrono::system_clock::time_point start, end;
-    std::chrono::duration<double, std::milli> diff;
-    bool need_100_continue;
+  std::string body_data;
+  std::string zero_space;
+  size_t write_pos = 0;
+  std::chrono::system_clock::time_point start, end;
+  std::chrono::duration<double, std::milli> diff;
+  bool need_100_continue;
 
-    // Request handles
-    virtual bool ReqHeadersHandle(HttpRequest* req) {
-      start = std::chrono::system_clock::now();
-      if (req->headers.count("expect")) {
-        need_100_continue = true;
-        return true;
-      }
-      return false;
-    }
-    virtual void ReqBodyPartHandle(const char* data, size_t max_size) {
-      // std::cout << "ReqBodyPartHandle: " << max_size << std::endl;
-      // resp_body.assign(data, max_size);
-      // std::cout << resp_body << std::endl;
-    }
-    virtual void ReqCompleteHandle(HttpRequest* req, HttpResponse* resp) {
-    }
-    virtual void ConnClosedHandle() {}
+  // Request handles
+  virtual bool ReqHeadersHandle(HttpRequest* req) {
+    req->Dump();
+    body_data.clear();
 
-    // Response handles
-    virtual void RespHeaderHandle(HttpResponse* resp) {
-      if (need_100_continue) {
-        resp->SetStatusCode(100);
-        resp->SetHeaders("Content-Length", 0);
-        need_100_continue = false;
-        return;
-      }
-      resp->SetStatusCode(200);
-      // resp->SetHeaders("Content-Length", resp_body.size());
-      resp->SetHeaders("Content-Length", 0);
-      end = std::chrono::system_clock::now();
-      diff = end - start;
-      std::cout << "Use: " << diff.count() << " ms" << std::endl;
+    start = std::chrono::system_clock::now();
+    if (req->headers_.count("expect")) {
+      need_100_continue = true;
+      return true;
     }
-    virtual int RespBodyPartHandle(char* buf, size_t max_size) {
-      // memcpy(buf, resp_body.data(), std::min(max_size, resp_body.size()));;
+
+    return false;
+  }
+  virtual void ReqBodyPartHandle(const char* data, size_t size) {
+    std::cout << "ReqBodyPartHandle: " << size << std::endl;
+    body_data.append(data, size);
+  }
+
+  // Response handles
+  virtual void RespHeaderHandle(HttpResponse* resp) {
+    if (need_100_continue) {
+      resp->SetStatusCode(100);
+      resp->SetContentLength(0);
+      need_100_continue = false;
+      return;
+    }
+    
+    zero_space.assign(1024 * 1024 * 8, 'a');
+    std::cout << slash::md5(zero_space) << std::endl;
+
+    resp->SetStatusCode(200);
+    // resp->SetContentLength(body_data.size());
+    resp->SetContentLength(zero_space.size());
+    end = std::chrono::system_clock::now();
+    diff = end - start;
+    std::cout << "Use: " << diff.count() << " ms" << std::endl;
+  }
+
+  virtual int RespBodyPartHandle(char* buf, size_t max_size) {
+    if (need_100_continue) {
       return 0;
     }
-  };
 
-  MyHttpConn(const int fd, const std::string& ip_port, Thread* worker) :
-    HttpConn(fd, ip_port, worker) {
-    handles_ = new MyHttpHandle();
+    size_t size = std::min(max_size, zero_space.size() - write_pos);
+    memcpy(buf, zero_space.data() + write_pos, size);
+    write_pos += size;
+    return size;
   }
-  // virtual void DealMessage(const pink::HttpRequest* req, pink::HttpResponse* res) {
-  //   std::cout << "handle get"<< std::endl;
-  //   std::cout << " + method: " << req->method << std::endl;
-  //   std::cout << " + path: " << req->path << std::endl;
-  //   std::cout << " + version: " << req->version << std::endl;
-  //   std::cout << " + content: " << req->content<< std::endl;
-  //   std::cout << " + headers: " << std::endl;
-  //   for (auto& h : req->headers) {
-  //     std::cout << "   + " << h.first << ":" << h.second << std::endl;
-  //   }
-  //   std::cout << " + query_params: " << std::endl;
-  //   for (auto& q : req->query_params) {
-  //     std::cout << "   + " << q.first << ":" << q.second << std::endl;
-  //   }
-  //   std::cout << " + post_params: " << std::endl;
-  //   for (auto& q : req->post_params) {
-  //     std::cout << "   + " << q.first << ":" << q.second << std::endl;
-  //   }
-
-  //   res->SetStatusCode(200);
-  //   res->SetBody("china");
-  // }
 };
+
+MyHttpHandle my_handles;
 
 class MyConnFactory : public ConnFactory {
  public:
   virtual PinkConn* NewPinkConn(int connfd, const std::string& ip_port, Thread* thread) const {
-    return new MyHttpConn(connfd, ip_port, thread);
+    return new pink::HttpConn(connfd, ip_port, thread, &my_handles);
   }
 };
 
@@ -116,19 +102,17 @@ static void SignalSetup() {
 }
 
 int main(int argc, char* argv[]) {
-  std::string ip;
   int port;
-  if (argc < 3) {
-    printf("Usage: ./http_server ip port");
+  if (argc < 2) {
+    printf("Usage: ./http_server port");
   } else {
-    ip.assign(argv[1]);
-    port = atoi(argv[2]);
+    port = atoi(argv[1]);
   }
 
   SignalSetup();
 
   ConnFactory* my_conn_factory = new MyConnFactory();
-  ServerThread *st = NewDispatchThread(port, 4, my_conn_factory, 1000);
+  ServerThread *st = NewDispatchThread(port, 1, my_conn_factory, 1000);
 
   if (st->StartThread() != 0) {
     printf("StartThread error happened!\n");

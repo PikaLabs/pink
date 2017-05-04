@@ -18,7 +18,7 @@
 namespace pink {
 
 static const uint32_t kHttpMaxMessage = 1024 * 1024 * 8;
-static const uint32_t kHttpMaxHeader = 1024 * 1024 * 8;
+static const uint32_t kHttpMaxHeader = 1024 * 1024;
 
 static const std::map<int, std::string> http_status_map = {
   {100, "Continue"},
@@ -58,11 +58,6 @@ static const std::map<int, std::string> http_status_map = {
   {509, "Not Extended"},
 };
 
-HttpRequest::HttpRequest():
-  method("GET"),
-  path("/index") {
-}
-
 inline int find_lf(const char* data, int size) {
   const char* c = data;
   int count = 0;
@@ -84,21 +79,21 @@ bool HttpRequest::ParseHeadLine(const char* data, int line_start,
     switch (*parseStatus) {
       case kHeaderMethod:
         if (data[i] != ' ') {
-          method.push_back(data[i]);
+          method_.push_back(data[i]);
         } else {
           *parseStatus = kHeaderPath;
         }
         break;
       case kHeaderPath:
         if (data[i] != ' ') {
-          path.push_back(data[i]);
+          url_.push_back(data[i]);
         } else {
           *parseStatus = kHeaderVersion;
         }
         break;
       case kHeaderVersion:
         if (data[i] != '\r' && data[i] != '\n') {
-          version.push_back(data[i]);
+          version_.push_back(data[i]);
         } else if (data[i] == '\n') {
           *parseStatus = kHeaderParamKey;
         }
@@ -114,7 +109,7 @@ bool HttpRequest::ParseHeadLine(const char* data, int line_start,
         if (data[i] != '\r' && data[i] != '\n') {
           param_value.push_back(data[i]);
         } else if (data[i] == '\r') {
-          headers[slash::StringToLower(param_key)] = param_value;
+          headers_[slash::StringToLower(param_key)] = param_value;
           *parseStatus = kHeaderParamKey;
         }
         break;
@@ -127,20 +122,22 @@ bool HttpRequest::ParseHeadLine(const char* data, int line_start,
 }
 
 bool HttpRequest::ParseGetUrl() {
+  path_ = url_;
   // Format path
-  if (path.find(headers["host"]) != std::string::npos &&
-      path.size() > (7 + headers["host"].size())) {
-    // http://www.xxx.xxx/path/to
-    path.assign(path.substr(7 + headers["host"].size()));
+  if (headers_.count("host") &&
+      path_.find(headers_["host"]) != std::string::npos &&
+      path_.size() > (7 + headers_["host"].size())) {
+    // http://www.xxx.xxx/path_/to
+    path_.assign(path_.substr(7 + headers_["host"].size()));
   }
-  size_t n = path.find('?');
+  size_t n = path_.find('?');
   if (n == std::string::npos) {
     return true; // no parameter
   }
-  if (!ParseParameters(path, n + 1)) {
+  if (!ParseParameters(path_, n + 1)) {
     return false;
   }
-  path.resize(n);
+  path_.resize(n);
   return true;
 }
 
@@ -161,19 +158,19 @@ bool HttpRequest::ParseParameters(const std::string data,
     if (end <= mid) {
       // empty value
       if (from_url) {
-        query_params[data.substr(pre, end - pre)]
+        query_params_[data.substr(pre, end - pre)]
           = std::string();
       } else {
-        post_params[data.substr(pre, end - pre)]
+        post_params_[data.substr(pre, end - pre)]
           = std::string();
       }
       pre = end + 1;
     } else {
       if (from_url) {
-        query_params[data.substr(pre, mid - pre)]
+        query_params_[data.substr(pre, mid - pre)]
           = data.substr(mid + 1, end - mid - 1);
       } else {
-        post_params[data.substr(pre, mid - pre)]
+        post_params_[data.substr(pre, mid - pre)]
           = data.substr(mid + 1, end - mid - 1);
       }
       pre = end + 1;
@@ -211,29 +208,41 @@ bool HttpRequest::ParseHeadFromArray(const char* data, const int size) {
   return true;
 }
 
-// bool HttpRequest::ParseBodyFromArray(const char* data, const int size) {
-//   content.append(data, size);
-//   if (method == "POST" &&
-//       headers["content-type"] == "application/x-www-form-urlencoded") {
-//     return ParseParameters(content, 0, false);
-//   }
-//   return true;
-// }
+void HttpRequest::Dump() {
+#ifdef __XDEBUG__
+  std::cout << "Method:  " << method_ << std::endl;
+  std::cout << "Url:     " << url_ << std::endl;
+  std::cout << "Path:    " << path_ << std::endl;
+  std::cout << "Version: " << version_ << std::endl;
+  std::cout << "Headers: " << std::endl;
+  for (auto& header : headers_) {
+    std::cout << "  ----- " << header.first << ": " << header.second << std::endl;
+  }
+  std::cout << "Query params: " << std::endl;
+  for (auto& item : query_params_) {
+    std::cout << "  ----- " << item.first << ": " << item.second << std::endl;
+  }
+  std::cout << "Post params: " << std::endl;
+  for (auto& item : post_params_) {
+    std::cout << "  ----- " << item.first << ": " << item.second << std::endl;
+  }
+#endif
+}
 
 void HttpRequest::Clear() {
-  version.clear();
-  path.clear();
-  method.clear();
-  query_params.clear();
-  post_params.clear();
-  headers.clear();
+  version_.clear();
+  path_.clear();
+  url_.clear();
+  method_.clear();
+  query_params_.clear();
+  post_params_.clear();
+  headers_.clear();
 }
 
 void HttpResponse::Clear() {
   status_code_ = 0;
   reason_phrase_.clear();
   headers_.clear();
-  content_length = 0;
 }
 
 // Return bytes actual be writen, should be less than size
@@ -247,13 +256,6 @@ int HttpResponse::SerializeHeaderToArray(char* data, size_t size) {
   serial_size += ret;
   if (ret < 0 || ret == static_cast<int>(size)) {
     return -1;
-  }
-
-  // Serialize header
-  if (headers_.count("Content-Length")) {
-    content_length = std::stoi(headers_.at("Content-Length"));
-  } else {
-    content_length = 0;
   }
 
   for (auto &line : headers_) {
@@ -284,14 +286,41 @@ void HttpResponse::SetStatusCode(int code) {
   reason_phrase_.assign(http_status_map.at(code));
 }
 
-HttpConn::HttpConn(const int fd, const std::string &ip_port,  Thread *thread) :
+class DefaultHttpHandle : public HttpHandles {
+ public:
+  // Request handles
+  virtual bool ReqHeadersHandle(HttpRequest* req) override {
+    return false;
+  }
+  virtual void ReqBodyPartHandle(const char* data, size_t max_size) override {
+  }
+
+  // Response handles
+  virtual void RespHeaderHandle(HttpResponse* resp) override {
+  }
+  virtual int RespBodyPartHandle(char* buf, size_t max_size) override {
+    return 0;
+  }
+};
+
+static HttpHandles* SanitizeHandle(HttpHandles* raw_handle) {
+  if (raw_handle == nullptr) {
+    return new DefaultHttpHandle();
+  }
+  return raw_handle;
+}
+
+HttpConn::HttpConn(const int fd, const std::string &ip_port,
+                   Thread *thread, HttpHandles* handles) :
   PinkConn(fd, ip_port, thread),
   recv_status_(kHeader),
   send_status_(kHeader),
   rbuf_pos_(0),
   wbuf_pos_(0),
   header_len_(0),
-  remain_recv_len_(0) {
+  remain_recv_len_(0),
+  remain_unfetch_len_(0),
+  handles_(SanitizeHandle(handles)) {
   rbuf_ = (char *)malloc(sizeof(char) * kHttpMaxMessage + sizeof(char));
   wbuf_ = (char *)malloc(sizeof(char) * kHttpMaxMessage);
   request_ = new HttpRequest();
@@ -313,20 +342,13 @@ bool HttpConn::BuildRequestHeader() {
   if (!request_->ParseHeadFromArray(rbuf_, header_len_)) {
     return false;  
   }
-  auto iter = request_->headers.begin();
-  iter = request_->headers.find("content-length");
-  if (iter == request_->headers.end()) {
-    remain_recv_len_ = 0;
+
+  if (request_->headers_.count("content-length")) {
+    remain_recv_len_ = std::stoul(request_->headers_["content-length"]);
   } else {
-    int64_t tmp = 0;
-    slash::string2l(iter->second.data(), iter->second.size(),
-        static_cast<long*>(&tmp));
-    remain_recv_len_ = tmp;
+    remain_recv_len_ = 0;
   }
 
-  if (rbuf_pos_ > header_len_) {
-    remain_recv_len_ -= rbuf_pos_ - header_len_;
-  }
   return true;
 }
 
@@ -357,6 +379,9 @@ ReadStatus HttpConn::GetRequest() {
           need_reply = handles_->ReqHeadersHandle(request_);
 
           if (remain_recv_len_ > 0) {
+            size_t part_body_size = rbuf_pos_ - header_len_;
+            remain_recv_len_ -= part_body_size;
+            remain_unfetch_len_ = part_body_size;
             recv_status_ = kPacket;
           } else {
             recv_status_ = kComplete;
@@ -382,15 +407,17 @@ ReadStatus HttpConn::GetRequest() {
           } else {
             rbuf_pos_ += nread;
             remain_recv_len_ -= nread;
+            remain_unfetch_len_ += nread;
           }
         }
-        if (remain_recv_len_ == 0 || // no more content
+        if (remain_recv_len_ == 0 ||
             rbuf_pos_ == kHttpMaxMessage) { // buffer full
-          handles_->ReqBodyPartHandle(rbuf_ + header_len_, rbuf_pos_ - header_len_);
+          handles_->ReqBodyPartHandle(rbuf_ + header_len_, remain_unfetch_len_);
+          remain_unfetch_len_ = 0;
           if (remain_recv_len_ == 0) {
             recv_status_ = kComplete;
           } else {
-            rbuf_pos_ = header_len_ = 0; // read more packet content from begin
+            rbuf_pos_ = header_len_ = 0;
           }
         }
         break;
@@ -413,14 +440,13 @@ ReadStatus HttpConn::GetRequest() {
 WriteStatus HttpConn::SendReply() {
   ssize_t nwritten = 0;
   size_t remain_buf_size = 0;
-  size_t wbuf_len = 0;
   int header_len = 0;
   while (true) {
     switch (send_status_) {
       case kHeader:
         handles_->RespHeaderHandle(response_);
         header_len = response_->SerializeHeaderToArray(wbuf_, kHttpMaxHeader);
-        remain_send_len_ = response_->ContentLength();
+        remain_send_len_ = response_->content_length();
         if (header_len < 0 || static_cast<uint32_t>(header_len) > kHttpMaxHeader) {
           handles_->ConnClosedHandle();
           return kWriteError;
@@ -446,10 +472,13 @@ WriteStatus HttpConn::SendReply() {
           wbuf_pos_ = 0;
         }
       case kPacket:
+        send_status_ = kPacket;
         remain_buf_size = kHttpMaxMessage - wbuf_pos_;
-        wbuf_len = handles_->RespBodyPartHandle(wbuf_ + wbuf_pos_,
-                                std::min(remain_buf_size, remain_send_len_));
-        nwritten = write(fd(), wbuf_ + wbuf_pos_, wbuf_len);
+        if (wbuf_len_ == 0) {
+          wbuf_len_ = handles_->RespBodyPartHandle(wbuf_ + wbuf_pos_,
+                                                   std::min(remain_buf_size, remain_send_len_));
+        }
+        nwritten = write(fd(), wbuf_ + wbuf_pos_, wbuf_len_);
         if (nwritten == -1 && errno == EAGAIN) {
           return kWriteHalf;
         } else if (nwritten <= 0) {
@@ -458,6 +487,7 @@ WriteStatus HttpConn::SendReply() {
         } else {
           wbuf_pos_ += nwritten;
           remain_send_len_ -= nwritten;
+          wbuf_len_ -= nwritten;
         }
         if (remain_send_len_ == 0) {
           send_status_ = kComplete;

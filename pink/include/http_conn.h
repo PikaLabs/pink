@@ -23,22 +23,26 @@ namespace pink {
 class HttpRequest {
  public:
   // attach in header
-  std::string method;
-  std::string path;
-  std::string version;
-  std::map<std::string, std::string> headers;
+  std::string method_;
+  std::string url_;
+  std::string path_;
+  std::string version_;
+  std::map<std::string, std::string> headers_;
 
   // in header for Get, in content for Post Put Delete
-  std::map<std::string, std::string> query_params;
+  std::map<std::string, std::string> query_params_;
 
   // POST: content-type: application/x-www-form-urlencoded
-  std::map<std::string, std::string> post_params;
+  std::map<std::string, std::string> post_params_;
   
-  HttpRequest();
   void Clear();
   bool ParseHeadFromArray(const char* data, const int size);
+  void Dump();
 
  private:
+  friend class HttpConn;
+  HttpRequest() {}
+
   enum ParseStatus {
     kHeaderMethod,
     kHeaderPath,
@@ -56,58 +60,83 @@ class HttpRequest {
 
 class HttpResponse {
  public:
-  HttpResponse():
-    status_code_(0),
-    content_length(0) {
-  }
   void Clear();
+  void Dump();
   int SerializeHeaderToArray(char* data, size_t size);
 
   void SetStatusCode(int code);
 
-  void SetHeaders(const std::string &key, const std::string &value) {
+  void SetHeaders(const std::string& key, const std::string& value) {
     headers_[key] = value;
   }
 
-  void SetHeaders(const std::string &key, const int value) {
+  void SetHeaders(const std::string& key, const size_t value) {
     headers_[key] = std::to_string(value);
   }
 
-  size_t ContentLength() {
-    return content_length;
+  void SetContentLength(size_t size) {
+    SetHeaders("Content-Length", size);
+  }
+
+  size_t content_length() {
+    if (headers_.count("Content-Length"))
+      return std::stoul(headers_["Content-Length"]);
+    return 0;
   }
 
  private:
+  friend class HttpConn;
+
+  HttpResponse() {}
+
   int status_code_;
   std::string reason_phrase_;
   std::map<std::string, std::string> headers_;
-  size_t content_length;
+};
+
+class HttpHandles {
+ public:
+  // Request handles
+  /*
+   * We have parsed HTTP headers and path,
+   * can be handled in ReqHeadersHandle(...).
+   * Return true if reply needed, and then handle response header and body
+   * using handle functions below, otherwise false.
+   */
+  virtual bool ReqHeadersHandle(HttpRequest* req) = 0;
+  /*
+   * Handle body data in ReqBodyPartHandle(...) if there are data follow up,
+   * We deliver data just once, all data should be received.
+   */
+  virtual void ReqBodyPartHandle(const char* data, size_t data_size) = 0;
+
+  // Response handles
+  /*
+   * Fill response headers in this handle, Content-Length is CRUTIAL.
+   * resp->SetContentLength(num) must be called in this handles.
+   * Besides, resa->SetStatusCode(code) should be called either.
+   */
+  virtual void RespHeaderHandle(HttpResponse* resp) = 0;
+  /*
+   * Fill write buffer 'buf' in this handle, should not exceed 'max_size'.
+   * Then return filled size actually.
+   */
+  virtual int RespBodyPartHandle(char* buf, size_t max_size) = 0;
+
+  // Close handle
+  virtual void ConnClosedHandle() {
+  }
 };
 
 class HttpConn: public PinkConn {
  public:
 
-  class HttpHandles {
-   public:
-    // Request handles
-    virtual bool ReqHeadersHandle(HttpRequest* req) { return false; }
-    virtual void ReqBodyPartHandle(const char* data, size_t max_size) {}
-    virtual void ReqCompleteHandle(HttpRequest* req, HttpResponse* resp) {}
-    virtual void ConnClosedHandle() {}
-
-    // Response handles
-    virtual void RespHeaderHandle(HttpResponse* resp) {}
-    virtual int RespBodyPartHandle(char* buf, size_t max_size) { return 0; }
-  };
-
-  HttpConn(const int fd, const std::string &ip_port,  Thread *thread);
+  HttpConn(const int fd, const std::string &ip_port,
+           Thread *thread, HttpHandles* handles = nullptr);
   virtual ~HttpConn();
 
   virtual ReadStatus GetRequest() override;
   virtual WriteStatus SendReply() override;
-
- protected:
-  HttpHandles* handles_;
 
  private:
 
@@ -123,10 +152,14 @@ class HttpConn: public PinkConn {
 
   uint32_t header_len_;
   uint64_t remain_recv_len_;
+  uint64_t remain_unfetch_len_;
   uint64_t remain_send_len_;
+  size_t wbuf_len_;
 
   HttpRequest* request_;
   HttpResponse* response_;
+
+  HttpHandles* handles_;
 };
 
 }  // namespace pink

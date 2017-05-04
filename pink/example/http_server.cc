@@ -53,12 +53,11 @@ class MyHttpHandle : public pink::HttpHandles {
       return;
     }
     
-    zero_space.assign(1024 * 1024 * 8, 'a');
-    std::cout << slash::md5(zero_space) << std::endl;
+    std::cout << slash::md5(body_data) << std::endl;
 
     resp->SetStatusCode(200);
-    // resp->SetContentLength(body_data.size());
-    resp->SetContentLength(zero_space.size());
+    resp->SetContentLength(body_data.size());
+    write_pos = 0;
     end = std::chrono::system_clock::now();
     diff = end - start;
     std::cout << "Use: " << diff.count() << " ms" << std::endl;
@@ -69,8 +68,8 @@ class MyHttpHandle : public pink::HttpHandles {
       return 0;
     }
 
-    size_t size = std::min(max_size, zero_space.size() - write_pos);
-    memcpy(buf, zero_space.data() + write_pos, size);
+    size_t size = std::min(max_size, body_data.size() - write_pos);
+    memcpy(buf, body_data.data() + write_pos, size);
     write_pos += size;
     return size;
   }

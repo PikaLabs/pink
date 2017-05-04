@@ -143,8 +143,7 @@ bool HttpRequest::ParseGetUrl() {
 
 // Parse query parameter from GET url or POST application/x-www-form-urlencoded
 // format: key1=value1&key2=value2&key3=value3
-bool HttpRequest::ParseParameters(const std::string data,
-                                  size_t line_start, bool from_url) {
+bool HttpRequest::ParseParameters(const std::string data, size_t line_start) {
   size_t pre = line_start, mid, end;
   while (pre < data.size()) {
     mid = data.find('=', pre);
@@ -157,22 +156,10 @@ bool HttpRequest::ParseParameters(const std::string data,
     }
     if (end <= mid) {
       // empty value
-      if (from_url) {
-        query_params_[data.substr(pre, end - pre)]
-          = std::string();
-      } else {
-        post_params_[data.substr(pre, end - pre)]
-          = std::string();
-      }
+      query_params_[data.substr(pre, end - pre)] = std::string();
       pre = end + 1;
     } else {
-      if (from_url) {
-        query_params_[data.substr(pre, mid - pre)]
-          = data.substr(mid + 1, end - mid - 1);
-      } else {
-        post_params_[data.substr(pre, mid - pre)]
-          = data.substr(mid + 1, end - mid - 1);
-      }
+      query_params_[data.substr(pre, mid - pre)] = data.substr(mid + 1, end - mid - 1);
       pre = end + 1;
     }
   }
@@ -222,10 +209,6 @@ void HttpRequest::Dump() {
   for (auto& item : query_params_) {
     std::cout << "  ----- " << item.first << ": " << item.second << std::endl;
   }
-  std::cout << "Post params: " << std::endl;
-  for (auto& item : post_params_) {
-    std::cout << "  ----- " << item.first << ": " << item.second << std::endl;
-  }
 #endif
 }
 
@@ -235,7 +218,6 @@ void HttpRequest::Clear() {
   url_.clear();
   method_.clear();
   query_params_.clear();
-  post_params_.clear();
   headers_.clear();
 }
 
@@ -292,7 +274,7 @@ class DefaultHttpHandle : public HttpHandles {
   virtual bool ReqHeadersHandle(HttpRequest* req) override {
     return false;
   }
-  virtual void ReqBodyPartHandle(const char* data, size_t max_size) override {
+  virtual void ReqBodyPartHandle(const char* data, size_t size) override {
   }
 
   // Response handles
@@ -314,14 +296,17 @@ HttpConn::HttpConn(const int fd, const std::string &ip_port,
                    Thread *thread, HttpHandles* handles) :
   PinkConn(fd, ip_port, thread),
   recv_status_(kHeader),
-  send_status_(kHeader),
   rbuf_pos_(0),
-  wbuf_pos_(0),
   header_len_(0),
   remain_recv_len_(0),
+  send_status_(kHeader),
+  wbuf_pos_(0),
   remain_unfetch_len_(0),
-  handles_(SanitizeHandle(handles)) {
-  rbuf_ = (char *)malloc(sizeof(char) * kHttpMaxMessage + sizeof(char));
+  remain_send_len_(0),
+  wbuf_len_(0),
+  handles_(SanitizeHandle(handles)),
+  own_handle_(handles_ != handles) {
+  rbuf_ = (char *)malloc(sizeof(char) * kHttpMaxMessage);
   wbuf_ = (char *)malloc(sizeof(char) * kHttpMaxMessage);
   request_ = new HttpRequest();
   response_ = new HttpResponse();
@@ -332,6 +317,9 @@ HttpConn::~HttpConn() {
   free(wbuf_);
   delete request_;
   delete response_;
+  if (own_handle_) {
+    delete handles_;
+  }
 }
 
 /*

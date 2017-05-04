@@ -22,19 +22,13 @@ namespace pink {
 
 class HttpRequest {
  public:
-  // attach in header
   std::string method_;
   std::string url_;
   std::string path_;
   std::string version_;
   std::map<std::string, std::string> headers_;
-
-  // in header for Get, in content for Post Put Delete
   std::map<std::string, std::string> query_params_;
 
-  // POST: content-type: application/x-www-form-urlencoded
-  std::map<std::string, std::string> post_params_;
-  
   void Clear();
   bool ParseHeadFromArray(const char* data, const int size);
   void Dump();
@@ -55,7 +49,7 @@ class HttpRequest {
   bool ParseGetUrl();
   bool ParseHeadLine(const char* data, int line_start,
                      int line_end, ParseStatus* parseStatus);
-  bool ParseParameters(const std::string data, size_t line_start = 0, bool from_url = true);
+  bool ParseParameters(const std::string data, size_t line_start = 0);
 };
 
 class HttpResponse {
@@ -126,6 +120,18 @@ class HttpHandles {
   // Close handle
   virtual void ConnClosedHandle() {
   }
+
+  HttpHandles() {
+  }
+  virtual ~HttpHandles() {
+  }
+
+ private:
+  /*
+   * No allowed copy and copy assign
+   */
+  HttpHandles(const HttpHandles&);
+  void operator=(const HttpHandles&);
 };
 
 class HttpConn: public PinkConn {
@@ -142,16 +148,17 @@ class HttpConn: public PinkConn {
 
   bool BuildRequestHeader();
 
+  // Receive related
   ConnStatus recv_status_;
-  ConnStatus send_status_;
-
   char* rbuf_;
   uint32_t rbuf_pos_;
-  char* wbuf_;
-  uint32_t wbuf_pos_;
-
   uint32_t header_len_;
   uint64_t remain_recv_len_;
+
+  // Send related
+  ConnStatus send_status_;
+  char* wbuf_;
+  uint32_t wbuf_pos_;
   uint64_t remain_unfetch_len_;
   uint64_t remain_send_len_;
   size_t wbuf_len_;
@@ -160,6 +167,7 @@ class HttpConn: public PinkConn {
   HttpResponse* response_;
 
   HttpHandles* handles_;
+  bool own_handle_;
 };
 
 }  // namespace pink

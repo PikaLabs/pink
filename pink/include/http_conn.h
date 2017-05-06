@@ -90,30 +90,29 @@ class HttpResponse {
 
 class HttpHandles {
  public:
-  // Request handles
+  // You need implement these handles.
   /*
-   * We have parsed HTTP headers and path,
-   * can be handled in ReqHeadersHandle(...).
+   * We have parsed HTTP request for now,
+   * then ReqHeadersHandle(...) will be called.
    * Return true if reply needed, and then handle response header and body
-   * using handle functions below, otherwise false.
+   * by functions below, otherwise false.
    */
   virtual bool ReqHeadersHandle(HttpRequest* req) = 0;
   /*
-   * Handle body data in ReqBodyPartHandle(...) if there are data follow up,
-   * We deliver data just once, all data should be received.
+   * ReqBodyPartHandle(...) will be called if there are data follow up,
+   * We deliver data just once.
    */
   virtual void ReqBodyPartHandle(const char* data, size_t data_size) = 0;
 
-  // Response handles
   /*
-   * Fill response headers in this handle, Content-Length is CRUTIAL.
-   * resp->SetContentLength(num) must be called in this handles.
-   * Besides, resa->SetStatusCode(code) should be called either.
+   * Fill response headers in this handle.
+   * You MUST set Content-Length by means of calling resp->SetContentLength(num).
+   * Besides, resp->SetStatusCode(code) should be called either.
    */
   virtual void RespHeaderHandle(HttpResponse* resp) = 0;
   /*
-   * Fill write buffer 'buf' in this handle, should not exceed 'max_size'.
-   * Then return filled size actually.
+   * Fill write buffer 'buf' in this handle, and should not exceed 'max_size'.
+   * Return actual size filled.
    */
   virtual int RespBodyPartHandle(char* buf, size_t max_size) = 0;
 

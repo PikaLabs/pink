@@ -293,19 +293,20 @@ static HttpHandles* SanitizeHandle(HttpHandles* raw_handle) {
 }
 
 HttpConn::HttpConn(const int fd, const std::string &ip_port,
-                   Thread *thread, HttpHandles* handles) :
-  PinkConn(fd, ip_port, thread),
-  recv_status_(kHeader),
-  rbuf_pos_(0),
-  header_len_(0),
-  remain_recv_len_(0),
-  send_status_(kHeader),
-  wbuf_pos_(0),
-  remain_unfetch_len_(0),
-  remain_send_len_(0),
-  wbuf_len_(0),
-  handles_(SanitizeHandle(handles)),
-  own_handle_(handles_ != handles) {
+                   Thread *thread, HttpHandles* handles)
+      : PinkConn(fd, ip_port, thread),
+        recv_status_(kHeader),
+        rbuf_pos_(0),
+        header_len_(0),
+        remain_recv_len_(0),
+        send_status_(kHeader),
+        wbuf_pos_(0),
+        remain_unfetch_len_(0),
+        remain_send_len_(0),
+        wbuf_len_(0),
+        handles_(SanitizeHandle(handles)),
+        own_handle_(handles_ != handles) {
+  handles_->thread_ptr_ = thread;
   rbuf_ = (char *)malloc(sizeof(char) * kHttpMaxMessage);
   wbuf_ = (char *)malloc(sizeof(char) * kHttpMaxMessage);
   request_ = new HttpRequest();

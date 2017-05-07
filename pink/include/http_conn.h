@@ -125,7 +125,13 @@ class HttpHandles {
   virtual ~HttpHandles() {
   }
 
+ protected:
+  // Assigned in constructor of HttpConn
+  Thread* thread_ptr_;
+
  private:
+  friend class HttpConn;
+
   /*
    * No allowed copy and copy assign
    */

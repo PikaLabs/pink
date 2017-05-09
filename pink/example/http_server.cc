@@ -27,7 +27,7 @@ class MyHttpHandle : public pink::HttpHandles {
   bool need_100_continue;
 
   // Request handles
-  virtual bool ReqHeadersHandle(HttpRequest* req) {
+  virtual bool ReqHeadersHandle(const HttpRequest* req) {
     req->Dump();
     body_data.clear();
 

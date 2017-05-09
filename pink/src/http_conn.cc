@@ -195,7 +195,7 @@ bool HttpRequest::ParseHeadFromArray(const char* data, const int size) {
   return true;
 }
 
-void HttpRequest::Dump() {
+void HttpRequest::Dump() const {
 #ifdef __XDEBUG__
   std::cout << "Method:  " << method_ << std::endl;
   std::cout << "Url:     " << url_ << std::endl;
@@ -271,7 +271,7 @@ void HttpResponse::SetStatusCode(int code) {
 class DefaultHttpHandle : public HttpHandles {
  public:
   // Request handles
-  virtual bool ReqHeadersHandle(HttpRequest* req) override {
+  virtual bool ReqHeadersHandle(const HttpRequest* req) override {
     return false;
   }
   virtual void ReqBodyPartHandle(const char* data, size_t size) override {
@@ -369,6 +369,8 @@ ReadStatus HttpConn::GetRequest() {
 
           if (remain_recv_len_ > 0) {
             size_t part_body_size = rbuf_pos_ - header_len_;
+            memmove(rbuf_, rbuf_ + header_len_ , part_body_size);
+            rbuf_pos_ = part_body_size;
             remain_recv_len_ -= part_body_size;
             remain_unfetch_len_ = part_body_size;
             recv_status_ = kPacket;
@@ -401,12 +403,11 @@ ReadStatus HttpConn::GetRequest() {
         }
         if (remain_recv_len_ == 0 ||
             rbuf_pos_ == kHttpMaxMessage) { // buffer full
-          handles_->ReqBodyPartHandle(rbuf_ + header_len_, remain_unfetch_len_);
+          handles_->ReqBodyPartHandle(rbuf_, remain_unfetch_len_);
           remain_unfetch_len_ = 0;
+          rbuf_pos_ = 0;
           if (remain_recv_len_ == 0) {
             recv_status_ = kComplete;
-          } else {
-            rbuf_pos_ = header_len_ = 0;
           }
         }
         break;
@@ -464,8 +465,13 @@ WriteStatus HttpConn::SendReply() {
         send_status_ = kPacket;
         remain_buf_size = kHttpMaxMessage - wbuf_pos_;
         if (wbuf_len_ == 0) {
-          wbuf_len_ = handles_->RespBodyPartHandle(wbuf_ + wbuf_pos_,
-                                                   std::min(remain_buf_size, remain_send_len_));
+          size_t need_size = std::min(remain_buf_size, remain_send_len_);
+          int ret = handles_->RespBodyPartHandle(wbuf_ + wbuf_pos_, need_size);
+          if (ret < 0) {
+            return kWriteError;
+          } else {
+            wbuf_len_ = ret;
+          }
         }
         nwritten = write(fd(), wbuf_ + wbuf_pos_, wbuf_len_);
         if (nwritten == -1 && errno == EAGAIN) {

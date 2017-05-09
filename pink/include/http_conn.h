@@ -31,7 +31,7 @@ class HttpRequest {
 
   void Clear();
   bool ParseHeadFromArray(const char* data, const int size);
-  void Dump();
+  void Dump() const;
 
  private:
   friend class HttpConn;
@@ -55,7 +55,6 @@ class HttpRequest {
 class HttpResponse {
  public:
   void Clear();
-  void Dump();
   int SerializeHeaderToArray(char* data, size_t size);
 
   void SetStatusCode(int code);
@@ -97,7 +96,7 @@ class HttpHandles {
    * Return true if reply needed, and then handle response header and body
    * by functions below, otherwise false.
    */
-  virtual bool ReqHeadersHandle(HttpRequest* req) = 0;
+  virtual bool ReqHeadersHandle(const HttpRequest* req) = 0;
   /*
    * ReqBodyPartHandle(...) will be called if there are data follow up,
    * We deliver data just once.

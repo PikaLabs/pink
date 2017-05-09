@@ -442,7 +442,8 @@ WriteStatus HttpConn::SendReply() {
           return kWriteError;
         }
 
-        nwritten = write(fd(), wbuf_ + wbuf_pos_, header_len);
+        // TODO(gaodq) write wbuf_ + wbuf_pos_ ?
+        nwritten = write(fd(), wbuf_, header_len);
         if (nwritten == -1 && errno == EAGAIN) {
           return kWriteHalf;
         } else if (nwritten <= 0) {

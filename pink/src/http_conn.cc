@@ -370,6 +370,7 @@ ReadStatus HttpConn::GetRequest() {
           if (remain_recv_len_ > 0) {
             size_t part_body_size = rbuf_pos_ - header_len_;
             memmove(rbuf_, rbuf_ + header_len_ , part_body_size);
+            rbuf_[part_body_size] = '\0';
             rbuf_pos_ = part_body_size;
             remain_recv_len_ -= part_body_size;
             remain_unfetch_len_ = part_body_size;

@@ -74,6 +74,9 @@ class ServerThread : public Thread {
 
   virtual ~ServerThread();
 
+  /*
+   * StartThread will return the error code as pthread_create
+   */
   virtual int StartThread() override;
 
 

@@ -27,6 +27,7 @@ struct TimerItem {
     return exec_time > item.exec_time;
   }
 }; 
+
 class BGThread : public Thread {
  public:
   explicit BGThread(int full = 100000) :
@@ -72,30 +73,5 @@ class BGThread : public Thread {
   slash::CondVar wsignal_;
   virtual void *ThreadMain() override;
 };
-
-class Timer : public Thread {
- public:
-  Timer(uint64_t interval, void (*function)(void*), void* arg,
-      uint64_t interval_float = 0); 
-  virtual ~Timer() {
-    Stop();
-    delete task_;
-  }
-  bool Start();
-  void Stop();
-  void Reset();
-  // remian time in micosecond
-  uint64_t RemainTime();
-
- private:
-  uint64_t interval_;
-  uint64_t interval_float_;
-  TimerItem *task_;
-  slash::Mutex mu_;
-  slash::CondVar signal_;
-  virtual void *ThreadMain() override;
-};
-
-}  // namespace pink
 
 #endif  // PINK_INCLUDE_BG_THREAD_H_

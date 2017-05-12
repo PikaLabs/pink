@@ -304,18 +304,21 @@ HttpConn::HttpConn(const int fd, const std::string &ip_port,
         remain_unfetch_len_(0),
         remain_send_len_(0),
         wbuf_len_(0),
-        handles_(SanitizeHandle(handles)),
-        own_handle_(handles_ != handles) {
+        handles_(SanitizeHandle(handles)) {
   handles_->thread_ptr_ = thread;
-  rbuf_ = (char *)malloc(sizeof(char) * kHttpMaxMessage);
-  wbuf_ = (char *)malloc(sizeof(char) * kHttpMaxMessage);
+  //rbuf_ = (char *)malloc(sizeof(char) * kHttpMaxMessage);
+  //wbuf_ = (char *)malloc(sizeof(char) * kHttpMaxMessage);
+  rbuf_ = new char[kHttpMaxMessage];
+  wbuf_ = new char[kHttpMaxMessage];
   request_ = new HttpRequest();
   response_ = new HttpResponse();
 }
 
 HttpConn::~HttpConn() {
-  free(rbuf_);
-  free(wbuf_);
+  // free(rbuf_);
+  // free(wbuf_);
+  delete rbuf_;
+  delete wbuf_;
   delete request_;
   delete response_;
   // Delete User's Http handles too

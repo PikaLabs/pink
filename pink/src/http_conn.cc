@@ -469,10 +469,12 @@ WriteStatus HttpConn::SendReply() {
         if (wbuf_len_ == 0) {
           size_t need_size = std::min(remain_buf_size, remain_send_len_);
           int ret = handles_->RespBodyPartHandle(wbuf_ + wbuf_pos_, need_size);
-          if (ret < 0) {
-            return kWriteError;
-          } else {
+          if (ret > 0) {
             wbuf_len_ = ret;
+          } else if (ret == 0) {
+            return kWriteAll;
+          } else {
+            return kWriteError;
           }
         }
         nwritten = write(fd(), wbuf_ + wbuf_pos_, wbuf_len_);

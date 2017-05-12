@@ -31,7 +31,9 @@ void* Thread::RunThread(void *arg) {
 
 int Thread::StartThread() {
   if (ehandle_ != nullptr) {
-    ehandle_->SetEnv(&private_);
+    if (ehandle_->SetEnv(&private_) != 0) {
+      return -1;
+    }
   }
   bool expect = false;
   if (!running_.compare_exchange_strong(expect, true)) {

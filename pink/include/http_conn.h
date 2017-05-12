@@ -171,7 +171,6 @@ class HttpConn: public PinkConn {
   HttpResponse* response_;
 
   HttpHandles* handles_;
-  bool own_handle_;
 };
 
 }  // namespace pink

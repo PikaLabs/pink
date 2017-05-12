@@ -318,9 +318,8 @@ HttpConn::~HttpConn() {
   free(wbuf_);
   delete request_;
   delete response_;
-  if (own_handle_) {
-    delete handles_;
-  }
+  // Delete User's Http handles too
+  delete handles_;
 }
 
 /*

@@ -74,4 +74,5 @@ class BGThread : public Thread {
   virtual void *ThreadMain() override;
 };
 
+}
 #endif  // PINK_INCLUDE_BG_THREAD_H_

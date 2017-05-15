@@ -54,6 +54,8 @@ class BGThread : public Thread {
    */
   void DelaySchedule(uint64_t timeout, void (*function)(void *), void* arg);
 
+  void QueueSize(int* pri_size, int* qu_size);
+
  private:
 
   struct BGItem {

@@ -5,6 +5,8 @@
 
 #include "pink/include/bg_thread.h"
 #include <sys/time.h>
+
+#include "slash/include/slash_mutex.h"
 #include "slash/include/xdebug.h"
 
 namespace pink {
@@ -18,6 +20,12 @@ void BGThread::Schedule(void (*function)(void*), void* arg) { mu_.Lock();
     rsignal_.Signal();
   }
   mu_.Unlock();
+}
+
+void BGThread::QueueSize(int* pri_size, int* qu_size) {
+  slash::MutexLock l(&mu_);
+  *pri_size = timer_queue_.size();
+  *qu_size = queue_.size();
 }
 
 void *BGThread::ThreadMain() {

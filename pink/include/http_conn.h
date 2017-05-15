@@ -112,6 +112,8 @@ class HttpHandles {
   /*
    * Fill write buffer 'buf' in this handle, and should not exceed 'max_size'.
    * Return actual size filled.
+   * Return -2 if has written all
+   * Return Other as Error and close connection
    */
   virtual int RespBodyPartHandle(char* buf, size_t max_size) = 0;
 

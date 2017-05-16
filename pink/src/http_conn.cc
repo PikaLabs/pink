@@ -467,8 +467,9 @@ WriteStatus HttpConn::SendReply() {
         }
       case kPacket:
         send_status_ = kPacket;
-        remain_buf_size = kHttpMaxMessage - wbuf_pos_;
         if (wbuf_len_ == 0) {
+          wbuf_pos_ = 0;
+          remain_buf_size = kHttpMaxMessage - wbuf_pos_;
           size_t need_size = std::min(remain_buf_size, remain_send_len_);
           int ret = handles_->RespBodyPartHandle(wbuf_ + wbuf_pos_, need_size);
           if (ret >= 0) {

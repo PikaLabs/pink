@@ -11,7 +11,8 @@
 
 namespace pink {
 
-void BGThread::Schedule(void (*function)(void*), void* arg) { mu_.Lock();
+void BGThread::Schedule(void (*function)(void*), void* arg) {
+  mu_.Lock();
   while (queue_.size() >= full_ && running()) {
     wsignal_.Wait();
   }
@@ -26,6 +27,12 @@ void BGThread::QueueSize(int* pri_size, int* qu_size) {
   slash::MutexLock l(&mu_);
   *pri_size = timer_queue_.size();
   *qu_size = queue_.size();
+}
+
+void BGThread::QueueClear() {
+  slash::MutexLock l(&mu_);
+  std::queue<BGItem>().swap(queue_);
+  std::priority_queue<TimerItem>().swap(timer_queue_);
 }
 
 void *BGThread::ThreadMain() {

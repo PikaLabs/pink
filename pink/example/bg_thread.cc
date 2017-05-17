@@ -12,7 +12,7 @@ using namespace std;
 
 
 void task(void *arg) {
-  std::cout << "task : " << *((int *)arg) << std::endl;
+  std::cout << " task : " << *((int *)arg) << std::endl;
   delete (int*)arg;
 }
 
@@ -33,12 +33,18 @@ int main() {
   pink::BGThread *t = new pink::BGThread();
   t->StartThread();
 
-  for (int i = 0; i < 100; i++) {
+  int qsize = 0, pqsize = 0;
+  std::cout << "Normal BGTask... " << std::endl;
+  for (int i = 0; i < 10; i++) {
     int *pi = new int(i);
     t->Schedule(task, (void*)pi);
+    t->QueueSize(&pqsize, &qsize);
+    std::cout << " current queue size:" << qsize << ", " << pqsize << std::endl;
   }
-  sleep(1);
+  std::cout << std::endl << std::endl;
+  sleep(5);
   
+  std::cout << "TimerItem Struct... " << std::endl;
   std::priority_queue<TimerItem> pq;
   pq.push(TimerItem(1, task, NULL));
   pq.push(TimerItem(5, task, NULL));
@@ -50,12 +56,19 @@ int main() {
     printf("%ld\n", pq.top().exec_time);
     pq.pop();
   }
+  std::cout << std::endl << std::endl;
 
-  for (int i = 0; i < 100; i++) {
+  std::cout << "Time BGTask... " << std::endl;
+  for (int i = 0; i < 10; i++) {
     int *pi = new int(i);
     t->DelaySchedule(i * 1000, task, (void*)pi);
+    t->QueueSize(&qsize, &pqsize);
+    std::cout << " current queue size:" << qsize << ", " << pqsize << std::endl;
   }
-  sleep(20);
+  sleep(3);
+  std::cout << "QueueClear..." << std::endl;
+  t->QueueClear();
+  sleep(10);
 
   return 0;
 }

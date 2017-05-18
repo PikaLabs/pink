@@ -38,16 +38,11 @@ class DispatchThread : public ServerThread {
 
   virtual ~DispatchThread();
 
-  virtual int StartThread();
-  int StopThread();
+  virtual int StartThread() override;
 
-  int work_num() {
-    return work_num_;
-  }
-
-  WorkerThread** worker_thread() {
-    return worker_thread_;
-  }
+  virtual int StopThread() override;
+  
+  void set_keepalive_timeout(int timeout) override;
 
  private:
   /*

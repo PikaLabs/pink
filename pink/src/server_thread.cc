@@ -101,6 +101,9 @@ int ServerThread::InitHandle() {
   return kSuccess;
 }
 
+void ServerThread::DoCronTask() {
+}
+
 void *ServerThread::ThreadMain() {
   int nfds;
   PinkFiredEvent *pfe;
@@ -130,9 +133,12 @@ void *ServerThread::ThreadMain() {
       if (when.tv_sec > now.tv_sec || (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
         timeout = (when.tv_sec - now.tv_sec) * 1000 + (when.tv_usec - now.tv_usec) / 1000;
       } else {
+        // Do own cron task as well as user's
+        DoCronTask();
+        handle_->CronHandle();
+
         when.tv_sec = now.tv_sec + (cron_interval_ / 1000);
         when.tv_usec = now.tv_usec + ((cron_interval_ % 1000) * 1000);
-        handle_->CronHandle();
         timeout = cron_interval_;
       }
     }

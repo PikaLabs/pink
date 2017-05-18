@@ -12,6 +12,7 @@
 #include <functional>
 #include <queue>
 #include <map>
+#include <atomic>
 
 #include <google/protobuf/message.h>
 
@@ -36,6 +37,11 @@ class WorkerThread : public Thread {
                         const ThreadEnvHandle* thandle = nullptr);
   virtual ~WorkerThread();
 
+  void set_keepalive_timeout(int timeout) {
+    keepalive_timeout_ = timeout;
+  }
+
+
   /*
    * The PbItem queue is the fd queue, receive from dispatch thread
    */
@@ -56,7 +62,7 @@ class WorkerThread : public Thread {
    *  public for external statistics
    */
   pthread_rwlock_t rwlock_;
-  std::map<int, PinkConn *> conns_;
+  std::map<int, PinkConn*> conns_;
 
 
  private:
@@ -73,7 +79,10 @@ class WorkerThread : public Thread {
    */
   PinkEpoll *pink_epoll_;
 
+  std::atomic<int> keepalive_timeout_; // keepalive second
+
   virtual void *ThreadMain() override;
+  void DoCronTask();
 
   // clean conns
   void Cleanup();

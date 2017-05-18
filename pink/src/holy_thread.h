@@ -9,6 +9,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <atomic>
 
 #include "slash/include/xdebug.h"
 #include "slash/include/slash_mutex.h"
@@ -34,6 +35,10 @@ class HolyThread: public ServerThread {
              const ThreadEnvHandle* thandle = nullptr);
   virtual ~HolyThread();
 
+  void set_keepalive_timeout(int timeout) override {
+    keepalive_timeout_ = timeout;
+  }
+
   /*
    *  public for external statistics
    */
@@ -43,6 +48,10 @@ class HolyThread: public ServerThread {
  private:
   ConnFactory *conn_factory_;
   const ThreadEnvHandle* thandle_;
+
+  std::atomic<int> keepalive_timeout_; // keepalive second
+
+  void DoCronTask() override;
 
   void HandleNewConn(const int connfd, const std::string &ip_port) override;
   void HandleConnEvent(PinkFiredEvent *pfe) override;

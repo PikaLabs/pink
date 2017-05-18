@@ -35,6 +35,8 @@ class ServerHandle {
   };
 };
 
+const int kDefaultKeepAliveTime = 60; // (s)
+
 class ServerThread : public Thread {
  public:
   /**
@@ -79,6 +81,7 @@ class ServerThread : public Thread {
    */
   virtual int StartThread() override;
 
+  virtual void set_keepalive_timeout(int timeout) = 0;
 
  protected:
   /*
@@ -86,8 +89,10 @@ class ServerThread : public Thread {
    */
   PinkEpoll *pink_epoll_;
 
-private:
+ private:
   int cron_interval_;
+  virtual void DoCronTask();
+
   const ServerHandle *handle_;
   bool own_handle_;
   /*

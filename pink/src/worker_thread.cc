@@ -7,10 +7,12 @@
 
 namespace pink {
 
+
 WorkerThread::WorkerThread(ConnFactory *conn_factory, int cron_interval,
                            const ThreadEnvHandle* ehandle)
       : conn_factory_(conn_factory),
-        cron_interval_(cron_interval) {
+        cron_interval_(cron_interval),
+        keepalive_timeout_(kDefaultKeepAliveTime) {
   set_env_handle(ehandle);
   /*
    * install the protobuf handler here
@@ -55,6 +57,7 @@ void *WorkerThread::ThreadMain() {
       if (when.tv_sec > now.tv_sec || (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
         timeout = (when.tv_sec - now.tv_sec) * 1000 + (when.tv_usec - now.tv_usec) / 1000;
       } else {
+        DoCronTask();
         when.tv_sec = now.tv_sec + (cron_interval_ / 1000);
         when.tv_usec = now.tv_usec + ((cron_interval_ % 1000 ) * 1000);
         timeout = cron_interval_;
@@ -95,7 +98,7 @@ void *WorkerThread::ThreadMain() {
           pink_epoll_->PinkDelEvent(pfe->fd);
           continue;
         }
-        
+
         in_conn = iter->second;
         if (pfe->mask & EPOLLIN) {
           ReadStatus getRes = in_conn->GetRequest();
@@ -137,6 +140,23 @@ void *WorkerThread::ThreadMain() {
 
   Cleanup();
   return NULL;
+}
+
+void WorkerThread::DoCronTask() {
+  // Check keepalive timeout connection
+  struct timeval now;
+  gettimeofday(&now, NULL);
+  slash::RWLock l(&rwlock_, true);
+  std::map<int, PinkConn*>::iterator iter = conns_.begin();
+  while (iter != conns_.end()) {
+    if (now.tv_sec - iter->second->last_interaction().tv_sec > keepalive_timeout_) {
+      close(iter->first);
+      delete iter->second;
+      iter = conns_.erase(iter);
+      continue;
+    }
+    ++iter;
+  }
 }
 
 void WorkerThread::Cleanup() {

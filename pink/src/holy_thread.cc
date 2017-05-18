@@ -10,7 +10,8 @@ HolyThread::HolyThread(int port, ConnFactory* conn_factory,
                        int cron_interval, const ServerHandle* handle,
                        const ThreadEnvHandle* ehandle)
     : ServerThread::ServerThread(port, cron_interval, handle),
-      conn_factory_(conn_factory) {
+      conn_factory_(conn_factory),
+      keepalive_timeout_(kDefaultKeepAliveTime) {
   set_env_handle(ehandle);
   pthread_rwlock_init(&rwlock_, nullptr);
 }
@@ -96,6 +97,23 @@ void HolyThread::HandleConnEvent(PinkFiredEvent *pfe) {
 
     slash::RWLock l(&rwlock_, true);
     conns_.erase(pfe->fd);
+  }
+}
+
+void HolyThread::DoCronTask() {
+  // Check keepalive timeout connection
+  struct timeval now;
+  gettimeofday(&now, NULL);
+  slash::RWLock l(&rwlock_, true);
+  std::map<int, PinkConn*>::iterator iter = conns_.begin();
+  while (iter != conns_.end()) {
+    if (now.tv_sec - iter->second->last_interaction().tv_sec > keepalive_timeout_) {
+      close(iter->first);
+      delete iter->second;
+      iter = conns_.erase(iter);
+      continue;
+    }
+    ++iter;
   }
 }
 

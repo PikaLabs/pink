@@ -41,12 +41,18 @@ int Thread::StartThread() {
 }
 
 int Thread::StopThread() {
-  set_running(false);
-  return pthread_join(thread_id_, nullptr);
+  if (running_) {
+    set_running(false);
+    return pthread_join(thread_id_, nullptr);
+  }
+  return 0;
 }
 
 int Thread::JoinThread() {
-  return pthread_join(thread_id_, nullptr);
+  if (running_) {
+    return pthread_join(thread_id_, nullptr);
+  }
+  return 0;
 }
 
 }  // namespace pink

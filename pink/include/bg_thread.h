@@ -43,8 +43,8 @@ class BGThread : public Thread {
       set_running(false);
       rsignal_.Signal();
       wsignal_.Signal();
+      JoinThread();
     }
-    JoinThread();
   }
 
   void Schedule(void (*function)(void*), void* arg);

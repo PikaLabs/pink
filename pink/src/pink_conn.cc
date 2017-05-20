@@ -12,22 +12,19 @@
 
 namespace pink {
 
-PinkConn::PinkConn(const int fd, const std::string &ip_port, Thread *thread):
-  fd_(fd),
-  ip_port_(ip_port),
-  is_reply_(false),
-  thread_(thread)
-{
+PinkConn::PinkConn(const int fd, const std::string &ip_port, Thread *thread)
+    : fd_(fd),
+      ip_port_(ip_port),
+      is_reply_(false),
+      thread_(thread) {
   gettimeofday(&last_interaction_, NULL);
 }
 
-PinkConn::~PinkConn()
-{
+PinkConn::~PinkConn() {
 //  close(fd_);
 }
 
-bool PinkConn::SetNonblock()
-{
+bool PinkConn::SetNonblock() {
   flags_ = Setnonblocking(fd());
   if (flags_ == -1) {
     return false;
@@ -35,4 +32,4 @@ bool PinkConn::SetNonblock()
   return true;
 }
 
-}
+}  // namespace pink

@@ -17,70 +17,55 @@
 
 using namespace pink;
 
-class MyHttpHandle : public pink::HttpHandles {
+class MyHTTPHandles : public pink::HTTPHandles {
  public:
   std::string body_data;
+  std::string body_md5;
   std::string zero_space;
   size_t write_pos = 0;
   std::chrono::system_clock::time_point start, end;
   std::chrono::duration<double, std::milli> diff;
-  bool need_100_continue;
 
   // Request handles
-  virtual bool ReqHeadersHandle(const HttpRequest* req) {
+  virtual bool HandleRequest(const HTTPRequest* req, HTTPResponse* resp) {
     req->Dump();
     body_data.clear();
 
     start = std::chrono::system_clock::now();
-    if (req->headers_.count("expect")) {
-      need_100_continue = true;
-      return true;
-    }
 
+    // Continue receive body
     return false;
   }
-  virtual void ReqBodyPartHandle(const char* data, size_t size) {
+  virtual void ReadBodyData(const char* data, size_t size) {
     std::cout << "ReqBodyPartHandle: " << size << std::endl;
     body_data.append(data, size);
   }
 
   // Response handles
-  virtual void RespHeaderHandle(HttpResponse* resp) {
-    if (need_100_continue) {
-      resp->SetStatusCode(100);
-      resp->SetContentLength(0);
-      need_100_continue = false;
-      return;
-    }
-    
-    std::cout << slash::md5(body_data) << std::endl;
+  virtual void PrepareResponse(HTTPResponse* resp) {
+    body_md5.assign(slash::md5(body_data));
 
     resp->SetStatusCode(200);
-    resp->SetContentLength(body_data.size());
+    resp->SetContentLength(body_md5.size());
     write_pos = 0;
     end = std::chrono::system_clock::now();
     diff = end - start;
     std::cout << "Use: " << diff.count() << " ms" << std::endl;
   }
 
-  virtual int RespBodyPartHandle(char* buf, size_t max_size) {
-    if (need_100_continue) {
-      return 0;
-    }
-
-    size_t size = std::min(max_size, body_data.size() - write_pos);
-    memcpy(buf, body_data.data() + write_pos, size);
+  virtual int WriteBodyData(char* buf, size_t max_size) {
+    size_t size = std::min(max_size, body_md5.size() - write_pos);
+    memcpy(buf, body_md5.data() + write_pos, size);
     write_pos += size;
     return size;
   }
 };
 
-MyHttpHandle my_handles;
-
 class MyConnFactory : public ConnFactory {
  public:
   virtual PinkConn* NewPinkConn(int connfd, const std::string& ip_port, Thread* thread) const {
-    return new pink::HttpConn(connfd, ip_port, thread, &my_handles);
+    auto my_handles = std::make_shared<MyHTTPHandles>();
+    return new pink::HTTPConn(connfd, ip_port, thread, my_handles);
   }
 };
 

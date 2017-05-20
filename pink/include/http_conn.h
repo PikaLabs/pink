@@ -8,6 +8,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <memory>
 
 #include "slash/include/slash_status.h"
 #include "slash/include/xdebug.h"
@@ -20,110 +21,147 @@
 
 namespace pink {
 
-class HttpRequest {
+class HTTPConn;
+
+class HTTPRequest {
  public:
+  const std::string url() const;
+  const std::string path() const;
+  const std::string query_value(const std::string& field) const;
+  const std::map<std::string, std::string> query_params() const;
+  const std::map<std::string, std::string> postform_params() const;
+  const std::map<std::string, std::string> headers() const;
+  const std::string postform_value(const std::string& field) const;
+  const std::string method() const;
+  const std::string content_type() const;
+
+  void Reset();
+  void Dump() const;
+
+ private:
+  friend class HTTPConn;
+  HTTPRequest(HTTPConn* conn);
+  ~HTTPRequest();
+
+  HTTPConn* conn_;
+
   std::string method_;
   std::string url_;
   std::string path_;
   std::string version_;
-  std::map<std::string, std::string> headers_;
+  std::string content_type_;
+  bool reply_100continue_;
+  std::map<std::string, std::string> postform_params_;
   std::map<std::string, std::string> query_params_;
+  std::map<std::string, std::string> headers_;
 
-  void Clear();
-  bool ParseHeadFromArray(const char* data, const int size);
-  void Dump() const;
-
- private:
-  friend class HttpConn;
-  HttpRequest() {}
-
-  enum ParseStatus {
+  enum RequestParserStatus {
     kHeaderMethod,
     kHeaderPath,
     kHeaderVersion,
     kHeaderParamKey,
     kHeaderParamValue,
-    kBody
   };
 
+  enum RequestStatus {
+    kNewRequest,
+    kHeaderReceiving,
+    kBodyReceiving,
+    kBodyReceived,
+  };
+
+  RequestStatus req_status_;
+  RequestParserStatus parse_status_;
+
+  char* rbuf_;
+  uint64_t rbuf_pos_;
+  uint64_t remain_recv_len_;
+
+  ReadStatus ReadData();
+  int ParseHeader();
+
+  ReadStatus DoRead();
+  bool ParseHeadFromArray(const char* data, const int size);
   bool ParseGetUrl();
-  bool ParseHeadLine(const char* data, int line_start,
-                     int line_end, ParseStatus* parseStatus);
+  bool ParseHeadLine(const char* data, int line_start, int line_end);
   bool ParseParameters(const std::string data, size_t line_start = 0);
 };
 
-class HttpResponse {
+class HTTPResponse {
  public:
-  void Clear();
-  int SerializeHeaderToArray(char* data, size_t size);
-
   void SetStatusCode(int code);
+  void SetHeaders(const std::string& key, const std::string& value);
+  void SetHeaders(const std::string& key, const size_t value);
+  void SetContentLength(uint64_t size);
 
-  void SetHeaders(const std::string& key, const std::string& value) {
-    headers_[key] = value;
-  }
-
-  void SetHeaders(const std::string& key, const size_t value) {
-    headers_[key] = std::to_string(value);
-  }
-
-  void SetContentLength(size_t size) {
-    SetHeaders("Content-Length", size);
-  }
-
-  size_t content_length() {
-    if (headers_.count("Content-Length"))
-      return std::stoul(headers_["Content-Length"]);
-    return 0;
-  }
+  void Reset();
 
  private:
-  friend class HttpConn;
+  friend class HTTPConn;
+  HTTPConn* conn_;
 
-  HttpResponse() {}
+  HTTPResponse(HTTPConn* conn);
+  ~HTTPResponse();
+
+  enum ResponseStatus {
+    kPrepareHeader,
+    kSendingHeader,
+    kSendingBody,
+  };
+
+  ResponseStatus resp_status_;
+
+  char* wbuf_;
+  uint64_t buf_len_;
+  uint64_t wbuf_pos_;
+
+  uint64_t remain_send_len_;
+  bool finished_;
 
   int status_code_;
-  std::string reason_phrase_;
   std::map<std::string, std::string> headers_;
+
+  bool Flush();
+  bool SerializeHeader();
 };
 
-class HttpHandles {
+class HTTPHandles {
  public:
   // You need implement these handles.
   /*
    * We have parsed HTTP request for now,
-   * then ReqHeadersHandle(...) will be called.
+   * then HandleRequest(req, resp) will be called.
    * Return true if reply needed, and then handle response header and body
    * by functions below, otherwise false.
    */
-  virtual bool ReqHeadersHandle(const HttpRequest* req) = 0;
+  virtual bool HandleRequest(const HTTPRequest* req, HTTPResponse* resp) = 0;
   /*
-   * ReqBodyPartHandle(...) will be called if there are data follow up,
+   * ReadBodyData(...) will be called if there are data follow up,
    * We deliver data just once.
    */
-  virtual void ReqBodyPartHandle(const char* data, size_t data_size) = 0;
+  virtual void ReadBodyData(const char* data, size_t data_size) = 0;
 
   /*
-   * Fill response headers in this handle.
+   * Fill response headers in this handle when body received.
    * You MUST set Content-Length by means of calling resp->SetContentLength(num).
    * Besides, resp->SetStatusCode(code) should be called either.
    */
-  virtual void RespHeaderHandle(HttpResponse* resp) = 0;
+  virtual void PrepareResponse(HTTPResponse* resp) = 0;
   /*
    * Fill write buffer 'buf' in this handle, and should not exceed 'max_size'.
    * Return actual size filled.
    * Return -2 if has written all
    * Return Other as Error and close connection
    */
-  virtual int RespBodyPartHandle(char* buf, size_t max_size) = 0;
+  virtual int WriteBodyData(char* buf, size_t max_size) = 0;
 
   // Close handle
   virtual void ConnClosedHandle() {
   }
 
-  HttpHandles() {
+  HTTPHandles() {
   }
-  virtual ~HttpHandles() {
+  virtual ~HTTPHandles() {
   }
 
  protected:
@@ -131,48 +169,33 @@ class HttpHandles {
   Thread* thread_ptr_;
 
  private:
-  friend class HttpConn;
+  friend class HTTPConn;
 
   /*
    * No allowed copy and copy assign
    */
-  HttpHandles(const HttpHandles&);
-  void operator=(const HttpHandles&);
+  HTTPHandles(const HTTPHandles&);
+  void operator=(const HTTPHandles&);
 };
 
-class HttpConn: public PinkConn {
+class HTTPConn: public PinkConn {
  public:
 
-  HttpConn(const int fd, const std::string &ip_port,
-           Thread *thread, HttpHandles* handles = nullptr);
-  virtual ~HttpConn();
+  HTTPConn(const int fd, const std::string &ip_port,
+           Thread *thread, std::shared_ptr<HTTPHandles> handles_);
+  ~HTTPConn();
 
   virtual ReadStatus GetRequest() override;
   virtual WriteStatus SendReply() override;
 
  private:
+  friend class HTTPRequest;
+  friend class HTTPResponse;
 
-  bool BuildRequestHeader();
+  HTTPRequest* request_;
+  HTTPResponse* response_;
 
-  // Receive related
-  ConnStatus recv_status_;
-  char* rbuf_;
-  uint32_t rbuf_pos_;
-  uint32_t header_len_;
-  uint64_t remain_recv_len_;
-
-  // Send related
-  ConnStatus send_status_;
-  char* wbuf_;
-  uint32_t wbuf_pos_;
-  uint64_t remain_unfetch_len_;
-  uint64_t remain_send_len_;
-  size_t wbuf_len_;
-
-  HttpRequest* request_;
-  HttpResponse* response_;
-
-  HttpHandles* handles_;
+  std::shared_ptr<HTTPHandles> handles_;
 };
 
 }  // namespace pink

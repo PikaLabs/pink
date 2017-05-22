@@ -207,8 +207,8 @@ int HTTPRequest::ParseHeader() {
   }
 
   if (headers_.count("expect") &&
-      headers_.at("expect") == "100-Continue" &&
-      headers_.at("expect") == "100-continue") {
+      (headers_.at("expect") == "100-Continue" ||
+      headers_.at("expect") == "100-continue")) {
     reply_100continue_ = true;
   }
 
@@ -407,6 +407,7 @@ ReadStatus HTTPRequest::ReadData() {
 
           if (reply_100continue_ && remain_recv_len_ != 0) {
             conn_->response_->SetStatusCode(100);
+            reply_100continue_ = false;
             return kReadAll;
           }
 

@@ -384,12 +384,14 @@ ReadStatus HTTPRequest::ReadData() {
     switch (req_status_) {
       case kHeaderReceiving:
         if ((s = DoRead()) != kOk) {
+          conn_->handles_->ConnClosedHandle();
           return s;
         }
         header_len = ParseHeader();
         if (header_len < 0 ||
             rbuf_pos_ > kHTTPMaxHeader) {
           // Parse header error
+          conn_->handles_->ConnClosedHandle();
           return kReadError;
         } else if (header_len > 0) {
           // Parse header success
@@ -421,6 +423,7 @@ ReadStatus HTTPRequest::ReadData() {
         break;
       case kBodyReceiving:
         if ((s = DoRead()) != kOk) {
+          conn_->handles_->ConnClosedHandle();
           return s;
         }
         if (rbuf_pos_ == kHTTPMaxMessage ||
@@ -508,66 +511,66 @@ void HTTPResponse::SetContentLength(uint64_t size) {
 }
 
 bool HTTPResponse::Flush() {
-  while (true) {
-    if (resp_status_ == kPrepareHeader) {
-      if (!SerializeHeader() ||
-          buf_len_ > kHTTPMaxHeader) {
-        return false;
-      }
-      resp_status_ = kSendingHeader;
+  if (resp_status_ == kPrepareHeader) {
+    if (!SerializeHeader() ||
+        buf_len_ > kHTTPMaxHeader) {
+      return false;
     }
-    if (resp_status_ == kSendingHeader) {
-      ssize_t nwritten = write(conn_->fd(), wbuf_ + wbuf_pos_, buf_len_);
-      if (nwritten == -1 && errno == EAGAIN) {
-        return true;
-      } else if (nwritten <= 0) {
-        // Connection close
-        return false;
-      } else if (nwritten == static_cast<ssize_t>(buf_len_)) {
-        // Complete sending header
-        wbuf_pos_ = 0;
-        buf_len_ = 0;
-        if (status_code_ == 100) {
-          // Sending 100-continue, no body
-          resp_status_ = kPrepareHeader;
-          finished_ = true;
-          return true;
-        }
-        resp_status_ = kSendingBody;
-      } else {
-        wbuf_pos_ += nwritten;
-        buf_len_ -= nwritten;
-      }
-    }
-    if (resp_status_ == kSendingBody) {
-      if (remain_send_len_ == 0) {
-        // Complete response
-        finished_ = true;
+    resp_status_ = kSendingHeader;
+  }
+  if (resp_status_ == kSendingHeader) {
+    ssize_t nwritten = write(conn_->fd(), wbuf_ + wbuf_pos_, buf_len_);
+    if (nwritten == -1 && errno == EAGAIN) {
+      return true;
+    } else if (nwritten <= 0) {
+      // Connection close
+      return false;
+    } else if (nwritten == static_cast<ssize_t>(buf_len_)) {
+      // Complete sending header
+      wbuf_pos_ = 0;
+      buf_len_ = 0;
+      if (status_code_ == 100) {
+        // Sending 100-continue, no body
         resp_status_ = kPrepareHeader;
+        finished_ = true;
         return true;
       }
-      if (buf_len_ == 0) {
-        size_t remain_buf = static_cast<uint64_t>(kHTTPMaxMessage) - wbuf_pos_;
-        size_t needed_size = std::min(remain_buf, remain_send_len_);
-        buf_len_ = conn_->handles_->WriteBodyData(wbuf_ + wbuf_pos_, needed_size);
-      }
-      ssize_t nwritten = write(conn_->fd(), wbuf_ + wbuf_pos_, buf_len_);
-      if (nwritten == -1 && errno == EAGAIN) {
-        return true;
-      } else if (nwritten <= 0) {
-        // Connection close
-        return false;
-      } else {
-        wbuf_pos_ += nwritten;
-        if (wbuf_pos_ == kHTTPMaxMessage) {
-          wbuf_pos_ = 0;
-        }
-        buf_len_ -= nwritten;
-        remain_send_len_ -= nwritten;
-      }
+      resp_status_ = kSendingBody;
+    } else {
+      wbuf_pos_ += nwritten;
+      buf_len_ -= nwritten;
     }
   }
-  assert(true);
+  if (resp_status_ == kSendingBody) {
+    if (remain_send_len_ == 0) {
+      // Complete response
+      finished_ = true;
+      resp_status_ = kPrepareHeader;
+      return true;
+    }
+    if (buf_len_ == 0) {
+      size_t remain_buf = static_cast<uint64_t>(kHTTPMaxMessage) - wbuf_pos_;
+      size_t needed_size = std::min(remain_buf, remain_send_len_);
+      buf_len_ = conn_->handles_->WriteBodyData(wbuf_ + wbuf_pos_, needed_size);
+    }
+    ssize_t nwritten = write(conn_->fd(), wbuf_ + wbuf_pos_, buf_len_);
+    if (nwritten == -1 && errno == EAGAIN) {
+      return true;
+    } else if (nwritten <= 0) {
+      // Connection close
+      return false;
+    } else {
+      wbuf_pos_ += nwritten;
+      if (wbuf_pos_ == kHTTPMaxMessage) {
+        wbuf_pos_ = 0;
+      }
+      buf_len_ -= nwritten;
+      remain_send_len_ -= nwritten;
+    }
+  }
+
+  // Continue
+  return true;
 }
 
 WriteStatus HTTPConn::SendReply() {

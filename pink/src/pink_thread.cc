@@ -41,7 +41,10 @@ int Thread::StartThread() {
 }
 
 int Thread::StopThread() {
-  set_running(false);
+  bool expect = true;
+  if (!running_.compare_exchange_strong(expect, false)) {
+    return 0;
+  }
   return pthread_join(thread_id_, nullptr);
 }
 

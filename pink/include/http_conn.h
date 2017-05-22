@@ -95,6 +95,7 @@ class HTTPResponse {
   void SetContentLength(uint64_t size);
 
   void Reset();
+  bool Finished();
 
  private:
   friend class HTTPConn;

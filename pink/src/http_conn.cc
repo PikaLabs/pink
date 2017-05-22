@@ -370,7 +370,11 @@ ReadStatus HTTPRequest::DoRead() {
 ReadStatus HTTPRequest::ReadData() {
   if (req_status_ == kNewRequest) {
     Reset();
-    conn_->response_->Reset();
+    if (conn_->response_->Finished()) {
+      conn_->response_->Reset();
+    } else {
+      return kReadHalf;
+    }
     req_status_ = kHeaderReceiving;
   }
 
@@ -453,7 +457,7 @@ HTTPResponse::HTTPResponse(HTTPConn* conn)
       buf_len_(0),
       wbuf_pos_(0),
       remain_send_len_(0),
-      finished_(false),
+      finished_(true),
       status_code_(200) {
   wbuf_ = new char[kHTTPMaxMessage];
 }
@@ -470,6 +474,10 @@ void HTTPResponse::Reset() {
   wbuf_pos_ = 0;
   buf_len_ = 0;
   resp_status_ = kPrepareHeader;
+}
+
+bool HTTPResponse::Finished() {
+  return finished_;
 }
 
 void HTTPResponse::SetStatusCode(int code) {
@@ -565,7 +573,7 @@ WriteStatus HTTPConn::SendReply() {
   if (!response_->Flush()) {
     return kWriteError;
   }
-  if (response_->finished_) {
+  if (response_->Finished()) {
     return kWriteAll;
   }
   return kWriteHalf;

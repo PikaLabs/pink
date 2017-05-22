@@ -6,7 +6,7 @@ Pink is a wrapper of pthread. Why you need it?
 
 When you use pthread, you always define many type of thread, such as:
 
-In network programming scenario, some thread used for accept the clinet's connection, some thread used for pass
+In network programming scenario, some thread used for accept the client's connection, some thread used for pass
 message to other thread, some thread used for communicate with client using protobuf.
 
 So pink wrap a thin capsulation upon pthread to offer more convinent function.

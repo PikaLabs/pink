@@ -135,12 +135,12 @@ class HTTPHandles {
    * Return true if reply needed, and then handle response header and body
    * by functions below, otherwise false.
    */
-  virtual bool HandleRequest(const HTTPRequest* req, HTTPResponse* resp) = 0;
+  virtual bool HandleRequest(const HTTPRequest* req) = 0;
   /*
    * ReadBodyData(...) will be called if there are data follow up,
    * We deliver data just once.
    */
-  virtual void ReadBodyData(const char* data, size_t data_size) = 0;
+  virtual void HandleBodyData(const char* data, size_t data_size) = 0;
 
   /*
    * Fill response headers in this handle when body received.
@@ -154,10 +154,10 @@ class HTTPHandles {
    * Return -2 if has written all
    * Return Other as Error and close connection
    */
-  virtual int WriteBodyData(char* buf, size_t max_size) = 0;
+  virtual int WriteResponseBody(char* buf, size_t max_size) = 0;
 
   // Close handle
-  virtual void ConnClosedHandle() {
+  virtual void HandleConnClosed() {
   }
 
   HTTPHandles() {

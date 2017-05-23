@@ -384,19 +384,19 @@ ReadStatus HTTPRequest::ReadData() {
     switch (req_status_) {
       case kHeaderReceiving:
         if ((s = DoRead()) != kOk) {
-          conn_->handles_->ConnClosedHandle();
+          conn_->handles_->HandleConnClosed();
           return s;
         }
         header_len = ParseHeader();
         if (header_len < 0 ||
             rbuf_pos_ > kHTTPMaxHeader) {
           // Parse header error
-          conn_->handles_->ConnClosedHandle();
+          conn_->handles_->HandleConnClosed();
           return kReadError;
         } else if (header_len > 0) {
           // Parse header success
           req_status_ = kBodyReceiving;
-          bool need_reply = conn_->handles_->HandleRequest(this, conn_->response_);
+          bool need_reply = conn_->handles_->HandleRequest(this);
           if (need_reply) {
             req_status_ = kBodyReceived;
             break;
@@ -414,7 +414,7 @@ ReadStatus HTTPRequest::ReadData() {
           }
 
           if (remain_recv_len_ == 0) {
-            conn_->handles_->ReadBodyData(rbuf_, rbuf_pos_);
+            conn_->handles_->HandleBodyData(rbuf_, rbuf_pos_);
             req_status_ = kBodyReceived;
           }
         } else {
@@ -423,12 +423,12 @@ ReadStatus HTTPRequest::ReadData() {
         break;
       case kBodyReceiving:
         if ((s = DoRead()) != kOk) {
-          conn_->handles_->ConnClosedHandle();
+          conn_->handles_->HandleConnClosed();
           return s;
         }
         if (rbuf_pos_ == kHTTPMaxMessage ||
             remain_recv_len_ == 0) {
-          conn_->handles_->ReadBodyData(rbuf_, rbuf_pos_);
+          conn_->handles_->HandleBodyData(rbuf_, rbuf_pos_);
           rbuf_pos_ = 0;
         }
         if (remain_recv_len_ == 0) {
@@ -551,7 +551,7 @@ bool HTTPResponse::Flush() {
     if (buf_len_ == 0) {
       size_t remain_buf = static_cast<uint64_t>(kHTTPMaxMessage) - wbuf_pos_;
       size_t needed_size = std::min(remain_buf, remain_send_len_);
-      buf_len_ = conn_->handles_->WriteBodyData(wbuf_ + wbuf_pos_, needed_size);
+      buf_len_ = conn_->handles_->WriteResponseBody(wbuf_ + wbuf_pos_, needed_size);
     }
     ssize_t nwritten = write(conn_->fd(), wbuf_ + wbuf_pos_, buf_len_);
     if (nwritten == -1 && errno == EAGAIN) {

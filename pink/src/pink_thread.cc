@@ -33,18 +33,20 @@ int Thread::StartThread() {
   if (ehandle_ != nullptr && ehandle_->SetEnv(&private_) == -1) {
     return -1;
   }
-  bool expect = false;
-  if (!running_.compare_exchange_strong(expect, true)) {
+  slash::MutexLock l(&running_mu_);
+  if (running_) {
     return 0;
   }
+  running_ = true;
   return pthread_create(&thread_id_, nullptr, RunThread, (void *)this);
 }
 
 int Thread::StopThread() {
-  bool expect = true;
-  if (!running_.compare_exchange_strong(expect, false)) {
+  slash::MutexLock l(&running_mu_);
+  if (!running_) {
     return 0;
   }
+  running_ = false;
   return pthread_join(thread_id_, nullptr);
 }
 

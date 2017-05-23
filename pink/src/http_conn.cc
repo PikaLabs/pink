@@ -335,6 +335,10 @@ const std::map<std::string, std::string> HTTPRequest::headers() const {
   return headers_;
 }
 
+const std::string HTTPRequest::client_ip_port() const {
+  return client_ip_port_;
+}
+
 void HTTPRequest::Reset() {
   rbuf_pos_ = 0;
   method_.clear();
@@ -348,6 +352,7 @@ void HTTPRequest::Reset() {
   query_params_.clear();
   headers_.clear();
   parse_status_ = kHeaderMethod;
+  client_ip_port_ = conn_->ip_port();
 }
 
 ReadStatus HTTPRequest::DoRead() {

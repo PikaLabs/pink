@@ -35,6 +35,8 @@ class HTTPRequest {
   const std::string method() const;
   const std::string content_type() const;
 
+  const std::string client_ip_port() const;
+
   void Reset();
   void Dump() const;
 
@@ -54,6 +56,8 @@ class HTTPRequest {
   std::map<std::string, std::string> postform_params_;
   std::map<std::string, std::string> query_params_;
   std::map<std::string, std::string> headers_;
+
+  std::string client_ip_port_;
 
   enum RequestParserStatus {
     kHeaderMethod,

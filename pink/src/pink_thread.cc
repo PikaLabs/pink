@@ -12,6 +12,7 @@ namespace pink {
 
 Thread::Thread()
   : running_(false),
+    should_stop_(false),
     thread_id_(0),
     ehandle_(nullptr),
     private_(nullptr) {
@@ -33,21 +34,24 @@ int Thread::StartThread() {
   if (ehandle_ != nullptr && ehandle_->SetEnv(&private_) == -1) {
     return -1;
   }
+  int ret = 0;
   slash::MutexLock l(&running_mu_);
-  if (running_) {
-    return 0;
+  if (!running_) {
+    running_ = true;
+    ret = pthread_create(&thread_id_, nullptr, RunThread, (void *)this);
   }
-  running_ = true;
-  return pthread_create(&thread_id_, nullptr, RunThread, (void *)this);
+  return ret;
 }
 
 int Thread::StopThread() {
+  int ret = 0;
+  set_should_stop(true);
   slash::MutexLock l(&running_mu_);
-  if (!running_) {
-    return 0;
+  if (running_) {
+    running_ = false;
+    ret = pthread_join(thread_id_, nullptr);
   }
-  running_ = false;
-  return pthread_join(thread_id_, nullptr);
+  return ret;
 }
 
 int Thread::JoinThread() {

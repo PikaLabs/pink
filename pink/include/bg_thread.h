@@ -43,13 +43,10 @@ class BGThread : public Thread {
   }
 
   virtual int StopThread() override {
-    if (running()) {
-      set_running(false);
-      rsignal_.Signal();
-      wsignal_.Signal();
-      return JoinThread();
-    }
-    return 0;
+    set_should_stop(true);
+    rsignal_.Signal();
+    wsignal_.Signal();
+    return StopThread();
   }
 
   void Schedule(void (*function)(void*), void* arg);

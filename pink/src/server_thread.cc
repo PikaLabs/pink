@@ -127,7 +127,7 @@ void *ServerThread::ThreadMain() {
   char port_buf[32];
   char ip_addr[INET_ADDRSTRLEN] = "";
 
-  while (running()) {
+  while (!should_stop()) {
     if (cron_interval_ > 0) {
       gettimeofday(&now, nullptr);
       if (when.tv_sec > now.tv_sec || (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {

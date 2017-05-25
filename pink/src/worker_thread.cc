@@ -50,7 +50,7 @@ void *WorkerThread::ThreadMain() {
     timeout = PINK_CRON_INTERVAL;
   }
 
-  while (running()) {
+  while (!should_stop()) {
 
     if (cron_interval_ > 0) {
       gettimeofday(&now, NULL);
@@ -136,7 +136,7 @@ void *WorkerThread::ThreadMain() {
         }
       } // connection event
     } // for (int i = 0; i < nfds; i++)
-  } // while (running())
+  } // while (!should_stop())
 
   Cleanup();
   return NULL;

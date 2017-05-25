@@ -33,14 +33,12 @@ class Thread {
   virtual int StopThread();
   int JoinThread();
 
-  bool running() {
-    slash::MutexLock l(&running_mu_);
-    return running_;
+  bool should_stop() {
+    return should_stop_.load();
   }
 
-  void set_running(bool running) {
-    slash::MutexLock l(&running_mu_);
-    running_ = running;
+  void set_should_stop(bool flag) {
+    should_stop_ = flag;
   }
 
   pthread_t thread_id() const {
@@ -69,6 +67,7 @@ class Thread {
 
   slash::Mutex running_mu_;
   bool running_;
+  std::atomic<bool> should_stop_;
   pthread_t thread_id_;
   std::string thread_name_;
 

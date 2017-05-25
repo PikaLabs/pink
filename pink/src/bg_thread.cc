@@ -13,7 +13,7 @@ namespace pink {
 
 void BGThread::Schedule(void (*function)(void*), void* arg) {
   mu_.Lock();
-  while (queue_.size() >= full_ && running()) {
+  while (queue_.size() >= full_ && !should_stop()) {
     wsignal_.Wait();
   }
   if (queue_.size() < full_) {
@@ -36,12 +36,12 @@ void BGThread::QueueClear() {
 }
 
 void *BGThread::ThreadMain() {
-  while (running()) {
+  while (!should_stop()) {
     mu_.Lock();
-    while (queue_.empty() && timer_queue_.empty() && running()) {
+    while (queue_.empty() && timer_queue_.empty() && !should_stop()) {
       rsignal_.Wait();
     }
-    if (!running()) {
+    if (should_stop()) {
       mu_.Unlock();
       break;
     }
@@ -59,7 +59,7 @@ void *BGThread::ThreadMain() {
         mu_.Unlock();
         (*function)(arg);
         continue;
-      } else if (queue_.empty() && running()) {
+      } else if (queue_.empty() && !should_stop()) {
         rsignal_.TimedWait(static_cast<uint32_t>((timer_item.exec_time - unow) / 1000));
         mu_.Unlock();
         continue;

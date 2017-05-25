@@ -81,6 +81,14 @@ void DispatchThread::set_keepalive_timeout(int timeout) {
   } 
 }
 
+int DispatchThread::conn_num() {
+  int num = 0;
+  for (int i = 0; i < work_num_; ++i) {
+    num += worker_thread_[i]->conn_num();
+  }
+  return num;
+} 
+
 void DispatchThread::HandleNewConn(const int connfd, const std::string& ip_port) {
   std::queue<PinkItem> *q = &(worker_thread_[last_thread_]->conn_queue_);
   PinkItem ti(connfd, ip_port);

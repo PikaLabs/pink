@@ -43,7 +43,7 @@ class BGThread : public Thread {
   }
 
   virtual int StopThread() override {
-    set_should_stop(true);
+    should_stop_ = true;
     rsignal_.Signal();
     wsignal_.Signal();
     return Thread::StopThread();

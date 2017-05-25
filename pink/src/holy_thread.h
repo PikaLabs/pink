@@ -39,6 +39,11 @@ class HolyThread: public ServerThread {
     keepalive_timeout_ = timeout;
   }
 
+  int conn_num() override {
+    slash::RWLock l(&rwlock_, false);
+    return conns_.size();
+  }
+
   /*
    *  public for external statistics
    */
@@ -53,7 +58,7 @@ class HolyThread: public ServerThread {
 
   void DoCronTask() override;
 
-  void HandleNewConn(const int connfd, const std::string &ip_port) override;
+  void HandleNewConn(int connfd, const std::string &ip_port) override;
   void HandleConnEvent(PinkFiredEvent *pfe) override;
 
   void Cleanup();

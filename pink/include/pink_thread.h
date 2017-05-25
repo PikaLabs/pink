@@ -37,9 +37,6 @@ class Thread {
     return should_stop_.load();
   }
 
-  void set_should_stop(bool flag) {
-    should_stop_ = flag;
-  }
 
   pthread_t thread_id() const {
     return thread_id_;
@@ -60,6 +57,9 @@ class Thread {
   void* get_private() {
     return private_;
   }
+  
+ protected:
+  std::atomic<bool> should_stop_;
 
  private:
   static void* RunThread(void* arg);
@@ -67,7 +67,6 @@ class Thread {
 
   slash::Mutex running_mu_;
   bool running_;
-  std::atomic<bool> should_stop_;
   pthread_t thread_id_;
   std::string thread_name_;
 

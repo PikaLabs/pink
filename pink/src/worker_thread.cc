@@ -89,11 +89,10 @@ void *WorkerThread::ThreadMain() {
       } else {
         in_conn = NULL;
         int should_close = 0;
-        std::map<int, PinkConn *>::iterator iter = conns_.begin();
         if (pfe == NULL) {
           continue;
         }
-        iter = conns_.find(pfe->fd);
+        std::map<int, PinkConn *>::iterator iter = conns_.find(pfe->fd);
         if (iter == conns_.end()) {
           pink_epoll_->PinkDelEvent(pfe->fd);
           continue;
@@ -168,6 +167,7 @@ void WorkerThread::Cleanup() {
     in_conn = iter->second;
     delete in_conn;
   }
+  conns_.clear();
 }
 
 };  // namespace pink

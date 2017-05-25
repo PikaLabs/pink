@@ -127,6 +127,7 @@ void HolyThread::Cleanup() {
     in_conn = iter->second;
     delete in_conn;
   }
+  conns_.clear();
 }
 
 extern ServerThread *NewHolyThread(

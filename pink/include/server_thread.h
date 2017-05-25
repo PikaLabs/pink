@@ -83,6 +83,8 @@ class ServerThread : public Thread {
 
   virtual void set_keepalive_timeout(int timeout) = 0;
 
+  virtual int conn_num() = 0; 
+
  protected:
   /*
    * The Epoll event handler
@@ -108,7 +110,7 @@ class ServerThread : public Thread {
   /*
    * The server connection and event handle
    */
-  virtual void HandleNewConn(const int connfd, const std::string& ip_port) = 0;
+  virtual void HandleNewConn(int connfd, const std::string& ip_port) = 0;
   virtual void HandleConnEvent(PinkFiredEvent *pfe) = 0;
 
 };

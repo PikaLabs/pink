@@ -44,6 +44,8 @@ class DispatchThread : public ServerThread {
   
   void set_keepalive_timeout(int timeout) override;
 
+  int conn_num() override; 
+
  private:
   /*
    * Here we used auto poll to find the next work thread,

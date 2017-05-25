@@ -41,6 +41,11 @@ class WorkerThread : public Thread {
     keepalive_timeout_ = timeout;
   }
 
+  int conn_num() {
+    slash::RWLock l(&rwlock_, false);
+    return conns_.size();
+  } 
+
 
   /*
    * The PbItem queue is the fd queue, receive from dispatch thread

@@ -46,7 +46,7 @@ class BGThread : public Thread {
     set_should_stop(true);
     rsignal_.Signal();
     wsignal_.Signal();
-    return StopThread();
+    return Thread::StopThread();
   }
 
   void Schedule(void (*function)(void*), void* arg);

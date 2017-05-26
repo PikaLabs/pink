@@ -143,7 +143,7 @@ WriteStatus PbConn::SendReply() {
 
 Status PbConn::BuildObuf() {
   wbuf_len_ = res_->ByteSize();
-  if (wbuf_len_ > PB_MAX_MESSAGE - 4
+  if (wbuf_len_ > kProtoMaxMessage - 4
       || !(res_->SerializeToArray(wbuf_ + 4, wbuf_len_))) {
     return Status::Corruption("Serialize to buffer failed");
   }

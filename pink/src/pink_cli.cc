@@ -174,15 +174,16 @@ Status PinkCli::SendRaw(void *buf, size_t count) {
   ssize_t nwritten;
 
   while (nleft > 0) {
-    if ((nwritten = write(rep_->sockfd, wbuf + pos, nleft)) <= 0) {
-      // TODO(anan) verify EINTR
-      //    we do not handle EINTR, because it may write forever when socket is
-      //    CLOSE_WAIT
-      if (errno == EAGAIN || errno == EWOULDBLOCK) {
+    if ((nwritten = write(rep_->sockfd, wbuf + pos, nleft)) < 0) {
+      if (errno == EINTR) {
+        continue;
+      } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
         return Status::Timeout("Send timeout");
       } else {
         return Status::IOError("write error " + std::string(strerror(errno)));
       }
+    } else if (nwritten == 0) {
+      return Status::IOError("write nothing");
     }
 
     nleft -= nwritten;
@@ -200,18 +201,16 @@ Status PinkCli::RecvRaw(void *buf, size_t *count) {
   ssize_t nread;
 
   while (nleft > 0) {
-    if ((nread = read(r->sockfd, rbuf + pos, nleft)) <= 0) {
-      // TODO(anan) verify EINTR
-      //    we do not handle EINTR, because it may read forever when socket is
-      //    CLOSE_WAIT
-
-      // blocking fd after setting setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO,...)
-      // will return EAGAIN for timeout
-      if (errno == EAGAIN || errno == EWOULDBLOCK) {
+    if ((nread = read(r->sockfd, rbuf + pos, nleft)) < 0) {
+      if (errno == EINTR) {
+        continue;
+      } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
         return Status::Timeout("Send timeout");
       } else {
         return Status::IOError("read error " + std::string(strerror(errno)));
       }
+    } else if (nread == 0) {
+      return Status::EndFile("socket closed");
     }
     nleft -= nread;
     pos += nread;

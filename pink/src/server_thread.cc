@@ -31,7 +31,8 @@ static const ServerHandle* SanitizeHandle(const ServerHandle* raw_handle) {
 
 ServerThread::ServerThread(int port,
     int cron_interval, const ServerHandle* handle)
-  : cron_interval_(cron_interval),
+  : pink_epoll_(NULL),
+    cron_interval_(cron_interval),
     handle_(SanitizeHandle(handle)),
     own_handle_(handle_ != handle),
     port_(port) {

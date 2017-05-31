@@ -101,6 +101,10 @@ void HolyThread::HandleConnEvent(PinkFiredEvent *pfe) {
 }
 
 void HolyThread::DoCronTask() {
+  if (keepalive_timeout_ <= 0) {
+    return;
+  }
+
   // Check keepalive timeout connection
   struct timeval now;
   gettimeofday(&now, NULL);

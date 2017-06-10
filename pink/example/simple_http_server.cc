@@ -4,68 +4,50 @@
 // of patent rights can be found in the PATENTS file in the same directory.
 
 #include <string>
-#include <chrono>
 #include <atomic>
 #include <signal.h>
 
 #include "slash/include/slash_status.h"
-#include "slash/include/slash_hash.h"
 #include "pink/include/pink_thread.h"
 #include "pink/src/worker_thread.h"
 #include "pink/src/dispatch_thread.h"
-#include "pink/include/http_conn.h"
+#include "pink/include/simple_http_conn.h"
 
 using namespace pink;
 
-class MyHTTPHandles : public pink::HTTPHandles {
+class MyHTTPConn : public pink::SimpleHTTPConn {
  public:
-  std::string body_data;
-  std::string body_md5;
-  std::string zero_space;
-  size_t write_pos = 0;
-  std::chrono::system_clock::time_point start, end;
-  std::chrono::duration<double, std::milli> diff;
-
-  // Request handles
-  virtual bool HandleRequest(const HTTPRequest* req) {
-    req->Dump();
-    body_data.clear();
-
-    start = std::chrono::system_clock::now();
-
-    // Continue receive body
-    return false;
+  MyHTTPConn(const int fd, const std::string& ip_port, Thread* worker) :
+    SimpleHTTPConn(fd, ip_port, worker) {
   }
-  virtual void HandleBodyData(const char* data, size_t size) {
-    std::cout << "ReqBodyPartHandle: " << size << std::endl;
-    body_data.append(data, size);
-  }
+  virtual void DealMessage(const pink::Request* req, pink::Response* res) {
+    std::cout << "handle get"<< std::endl;
+    std::cout << " + method: " << req->method << std::endl;
+    std::cout << " + path: " << req->path << std::endl;
+    std::cout << " + version: " << req->version << std::endl;
+    std::cout << " + content: " << req->content<< std::endl;
+    std::cout << " + headers: " << std::endl;
+    for (auto& h : req->headers) {
+      std::cout << "   + " << h.first << ":" << h.second << std::endl;
+    }
+    std::cout << " + query_params: " << std::endl;
+    for (auto& q : req->query_params) {
+      std::cout << "   + " << q.first << ":" << q.second << std::endl;
+    }
+    std::cout << " + post_params: " << std::endl;
+    for (auto& q : req->post_params) {
+      std::cout << "   + " << q.first << ":" << q.second << std::endl;
+    }
 
-  // Response handles
-  virtual void PrepareResponse(HTTPResponse* resp) {
-    body_md5.assign(slash::md5(body_data));
-
-    resp->SetStatusCode(200);
-    resp->SetContentLength(body_md5.size());
-    write_pos = 0;
-    end = std::chrono::system_clock::now();
-    diff = end - start;
-    std::cout << "Use: " << diff.count() << " ms" << std::endl;
-  }
-
-  virtual int WriteResponseBody(char* buf, size_t max_size) {
-    size_t size = std::min(max_size, body_md5.size() - write_pos);
-    memcpy(buf, body_md5.data() + write_pos, size);
-    write_pos += size;
-    return size;
+    res->SetStatusCode(200);
+    res->SetBody("china");
   }
 };
 
 class MyConnFactory : public ConnFactory {
  public:
   virtual PinkConn* NewPinkConn(int connfd, const std::string& ip_port, Thread* thread) const {
-    auto my_handles = std::make_shared<MyHTTPHandles>();
-    return new pink::HTTPConn(connfd, ip_port, thread, my_handles);
+    return new MyHTTPConn(connfd, ip_port, thread);
   }
 };
 
@@ -88,7 +70,7 @@ static void SignalSetup() {
 int main(int argc, char* argv[]) {
   int port;
   if (argc < 2) {
-    printf("Usage: ./http_server port");
+    printf("Usage: ./simple_http_server port");
   } else {
     port = atoi(argv[1]);
   }

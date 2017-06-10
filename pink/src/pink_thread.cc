@@ -32,7 +32,8 @@ void* Thread::RunThread(void *arg) {
 }
 
 int Thread::StartThread() {
-  if (ehandle_ != nullptr && ehandle_->SetEnv(&private_) == -1) {
+  if (ehandle_ != nullptr &&
+      ehandle_->SetEnv(&private_) == -1) {
     return -1;
   }
   slash::MutexLock l(&running_mu_);

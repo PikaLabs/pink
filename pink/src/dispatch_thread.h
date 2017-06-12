@@ -36,6 +36,16 @@ class DispatchThread : public ServerThread {
                  int cron_interval = 0, const ServerHandle* handle = nullptr,
                  const ThreadEnvHandle* ehandle = nullptr);
 
+  DispatchThread(int port,
+                 int work_num, Thread **worker_thread,
+                 int cron_interval = 0, const ServerHandle* handle = nullptr);
+  DispatchThread(const std::string &ip, int port,
+                 int work_num, Thread **worker_thread,
+                 int cron_interval = 0, const ServerHandle* handle = nullptr);
+  DispatchThread(const std::set<std::string>& ips, int port,
+                 int work_num, Thread **worker_thread,
+                 int cron_interval = 0, const ServerHandle* handle = nullptr);
+
   virtual ~DispatchThread();
 
   virtual int StartThread() override;
@@ -57,6 +67,7 @@ class DispatchThread : public ServerThread {
    * This is the work threads
    */
   WorkerThread** worker_thread_;
+  bool owned_worker_thread_;
 
   void HandleNewConn(const int connfd, const std::string& ip_port) override;
   void HandleConnEvent(PinkFiredEvent *pfe) override {}

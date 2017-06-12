@@ -1,4 +1,4 @@
-#include "worker_thread.h"
+#include "pink/include/worker_thread.h"
 
 #include "pink/include/pink_conn.h"
 #include "pink/src/pink_item.h"
@@ -171,6 +171,10 @@ void WorkerThread::Cleanup() {
     delete in_conn;
   }
   conns_.clear();
+}
+
+Thread *NewWorkerThread(ConnFactory *conn_factory, int cron_interval) {
+  return new WorkerThread(conn_factory, cron_interval);
 }
 
 };  // namespace pink

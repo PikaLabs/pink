@@ -6,7 +6,6 @@
 #include "slash/include/xdebug.h"
 #include "pink/include/pink_define.h"
 #include "pink/include/redis_conn.h"
-#include "pink/src/worker_thread.h"
 
 namespace pink {
 

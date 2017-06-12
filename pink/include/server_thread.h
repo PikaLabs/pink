@@ -153,6 +153,26 @@ extern ServerThread *NewDispatchThread(
     const ServerHandle* handle = nullptr,
     const ThreadEnvHandle* thandle = nullptr);
 
+extern ServerThread* NewDispatchThread(
+    int port,
+    int work_num, Thread **worker_thread,
+    int cron_interval = 0,
+    const ServerHandle* handle = nullptr);
+extern ServerThread* NewDispatchThread(
+    const std::string &ip, int port,
+    int work_num, Thread **worker_thread,
+    int cron_interval = 0,
+    const ServerHandle* handle = nullptr);
+extern ServerThread* NewDispatchThread(
+    const std::set<std::string>& ips, int port,
+    int work_num, Thread **worker_thread,
+    int cron_interval = 0,
+    const ServerHandle* handle = nullptr);
+
+extern Thread *NewWorkerThread(
+    ConnFactory *conn_factory,
+    int cron_interval = 0);
+
 } // namespace pink
 
 #endif

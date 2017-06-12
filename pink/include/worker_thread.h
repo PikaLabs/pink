@@ -35,6 +35,7 @@ class WorkerThread : public Thread {
  public:
   explicit WorkerThread(ConnFactory *conn_factory, int cron_interval = 0,
                         const ThreadEnvHandle* thandle = nullptr);
+
   virtual ~WorkerThread();
 
   void set_keepalive_timeout(int timeout) {

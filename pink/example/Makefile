@@ -5,7 +5,7 @@ else
 	CXXFLAGS = -O2 -pipe -fPIC -W -Wwrite-strings -Wpointer-arith -Wreorder -Wswitch -Wsign-promo -Wredundant-decls -Wformat -Wall -D_GNU_SOURCE -D__STDC_FORMAT_MACROS -std=c++11 -Wno-unused-variable -Wno-maybe-uninitialized -Wno-unused-parameter
 	# CXXFLAGS = -Wall -W -DDEBUG -g -O0 -D__XDEBUG__ 
 endif
-OBJECT = holy_srv holy_srv_chandle dispatch_srv myproto_cli http_server bg_thread simple_http_server
+OBJECT = holy_srv holy_srv_chandle dispatch_srv dispatch_srv2 myproto_cli http_server bg_thread simple_http_server
 
 ifndef SLASH_PATH
 SLASH_PATH = ../third/slash
@@ -52,6 +52,10 @@ holy_srv_chandle: myholy_srv_chandle.cc myproto.pb.cc
 
 dispatch_srv: mydispatch_srv.cc myproto.pb.cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+
+dispatch_srv2: mydispatch_srv2.cc myproto.pb.cc
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+
 myproto_cli: myproto_cli.cc myproto.pb.cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 

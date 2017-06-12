@@ -13,7 +13,6 @@
 #include "slash/include/xdebug.h"
 #include "slash/include/slash_string.h"
 #include "pink/include/pink_define.h"
-#include "pink/src/worker_thread.h"
 
 namespace pink {
 

@@ -9,8 +9,7 @@
 
 #include "slash/include/slash_status.h"
 #include "pink/include/pink_thread.h"
-#include "pink/src/worker_thread.h"
-#include "pink/src/dispatch_thread.h"
+#include "pink/include/server_thread.h"
 #include "pink/include/simple_http_conn.h"
 
 using namespace pink;

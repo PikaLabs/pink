@@ -134,39 +134,69 @@ extern ServerThread *NewHolyThread(
     const ServerHandle* handle = nullptr,
     const ThreadEnvHandle* thandle = nullptr);
 
+/**
+ * This type Dispatch thread just get Connection and then Dispatch the fd to
+ * worker thread
+ *
+ * @brief
+ *
+ * @param port          the port number
+ * @param conn_factory  connection factory object
+ * @param cron_interval the cron job interval
+ * @param queue_limit   the size limit of workers' connection queue
+ * @param handle        the server's handle (e.g. CronHandle, AccessHandle...)
+ * @param ehandle       the worker's enviroment setting handle
+ */
 extern ServerThread *NewDispatchThread(
     int port,
     int work_num, ConnFactory* conn_factory,
     int cron_interval = 0,
+    int queue_limit = 1000,
     const ServerHandle* handle = nullptr,
     const ThreadEnvHandle* thandle = nullptr);
 extern ServerThread *NewDispatchThread(
     const std::string &ip, int port,
     int work_num, ConnFactory* conn_factory,
     int cron_interval = 0,
+    int queue_limit = 1000,
     const ServerHandle* handle = nullptr,
     const ThreadEnvHandle* thandle = nullptr);
 extern ServerThread *NewDispatchThread(
     const std::set<std::string>& ips, int port,
     int work_num, ConnFactory* conn_factory,
     int cron_interval = 0,
+    int queue_limit = 1000,
     const ServerHandle* handle = nullptr,
     const ThreadEnvHandle* thandle = nullptr);
 
+/**
+ * @brief
+ *
+ * @param port          the port number
+ * @param ip, ips       the ip string
+ * @param work_num
+ * @param worker_thread the worker thred we define
+ * @param cron_interval the cron job interval
+ * @param queue_limit   the size limit of workers' connection queue
+ * @param handle        the server's handle (e.g. CronHandle, AccessHandle...)
+ */
 extern ServerThread* NewDispatchThread(
     int port,
     int work_num, Thread **worker_thread,
     int cron_interval = 0,
+    int queue_limit = 1000,
     const ServerHandle* handle = nullptr);
 extern ServerThread* NewDispatchThread(
     const std::string &ip, int port,
     int work_num, Thread **worker_thread,
     int cron_interval = 0,
+    int queue_limit = 1000,
     const ServerHandle* handle = nullptr);
 extern ServerThread* NewDispatchThread(
     const std::set<std::string>& ips, int port,
     int work_num, Thread **worker_thread,
     int cron_interval = 0,
+    int queue_limit = 1000,
     const ServerHandle* handle = nullptr);
 
 extern Thread *NewWorkerThread(

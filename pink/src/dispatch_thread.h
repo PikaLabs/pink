@@ -21,30 +21,40 @@ class WorkerThread;
 
 class DispatchThread : public ServerThread {
  public:
-  // This type Dispatch thread just get Connection and then Dispatch the fd to
-  // worker thead
-  DispatchThread(int port,
+   DispatchThread(int port,
                  int work_num, ConnFactory* conn_factory,
-                 int cron_interval = 0, const ServerHandle* handle = nullptr,
-                 const ThreadEnvHandle* ehandle = nullptr);
+                 int cron_interval,
+                 int queue_limit,
+                 const ServerHandle* handle,
+                 const ThreadEnvHandle* ehandle);
   DispatchThread(const std::string &ip, int port,
                  int work_num, ConnFactory* conn_factory,
-                 int cron_interval = 0, const ServerHandle* handle = nullptr,
-                 const ThreadEnvHandle* ehandle = nullptr);
+                 int cron_interval,
+                 int queue_limit,
+                 const ServerHandle* handle,
+                 const ThreadEnvHandle* ehandle);
   DispatchThread(const std::set<std::string>& ips, int port,
                  int work_num, ConnFactory* conn_factory,
-                 int cron_interval = 0, const ServerHandle* handle = nullptr,
-                 const ThreadEnvHandle* ehandle = nullptr);
+                 int cron_interval,
+                 int queue_limit,
+                 const ServerHandle* handle,
+                 const ThreadEnvHandle* ehandle);
 
   DispatchThread(int port,
                  int work_num, Thread **worker_thread,
-                 int cron_interval = 0, const ServerHandle* handle = nullptr);
+                 int cron_interval,
+                 int queue_limit,
+                 const ServerHandle* handle);
   DispatchThread(const std::string &ip, int port,
                  int work_num, Thread **worker_thread,
-                 int cron_interval = 0, const ServerHandle* handle = nullptr);
+                 int cron_interval,
+                 int queue_limit,
+                 const ServerHandle* handle);
   DispatchThread(const std::set<std::string>& ips, int port,
                  int work_num, Thread **worker_thread,
-                 int cron_interval = 0, const ServerHandle* handle = nullptr);
+                 int cron_interval,
+                 int queue_limit,
+                 const ServerHandle* handle);
 
   virtual ~DispatchThread();
 
@@ -68,6 +78,7 @@ class DispatchThread : public ServerThread {
    */
   WorkerThread** worker_thread_;
   bool owned_worker_thread_;
+  int queue_limit_;
 
   void HandleNewConn(const int connfd, const std::string& ip_port) override;
   void HandleConnEvent(PinkFiredEvent *pfe) override {}

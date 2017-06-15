@@ -5,7 +5,7 @@ else
 	CXXFLAGS = -O2 -pipe -fPIC -W -Wwrite-strings -Wpointer-arith -Wreorder -Wswitch -Wsign-promo -Wredundant-decls -Wformat -Wall -D_GNU_SOURCE -D__STDC_FORMAT_MACROS -std=c++11 -Wno-unused-variable -Wno-maybe-uninitialized -Wno-unused-parameter
 	# CXXFLAGS = -Wall -W -DDEBUG -g -O0 -D__XDEBUG__ 
 endif
-OBJECT = holy_srv holy_srv_chandle dispatch_srv dispatch_srv2 myproto_cli http_server bg_thread simple_http_server
+OBJECT = holy_srv holy_srv_chandle dispatch_srv dispatch_srv2 myproto_cli http_server redis_cli bg_thread simple_http_server
 
 ifndef SLASH_PATH
 SLASH_PATH = ../third/slash
@@ -67,9 +67,9 @@ myproto_cli: myproto_cli.cc myproto.pb.cc
 # 
 # pika_holy: pika_holy.cc pika_holy_thread.cc
 #   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
-# 
-# redis_cli: redis_cli_test.cc
-#   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+
+redis_cli: redis_cli_test.cc
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
 bg_thread: bg_thread.cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)

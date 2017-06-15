@@ -52,6 +52,7 @@ class MyConnFactory : public ConnFactory {
 };
 
 class MyWorker : public WorkerThread {
+ public:
   explicit MyWorker(ConnFactory *conn_factory, int cron_interval = 0)
       : WorkerThread(conn_factory, cron_interval) {
   }

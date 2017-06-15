@@ -1,9 +1,8 @@
 #include <stdio.h>
 #include <errno.h>
 #include "slash/include/xdebug.h"
-#include "include/pink_cli.h"
-#include "include/redis_cli.h"
-
+#include "pink/include/pink_cli.h"
+#include "pink/include/redis_cli.h"
 
 using namespace pink;
 
@@ -20,7 +19,7 @@ int main(int argc, char* argv[]) {
   int i = 5;
 
   printf ("\nTest Serialize\n");
-  int ret = SerializeCommand(&str, "HSET %s %d", "key", i);
+  int ret = pink::SerializeRedisCommand(&str, "HSET %s %d", "key", i);
   printf ("   1. Serialize by va return %d, (%s)\n", ret, str.c_str());
 
   RedisCmdArgsType vec;
@@ -28,7 +27,7 @@ int main(int argc, char* argv[]) {
   vec.push_back("key");
   vec.push_back(std::to_string(5));
 
-  ret = SerializeCommand(vec, &str);
+  ret = pink::SerializeRedisCommand(vec, &str);
   printf ("   2. Serialize by vec return %d, (%s)\n", ret, str.c_str());
 
   PinkCli *rcli = NewRedisCli();
@@ -59,48 +58,49 @@ int main(int argc, char* argv[]) {
   scanf ("%c", &ch);
   */
 
+  pink::RedisCmdArgsType redis_argv;
   printf ("\nTest Send and Recv Ping\n");
   std::string ping = "*1\r\n$4\r\nping\r\n";
   for (int i = 0; i < 1; i++) {
     s = rcli->Send(&ping);
     printf("Send %d: %s\n", i, s.ToString().c_str());
 
-    s = rcli->Recv(NULL);
+    s = rcli->Recv(&redis_argv);
     printf("Recv %d: return %s\n", i, s.ToString().c_str());
-    if (rcli->argv_.size() > 0) {
-      printf("  argv[0]  is (%s)\n", rcli->argv_[0].c_str());
+    if (redis_argv.size() > 0) {
+      printf("  redis_argv[0]  is (%s)\n", redis_argv[0].c_str());
     }
   }
 
   printf ("\nTest Send and Recv Mutli\n");
-  SerializeCommand(&str, "MSET a 1 b 2 c 3 d 4");
+  pink::SerializeRedisCommand(&str, "MSET a 1 b 2 c 3 d 4");
   printf ("Send mset parse (%s)\n", str.c_str());
   s = rcli->Send(&str);
   printf ("Send mset return %s\n", s.ToString().c_str());
 
-  s = rcli->Recv(NULL);
-  printf("Recv mset return %s with %lu elements\n", s.ToString().c_str(), rcli->argv_.size());
-  for (size_t i = 0; i < rcli->argv_.size(); i++) {
-    printf("  argv[%lu] = (%s)", i, rcli->argv_[i].c_str());
+  s = rcli->Recv(&redis_argv);
+  printf("Recv mset return %s with %lu elements\n", s.ToString().c_str(), redis_argv.size());
+  for (size_t i = 0; i < redis_argv.size(); i++) {
+    printf("  redis_argv[%lu] = (%s)", i, redis_argv[i].c_str());
   }
 
   printf ("\n\nTest Mget case 1: send 1 time, and recv 1 time\n");
-  SerializeCommand(&str, "MGET a  b  c  d ");
+  pink::SerializeRedisCommand(&str, "MGET a  b  c  d ");
   printf ("Send mget parse (%s)\n", str.c_str());
 
   for (int si = 0; si < 2; si++) {
     s = rcli->Send(&str);
     printf ("Send mget case 1: i=%d, return %s\n", si, s.ToString().c_str());
 
-    s = rcli->Recv(NULL);
-    printf ("Recv mget case 1: i=%d, return %s with %lu elements\n", si, s.ToString().c_str(), rcli->argv_.size());
-    for (size_t i = 0; i < rcli->argv_.size(); i++) {
-      printf("  argv[%lu] = (%s)\n", i, rcli->argv_[i].c_str());
+    s = rcli->Recv(&redis_argv);
+    printf ("Recv mget case 1: i=%d, return %s with %lu elements\n", si, s.ToString().c_str(), redis_argv.size());
+    for (size_t i = 0; i < redis_argv.size(); i++) {
+      printf("  redis_argv[%lu] = (%s)\n", i, redis_argv[i].c_str());
     }
   }
 
   printf ("\nTest Mget case 2: send 2 times, then recv 2 times\n");
-  SerializeCommand(&str, "MGET a  b  c  d ");
+  pink::SerializeRedisCommand(&str, "MGET a  b  c  d ");
   printf ("\nSend mget parse (%s)\n", str.c_str());
 
   for (int si = 0; si < 2; si++) {
@@ -109,10 +109,10 @@ int main(int argc, char* argv[]) {
   }
 
   for (int si = 0; si < 2; si++) {
-    s = rcli->Recv(NULL);
-    printf ("Recv mget case 1: i=%d, return %s with %lu elements\n", si, s.ToString().c_str(), rcli->argv_.size());
-    for (size_t i = 0; i < rcli->argv_.size(); i++) {
-      printf ("  argv[%lu] = (%s)\n", i, rcli->argv_[i].c_str());
+    s = rcli->Recv(&redis_argv);
+    printf ("Recv mget case 1: i=%d, return %s with %lu elements\n", si, s.ToString().c_str(), redis_argv.size());
+    for (size_t i = 0; i < redis_argv.size(); i++) {
+      printf ("  redis_argv[%lu] = (%s)\n", i, redis_argv[i].c_str());
     }
   }
 

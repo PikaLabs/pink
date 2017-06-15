@@ -58,13 +58,15 @@ class DispatchThread : public ServerThread {
 
   virtual ~DispatchThread();
 
-  virtual int StartThread() override;
+  int StartThread() override;
 
-  virtual int StopThread() override;
+  int StopThread() override;
   
   void set_keepalive_timeout(int timeout) override;
 
   int conn_num() override; 
+
+	void Cleanup() override;
 
  private:
   /*

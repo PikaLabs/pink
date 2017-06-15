@@ -20,8 +20,8 @@ typedef std::vector<std::string> RedisCmdArgsType;
 // 2. by a string vector;
 //    eg.  RedisCli::Serialize(argv, cmd);
 //        also cmd will be set as the result string.
-extern int SerializeCommand(std::string *cmd, const char *format, ...);
-extern int SerializeCommand(RedisCmdArgsType argv, std::string *cmd);
+extern int SerializeRedisCommand(std::string *cmd, const char *format, ...);
+extern int SerializeRedisCommand(RedisCmdArgsType argv, std::string *cmd);
 
 }   // namespace pink
 

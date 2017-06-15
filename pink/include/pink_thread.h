@@ -37,6 +37,13 @@ class Thread {
     return should_stop_.load();
   }
 
+  void set_should_stop(bool value) {
+    should_stop_.store(value);
+  }
+
+  bool is_running() {
+    return running_;
+  }
 
   pthread_t thread_id() const {
     return thread_id_;

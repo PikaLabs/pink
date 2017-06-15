@@ -29,9 +29,9 @@ class RedisCli : public PinkCli {
   // Read, parse and store the reply
   virtual Status Recv(void *result = NULL);
 
-  RedisCmdArgsType argv_;   // The parsed result 
-
  private:
+
+  RedisCmdArgsType argv_;   // The parsed result 
 
   char *rbuf_;
   int32_t rbuf_size_;
@@ -126,6 +126,9 @@ Status RedisCli::Recv(void *trival) {
   int result = GetReply();
   switch (result) {
     case REDIS_OK: 
+      if (trival != nullptr) {
+        *static_cast<RedisCmdArgsType*>(trival) = argv_;
+      }
       return Status::OK();
     case REDIS_ETIMEOUT:
       return Status::Timeout("");
@@ -382,7 +385,7 @@ int RedisCli::GetReplyFromReader() {
   }
 }
 
-extern PinkCli *NewRedisCli() {
+PinkCli *NewRedisCli() {
   return new RedisCli();
 }
 //
@@ -608,7 +611,7 @@ int redisFormatCommandArgv(RedisCmdArgsType argv, std::string *cmd) {
   return REDIS_OK;
 }
 
-extern int SerializeCommand(std::string *cmd, const char *format, ...) {
+int SerializeRedisCommand(std::string *cmd, const char *format, ...) {
   va_list ap;
   va_start(ap, format);
   int result = redisvAppendCommand(cmd, format, ap);
@@ -616,7 +619,7 @@ extern int SerializeCommand(std::string *cmd, const char *format, ...) {
   return result;
 }
 
-extern int SerializeCommand(RedisCmdArgsType argv, std::string *cmd)  {
+int SerializeRedisCommand(RedisCmdArgsType argv, std::string *cmd)  {
   return redisFormatCommandArgv(argv, cmd);
 }
 

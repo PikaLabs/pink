@@ -130,6 +130,12 @@ int DispatchThread::conn_num() {
   return num;
 } 
 
+void DispatchThread::Cleanup() {
+  for (int i = 0; i < work_num_; ++i) {
+    worker_thread_[i]->Cleanup();
+  }
+}
+
 void DispatchThread::HandleNewConn(const int connfd, const std::string& ip_port) {
   // Slow workers may consume many fds.
   // We simply loop to find next legal worker.

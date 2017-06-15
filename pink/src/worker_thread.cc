@@ -58,6 +58,7 @@ void *WorkerThread::ThreadMain() {
         timeout = (when.tv_sec - now.tv_sec) * 1000 + (when.tv_usec - now.tv_usec) / 1000;
       } else {
         DoCronTask();
+        CronHandle();
         when.tv_sec = now.tv_sec + (cron_interval_ / 1000);
         when.tv_usec = now.tv_usec + ((cron_interval_ % 1000 ) * 1000);
         timeout = cron_interval_;
@@ -171,10 +172,6 @@ void WorkerThread::Cleanup() {
     delete in_conn;
   }
   conns_.clear();
-}
-
-Thread *NewWorkerThread(ConnFactory *conn_factory, int cron_interval) {
-  return new WorkerThread(conn_factory, cron_interval);
 }
 
 };  // namespace pink

@@ -20,6 +20,7 @@
 #include "slash/include/slash_mutex.h"
 
 #include "pink/include/server_thread.h"
+#include "pink/src/pink_epoll.h"
 #include "pink/include/pink_thread.h"
 #include "pink/include/pink_define.h"
 
@@ -70,8 +71,8 @@ class WorkerThread : public Thread {
   pthread_rwlock_t rwlock_;
   std::map<int, PinkConn*> conns_;
 
-
  private:
+  friend class DispatchThread;
   ConnFactory *conn_factory_;
   int cron_interval_;
   /*
@@ -88,11 +89,11 @@ class WorkerThread : public Thread {
   std::atomic<int> keepalive_timeout_; // keepalive second
 
   virtual void *ThreadMain() override;
+  virtual void CronHandle() {}
   void DoCronTask();
 
   // clean conns
   void Cleanup();
-
 };  // class WorkerThread
 
 }  // namespace pink

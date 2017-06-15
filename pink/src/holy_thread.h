@@ -44,13 +44,23 @@ class HolyThread: public ServerThread {
     return conns_.size();
   }
 
-  /*
-   *  public for external statistics
-   */
-  pthread_rwlock_t rwlock_;
-  std::map<int, PinkConn *> conns_;
+  pthread_rwlock_t* conn_rwlock() override {
+    return &rwlock_;
+  }
+
+  std::map<int, PinkConn*>* conns() override {
+    return &conns_;
+  }
+
+  void Cleanup() override;
 
  private:
+  /*
+   *  For external statistics
+   */
+  pthread_rwlock_t rwlock_;
+  std::map<int, PinkConn*> conns_;
+
   ConnFactory *conn_factory_;
   const ThreadEnvHandle* thandle_;
 
@@ -60,8 +70,6 @@ class HolyThread: public ServerThread {
 
   void HandleNewConn(int connfd, const std::string &ip_port) override;
   void HandleConnEvent(PinkFiredEvent *pfe) override;
-
-  void Cleanup();
 };  // class HolyThread
 
 

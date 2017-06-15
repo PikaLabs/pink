@@ -78,7 +78,7 @@ int main() {
   Thread* my_worker[10];
   ConnFactory *my_conn_factory = new MyConnFactory();
   for (int i = 0; i < 10; i++) {
-    my_worker[i] = NewWorkerThread(my_conn_factory, 1000);
+    my_worker[i] = new MyWorker(my_conn_factory, 1000);
   }
   ServerThread *st = NewDispatchThread(9211, 10, my_worker, 1000);
 

@@ -20,6 +20,7 @@ namespace pink {
 
 class ServerSocket;
 class PinkEpoll;
+class PinkConn;
 struct PinkFiredEvent;
 class ConnFactory;
 class WorkerThread;
@@ -39,43 +40,6 @@ const int kDefaultKeepAliveTime = 60; // (s)
 
 class ServerThread : public Thread {
  public:
-  /**
-   * @brief
-   *
-   * @param port the port number
-   * @param work_num
-   * @param worker_thread the worker thred we define
-   * @param cron_interval the cron job interval
-   */
-  ServerThread(int port, int cron_interval = 0,
-               const ServerHandle *handle = nullptr);
-
-  /**
-   * @brief
-   *
-   * @param ip the ip string
-   * @param port the port number
-   * @param work_num
-   * @param worker_thread the worker thred we define
-   * @param cron_interval the cron job interval
-   */
-  ServerThread(const std::string& bind_ip, int port, int cron_interval = 0,
-               const ServerHandle *handle = nullptr);
-
-  /**
-   * @brief
-   *
-   * @param ips the ip string set
-   * @param port the port number
-   * @param work_num
-   * @param worker_thread the worker thred we define
-   * @param cron_interval the cron job interval
-   */
-  ServerThread(const std::set<std::string>& bind_ips, int port,
-               int cron_interval = 0, const ServerHandle *handle = nullptr);
-
-  virtual ~ServerThread();
-
   /*
    * StartThread will return the error code as pthread_create
    */
@@ -85,7 +49,21 @@ class ServerThread : public Thread {
 
   virtual int conn_num() = 0; 
 
+  virtual void Cleanup() = 0;
+
+  // FIXME (gaodq) Used for holythread only
+  virtual pthread_rwlock_t* conn_rwlock() { return nullptr; }
+  virtual std::map<int, PinkConn*>* conns() { return nullptr; }
+
+  virtual ~ServerThread();
+
  protected:
+  ServerThread(int port, int cron_interval, const ServerHandle *handle);
+  ServerThread(const std::string& bind_ip, int port, int cron_interval,
+               const ServerHandle *handle);
+  ServerThread(const std::set<std::string>& bind_ips, int port,
+               int cron_interval, const ServerHandle *handle);
+
   /*
    * The Epoll event handler
    */
@@ -198,10 +176,6 @@ extern ServerThread* NewDispatchThread(
     int cron_interval = 0,
     int queue_limit = 1000,
     const ServerHandle* handle = nullptr);
-
-extern Thread *NewWorkerThread(
-    ConnFactory *conn_factory,
-    int cron_interval = 0);
 
 } // namespace pink
 

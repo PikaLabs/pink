@@ -12,11 +12,11 @@ namespace pink {
 
 Thread::Thread()
   : should_stop_(false),
-  running_(false),
-  thread_id_(0),
-  ehandle_(nullptr),
-  private_(nullptr) {
-  }
+    running_(false),
+    thread_id_(0),
+    ehandle_(nullptr),
+    private_(nullptr) {
+}
 
 Thread::~Thread() {
   StopThread();

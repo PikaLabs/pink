@@ -76,7 +76,7 @@ static void SignalSetup() {
 
 int main() {
   SignalSetup();
-  Thread* my_worker[10];
+  WorkerThread* my_worker[10];
   ConnFactory *my_conn_factory = new MyConnFactory();
   for (int i = 0; i < 10; i++) {
     my_worker[i] = new MyWorker(my_conn_factory, 1000);

@@ -52,35 +52,35 @@ DispatchThread::DispatchThread(const std::set<std::string>& ips, int port,
 }
 
 DispatchThread::DispatchThread(int port,
-                               int work_num, Thread **worker_thread,
+                               int work_num, WorkerThread** worker_thread,
                                int cron_interval, int queue_limit,
                                const ServerHandle* handle)
       : ServerThread::ServerThread(port, cron_interval, handle),
         last_thread_(0),
         work_num_(work_num),
-        worker_thread_(reinterpret_cast<WorkerThread **>(worker_thread)),
+        worker_thread_(worker_thread),
         owned_worker_thread_(false) {
 }
 
 DispatchThread::DispatchThread(const std::string &ip, int port,
-                               int work_num, Thread **worker_thread,
+                               int work_num, WorkerThread** worker_thread,
                                int cron_interval, int queue_limit,
                                const ServerHandle* handle)
       : ServerThread::ServerThread(ip, port, cron_interval, handle),
         last_thread_(0),
         work_num_(work_num),
-        worker_thread_(reinterpret_cast<WorkerThread **>(worker_thread)),
+        worker_thread_(worker_thread),
         owned_worker_thread_(false) {
 }
 
 DispatchThread::DispatchThread(const std::set<std::string>& ips, int port,
-                               int work_num, Thread **worker_thread,
+                               int work_num, WorkerThread** worker_thread,
                                int cron_interval, int queue_limit,
                                const ServerHandle* handle)
       : ServerThread::ServerThread(ips, port, cron_interval, handle),
         last_thread_(0),
         work_num_(work_num),
-        worker_thread_(reinterpret_cast<WorkerThread **>(worker_thread)),
+        worker_thread_(worker_thread),
         owned_worker_thread_(false) {
 }
 
@@ -197,7 +197,7 @@ extern ServerThread *NewDispatchThread(
 
 extern ServerThread* NewDispatchThread(
     int port,
-    int work_num, Thread **worker_thread,
+    int work_num, WorkerThread** worker_thread,
     int cron_interval, int queue_limit,
     const ServerHandle* handle) {
   return new DispatchThread(port, work_num, worker_thread,
@@ -205,7 +205,7 @@ extern ServerThread* NewDispatchThread(
 }
 extern ServerThread* NewDispatchThread(
     const std::string &ip, int port,
-    int work_num, Thread **worker_thread,
+    int work_num, WorkerThread** worker_thread,
     int cron_interval, int queue_limit,
     const ServerHandle* handle) {
   return new DispatchThread(ip, port, work_num, worker_thread,
@@ -213,7 +213,7 @@ extern ServerThread* NewDispatchThread(
 }
 extern ServerThread* NewDispatchThread(
     const std::set<std::string>& ips, int port,
-    int work_num, Thread **worker_thread,
+    int work_num, WorkerThread** worker_thread,
     int cron_interval, int queue_limit,
     const ServerHandle* handle) {
   return new DispatchThread(ips, port, work_num, worker_thread,

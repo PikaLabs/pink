@@ -41,17 +41,17 @@ class DispatchThread : public ServerThread {
                  const ThreadEnvHandle* ehandle);
 
   DispatchThread(int port,
-                 int work_num, Thread **worker_thread,
+                 int work_num, WorkerThread** worker_thread,
                  int cron_interval,
                  int queue_limit,
                  const ServerHandle* handle);
   DispatchThread(const std::string &ip, int port,
-                 int work_num, Thread **worker_thread,
+                 int work_num, WorkerThread** worker_thread,
                  int cron_interval,
                  int queue_limit,
                  const ServerHandle* handle);
   DispatchThread(const std::set<std::string>& ips, int port,
-                 int work_num, Thread **worker_thread,
+                 int work_num, WorkerThread** worker_thread,
                  int cron_interval,
                  int queue_limit,
                  const ServerHandle* handle);

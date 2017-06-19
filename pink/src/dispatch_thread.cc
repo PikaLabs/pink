@@ -14,7 +14,8 @@ DispatchThread::DispatchThread(int port,
       : ServerThread::ServerThread(port, cron_interval, handle),
         last_thread_(0),
         work_num_(work_num),
-        owned_worker_thread_(true) {
+        owned_worker_thread_(true),
+        queue_limit_(queue_limit) {
   worker_thread_ = new WorkerThread*[work_num_];
   for (int i = 0; i < work_num_; i++) {
     worker_thread_[i] = new WorkerThread(conn_factory, cron_interval, ehandle);
@@ -29,7 +30,8 @@ DispatchThread::DispatchThread(const std::string &ip, int port,
       : ServerThread::ServerThread(ip, port, cron_interval, handle),
         last_thread_(0),
         work_num_(work_num),
-        owned_worker_thread_(true) {
+        owned_worker_thread_(true),
+        queue_limit_(queue_limit) {
   worker_thread_ = new WorkerThread*[work_num_];
   for (int i = 0; i < work_num_; i++) {
     worker_thread_[i] = new WorkerThread(conn_factory, cron_interval, ehandle);
@@ -44,7 +46,8 @@ DispatchThread::DispatchThread(const std::set<std::string>& ips, int port,
       : ServerThread::ServerThread(ips, port, cron_interval, handle),
         last_thread_(0),
         work_num_(work_num),
-        owned_worker_thread_(true) {
+        owned_worker_thread_(true),
+        queue_limit_(queue_limit) {
   worker_thread_ = new WorkerThread*[work_num_];
   for (int i = 0; i < work_num_; i++) {
     worker_thread_[i] = new WorkerThread(conn_factory, cron_interval, ehandle);
@@ -59,7 +62,8 @@ DispatchThread::DispatchThread(int port,
         last_thread_(0),
         work_num_(work_num),
         worker_thread_(worker_thread),
-        owned_worker_thread_(false) {
+        owned_worker_thread_(false),
+        queue_limit_(queue_limit) {
 }
 
 DispatchThread::DispatchThread(const std::string &ip, int port,
@@ -70,7 +74,8 @@ DispatchThread::DispatchThread(const std::string &ip, int port,
         last_thread_(0),
         work_num_(work_num),
         worker_thread_(worker_thread),
-        owned_worker_thread_(false) {
+        owned_worker_thread_(false),
+        queue_limit_(queue_limit) {
 }
 
 DispatchThread::DispatchThread(const std::set<std::string>& ips, int port,
@@ -81,7 +86,8 @@ DispatchThread::DispatchThread(const std::set<std::string>& ips, int port,
         last_thread_(0),
         work_num_(work_num),
         worker_thread_(worker_thread),
-        owned_worker_thread_(false) {
+        owned_worker_thread_(false),
+        queue_limit_(queue_limit) {
 }
 
 DispatchThread::~DispatchThread() {

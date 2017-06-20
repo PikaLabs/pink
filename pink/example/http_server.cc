@@ -64,7 +64,7 @@ class MyConnFactory : public ConnFactory {
  public:
   virtual PinkConn* NewPinkConn(int connfd, const std::string& ip_port,
                                 ServerThread* thread,
-                                void* worker_private_data) const {
+                                void* worker_specific_data) const {
     auto my_handles = std::make_shared<MyHTTPHandles>();
     return new pink::HTTPConn(connfd, ip_port, thread, my_handles);
   }

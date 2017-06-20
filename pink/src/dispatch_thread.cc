@@ -9,63 +9,60 @@ namespace pink {
 DispatchThread::DispatchThread(int port,
                                int work_num, ConnFactory* conn_factory,
                                int cron_interval, int queue_limit,
-                               const ServerHandle* handle,
-                               const ThreadEnvHandle* ehandle)
+                               const ServerHandle* handle)
       : ServerThread::ServerThread(port, cron_interval, handle),
         last_thread_(0),
         work_num_(work_num),
-        owned_worker_thread_(true),
         queue_limit_(queue_limit) {
   worker_thread_ = new WorkerThread*[work_num_];
   for (int i = 0; i < work_num_; i++) {
-    worker_thread_[i] = new WorkerThread(conn_factory, this, cron_interval, ehandle);
+    worker_thread_[i] = new WorkerThread(conn_factory, this, cron_interval);
   }
 }
 
 DispatchThread::DispatchThread(const std::string &ip, int port,
                                int work_num, ConnFactory* conn_factory,
                                int cron_interval, int queue_limit,
-                               const ServerHandle* handle,
-                               const ThreadEnvHandle* ehandle)
+                               const ServerHandle* handle)
       : ServerThread::ServerThread(ip, port, cron_interval, handle),
         last_thread_(0),
         work_num_(work_num),
-        owned_worker_thread_(true),
         queue_limit_(queue_limit) {
   worker_thread_ = new WorkerThread*[work_num_];
   for (int i = 0; i < work_num_; i++) {
-    worker_thread_[i] = new WorkerThread(conn_factory, this, cron_interval, ehandle);
+    worker_thread_[i] = new WorkerThread(conn_factory, this, cron_interval);
   }
 }
 
 DispatchThread::DispatchThread(const std::set<std::string>& ips, int port,
                                int work_num, ConnFactory* conn_factory,
                                int cron_interval, int queue_limit,
-                               const ServerHandle* handle,
-                               const ThreadEnvHandle* ehandle)
+                               const ServerHandle* handle)
       : ServerThread::ServerThread(ips, port, cron_interval, handle),
         last_thread_(0),
         work_num_(work_num),
-        owned_worker_thread_(true),
         queue_limit_(queue_limit) {
   worker_thread_ = new WorkerThread*[work_num_];
   for (int i = 0; i < work_num_; i++) {
-    worker_thread_[i] = new WorkerThread(conn_factory, this, cron_interval, ehandle);
+    worker_thread_[i] = new WorkerThread(conn_factory, this, cron_interval);
   }
 }
 
 DispatchThread::~DispatchThread() {
-  if (owned_worker_thread_) {
-    for (int i = 0; i < work_num_; i++) {
-      delete worker_thread_[i];
-    }
-    delete[] worker_thread_;
+  for (int i = 0; i < work_num_; i++) {
+    delete worker_thread_[i];
   }
+  delete[] worker_thread_;
 }
 
 int DispatchThread::StartThread() {
   for (int i = 0; i < work_num_; i++) {
-    int ret = worker_thread_[i]->StartThread();
+    int ret = handle_->CreateWorkerSpecificData(&(worker_thread_[i]->private_data_));
+    if (ret != 0) {
+      return ret;
+    }
+
+    ret = worker_thread_[i]->StartThread();
     if (ret != 0) {
       return ret;
     }
@@ -79,6 +76,10 @@ int DispatchThread::StartThread() {
 int DispatchThread::StopThread() {
   for (int i = 0; i < work_num_; i++) {
     int ret = worker_thread_[i]->StopThread();
+    if (ret != 0) {
+      return ret;
+    }
+    ret = handle_->DeleteWorkerSpecificData(worker_thread_[i]->private_data_);
     if (ret != 0) {
       return ret;
     }
@@ -144,28 +145,25 @@ extern ServerThread *NewDispatchThread(
     int port,
     int work_num, ConnFactory* conn_factory,
     int cron_interval, int queue_limit,
-    const ServerHandle* handle,
-    const ThreadEnvHandle* ehandle) {
+    const ServerHandle* handle) { 
   return new DispatchThread(port, work_num, conn_factory,
-                            cron_interval, queue_limit, handle, ehandle);
+                            cron_interval, queue_limit, handle);
 }
 extern ServerThread *NewDispatchThread(
     const std::string &ip, int port,
     int work_num, int queue_limit,
     ConnFactory* conn_factory,
-    int cron_interval, const ServerHandle* handle,
-    const ThreadEnvHandle* ehandle) {
+    int cron_interval, const ServerHandle* handle) {
   return new DispatchThread(ip, port, work_num, conn_factory,
-                            cron_interval, queue_limit, handle, ehandle);
+                            cron_interval, queue_limit, handle);
 }
 extern ServerThread *NewDispatchThread(
     const std::set<std::string>& ips, int port,
     int work_num, int queue_limit,
     ConnFactory* conn_factory,
-    int cron_interval, const ServerHandle* handle,
-    const ThreadEnvHandle* ehandle) {
+    int cron_interval, const ServerHandle* handle) {
   return new DispatchThread(ips, port, work_num, conn_factory,
-                            cron_interval, queue_limit, handle, ehandle);
+                            cron_interval, queue_limit, handle);
 }
 
 };  // namespace pink

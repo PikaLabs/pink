@@ -25,34 +25,31 @@ class DispatchThread : public ServerThread {
                  int work_num, ConnFactory* conn_factory,
                  int cron_interval,
                  int queue_limit,
-                 const ServerHandle* handle,
-                 const ThreadEnvHandle* ehandle);
+                 const ServerHandle* handle);
   DispatchThread(const std::string &ip, int port,
                  int work_num, ConnFactory* conn_factory,
                  int cron_interval,
                  int queue_limit,
-                 const ServerHandle* handle,
-                 const ThreadEnvHandle* ehandle);
+                 const ServerHandle* handle);
   DispatchThread(const std::set<std::string>& ips, int port,
                  int work_num, ConnFactory* conn_factory,
                  int cron_interval,
                  int queue_limit,
-                 const ServerHandle* handle,
-                 const ThreadEnvHandle* ehandle);
+                 const ServerHandle* handle);
 
   virtual ~DispatchThread();
 
-  int StartThread() override;
+  virtual int StartThread() override;
 
-  int StopThread() override;
+  virtual int StopThread() override;
   
-  void set_keepalive_timeout(int timeout) override;
+  virtual void set_keepalive_timeout(int timeout) override;
 
-  int conn_num() override; 
+  virtual int conn_num() override; 
 
-	void KillAllConns() override;
+	virtual void KillAllConns() override;
 
-	void KillConn(const std::string& ip_port) override;
+	virtual void KillConn(const std::string& ip_port) override;
 
  private:
   /*
@@ -65,8 +62,8 @@ class DispatchThread : public ServerThread {
    * This is the work threads
    */
   WorkerThread** worker_thread_;
-  bool owned_worker_thread_;
   int queue_limit_;
+  std::map<WorkerThread*, void*> localdata_;
 
   void HandleNewConn(const int connfd, const std::string& ip_port) override;
   void HandleConnEvent(PinkFiredEvent *pfe) override {}

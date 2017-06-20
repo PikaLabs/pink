@@ -31,9 +31,9 @@ class ServerHandle {
   virtual ~ServerHandle() {}
 
   virtual void CronHandle() const {};
-  virtual bool AccessHandle(std::string& ip) const {
-    return true;
-  };
+  virtual bool AccessHandle(std::string& ip) const { return true; };
+  virtual int CreateWorkerSpecificData(void** data) const { return 0; }
+  virtual int DeleteWorkerSpecificData(void* data) const { return 0; }
 };
 
 const int kDefaultKeepAliveTime = 60; // (s)
@@ -67,6 +67,9 @@ class ServerThread : public Thread {
   PinkEpoll *pink_epoll_;
 
  private:
+  friend class DispatchThread;
+  friend class HolyThread;
+
   int cron_interval_;
   virtual void DoCronTask();
 
@@ -94,20 +97,17 @@ extern ServerThread *NewHolyThread(
     int port,
     ConnFactory *conn_factory,
     int cron_interval = 0,
-    const ServerHandle* handle = nullptr,
-    const ThreadEnvHandle* thandle = nullptr);
+    const ServerHandle* handle = nullptr);
 extern ServerThread *NewHolyThread(
     const std::string &bind_ip, int port,
     ConnFactory *conn_factory,
     int cron_interval = 0,
-    const ServerHandle* handle = nullptr,
-    const ThreadEnvHandle* thandle = nullptr);
+    const ServerHandle* handle = nullptr);
 extern ServerThread *NewHolyThread(
     const std::set<std::string>& bind_ips, int port,
     ConnFactory *conn_factory,
     int cron_interval = 0,
-    const ServerHandle* handle = nullptr,
-    const ThreadEnvHandle* thandle = nullptr);
+    const ServerHandle* handle = nullptr);
 
 /**
  * This type Dispatch thread just get Connection and then Dispatch the fd to
@@ -127,22 +127,19 @@ extern ServerThread *NewDispatchThread(
     int work_num, ConnFactory* conn_factory,
     int cron_interval = 0,
     int queue_limit = 1000,
-    const ServerHandle* handle = nullptr,
-    const ThreadEnvHandle* thandle = nullptr);
+    const ServerHandle* handle = nullptr);
 extern ServerThread *NewDispatchThread(
     const std::string &ip, int port,
     int work_num, ConnFactory* conn_factory,
     int cron_interval = 0,
     int queue_limit = 1000,
-    const ServerHandle* handle = nullptr,
-    const ThreadEnvHandle* thandle = nullptr);
+    const ServerHandle* handle = nullptr);
 extern ServerThread *NewDispatchThread(
     const std::set<std::string>& ips, int port,
     int work_num, ConnFactory* conn_factory,
     int cron_interval = 0,
     int queue_limit = 1000,
-    const ServerHandle* handle = nullptr,
-    const ThreadEnvHandle* thandle = nullptr);
+    const ServerHandle* handle = nullptr);
 
 } // namespace pink
 

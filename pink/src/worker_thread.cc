@@ -9,12 +9,11 @@ namespace pink {
 
 
 WorkerThread::WorkerThread(ConnFactory *conn_factory, ServerThread* server_thread,
-                           int cron_interval, const ThreadEnvHandle* ehandle)
+                           int cron_interval) 
       : server_thread_(server_thread),
         conn_factory_(conn_factory),
         cron_interval_(cron_interval),
         keepalive_timeout_(kDefaultKeepAliveTime) {
-  set_env_handle(ehandle);
   /*
    * install the protobuf handler here
    */
@@ -77,8 +76,7 @@ void *WorkerThread::ThreadMain() {
             conn_queue_.pop();
           }
           PinkConn *tc = conn_factory_->NewPinkConn(ti.fd(), ti.ip_port(),
-                                                    server_thread_,
-                                                    get_private());
+                                                    server_thread_, private_data_);
           tc->SetNonblock();
           {
             slash::WriteLock l(&rwlock_);

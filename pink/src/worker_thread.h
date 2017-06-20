@@ -35,8 +35,7 @@ class ConnFactory;
 class WorkerThread : public Thread {
  public:
   explicit WorkerThread(ConnFactory *conn_factory, ServerThread* server_thread,
-                        int cron_interval = 0,
-                        const ThreadEnvHandle* thandle = nullptr);
+                        int cron_interval = 0);
 
   virtual ~WorkerThread();
 
@@ -66,9 +65,6 @@ class WorkerThread : public Thread {
   }
   slash::Mutex mutex_;
 
-  /*
-   *  public for external statistics
-   */
   slash::RWMutex rwlock_;
   std::map<int, PinkConn*> conns_;
 
@@ -78,6 +74,9 @@ class WorkerThread : public Thread {
   ServerThread* server_thread_;
   ConnFactory *conn_factory_;
   int cron_interval_;
+
+  void* private_data_;
+
   /*
    * These two fd receive the notify from dispatch thread
    */

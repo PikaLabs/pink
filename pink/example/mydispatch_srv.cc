@@ -19,7 +19,7 @@ using namespace pink;
 class MyConn: public PbConn {
  public:
   MyConn(int fd, const std::string& ip_port, ServerThread *thread,
-         void* worker_private_data);
+         void* worker_specific_data);
   virtual ~MyConn();
  protected:
   virtual int DealMessage();
@@ -30,9 +30,9 @@ class MyConn: public PbConn {
 };
 
 MyConn::MyConn(int fd, const std::string& ip_port, ServerThread *thread,
-               void* worker_private_data)
+               void* worker_specific_data)
     : PbConn(fd, ip_port, thread) {
-  // Handle worker_private_data ...
+  // Handle worker_specific_data ...
 }
 
 MyConn::~MyConn() {
@@ -54,8 +54,8 @@ class MyConnFactory : public ConnFactory {
  public:
   virtual PinkConn *NewPinkConn(int connfd, const std::string &ip_port,
                                 ServerThread *thread,
-                                void* worker_private_data) const {
-    return new MyConn(connfd, ip_port, thread, worker_private_data);
+                                void* worker_specific_data) const {
+    return new MyConn(connfd, ip_port, thread, worker_specific_data);
   }
 };
 

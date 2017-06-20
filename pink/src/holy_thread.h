@@ -23,30 +23,31 @@ class HolyThread: public ServerThread {
  public:
   // This type thread thread will listen and work self list redis thread
   HolyThread(int port, ConnFactory* conn_factory,
-             int cron_interval = 0, const ServerHandle* handle = nullptr,
-             const ThreadEnvHandle* thandle = nullptr);
+             int cron_interval = 0, const ServerHandle* handle = nullptr);
   HolyThread(const std::string& bind_ip, int port,
              ConnFactory* conn_factory,
-             int cron_interval = 0, const ServerHandle* handle = nullptr,
-             const ThreadEnvHandle* thandle = nullptr);
+             int cron_interval = 0, const ServerHandle* handle = nullptr);
   HolyThread(const std::set<std::string>& bind_ips, int port, 
              ConnFactory* conn_factory,
-             int cron_interval = 0, const ServerHandle* handle = nullptr,
-             const ThreadEnvHandle* thandle = nullptr);
+             int cron_interval = 0, const ServerHandle* handle = nullptr);
   virtual ~HolyThread();
 
-  void set_keepalive_timeout(int timeout) override {
+  virtual int StartThread() override;
+
+  virtual int StopThread() override;
+
+  virtual void set_keepalive_timeout(int timeout) override {
     keepalive_timeout_ = timeout;
   }
 
-  int conn_num() override {
+  virtual int conn_num() override {
     slash::ReadLock l(&rwlock_);
     return conns_.size();
   }
 
-  void KillAllConns() override;
+  virtual void KillAllConns() override;
 
-  void KillConn(const std::string& ip_port) override;
+  virtual void KillConn(const std::string& ip_port) override;
 
  private:
   /*
@@ -56,7 +57,7 @@ class HolyThread: public ServerThread {
   std::map<int, PinkConn*> conns_;
 
   ConnFactory *conn_factory_;
-  const ThreadEnvHandle* thandle_;
+  void* private_data_;
 
   std::atomic<int> keepalive_timeout_; // keepalive second
 

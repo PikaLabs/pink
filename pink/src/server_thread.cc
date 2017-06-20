@@ -20,6 +20,12 @@ public:
   virtual bool AccessHandle(std::string& ip) const override {
     return true;
   }
+  virtual int CreateWorkerSpecificData(void** data) const override {
+    return 0;
+  }
+  virtual int DeleteWorkerSpecificData(void* data) const override {
+    return 0;
+  }
 };
 
 static const ServerHandle* SanitizeHandle(const ServerHandle* raw_handle) {

@@ -8,38 +8,48 @@ namespace pink {
 
 HolyThread::HolyThread(int port,
                        ConnFactory* conn_factory,
-                       int cron_interval, const ServerHandle* handle,
-                       const ThreadEnvHandle* ehandle)
+                       int cron_interval, const ServerHandle* handle)
     : ServerThread::ServerThread(port, cron_interval, handle),
       conn_factory_(conn_factory),
       keepalive_timeout_(kDefaultKeepAliveTime) {
-  set_env_handle(ehandle);
 }
 
 HolyThread::HolyThread(const std::string& bind_ip, int port,
                        ConnFactory* conn_factory,
-                       int cron_interval, const ServerHandle* handle,
-                       const ThreadEnvHandle* ehandle)
+                       int cron_interval, const ServerHandle* handle)
     : ServerThread::ServerThread(bind_ip, port, cron_interval, handle),
       conn_factory_(conn_factory) {
-  set_env_handle(ehandle);
 }
 
 HolyThread::HolyThread(const std::set<std::string>& bind_ips, int port,
                        ConnFactory* conn_factory,
-                       int cron_interval, const ServerHandle* handle,
-                       const ThreadEnvHandle* ehandle)
+                       int cron_interval, const ServerHandle* handle)
     : ServerThread::ServerThread(bind_ips, port, cron_interval, handle),
       conn_factory_(conn_factory) {
-  set_env_handle(ehandle);
 }
 
 HolyThread::~HolyThread() {
   KillAllConns();
 }
 
+int HolyThread::StartThread() {
+  int ret = handle_->CreateWorkerSpecificData(&private_data_);
+  if (ret != 0) {
+    return ret;
+  }
+  return ServerThread::StartThread();
+}
+
+int HolyThread::StopThread() {
+  int ret = handle_->DeleteWorkerSpecificData(private_data_);
+  if (ret != 0) {
+    return ret;
+  }
+  return ServerThread::StopThread();
+}
+
 void HolyThread::HandleNewConn(const int connfd, const std::string &ip_port) {
-  PinkConn *tc = conn_factory_->NewPinkConn(connfd, ip_port, this, get_private());
+  PinkConn *tc = conn_factory_->NewPinkConn(connfd, ip_port, this, private_data_);
   tc->SetNonblock();
   {
     slash::WriteLock l(&rwlock_);
@@ -146,26 +156,20 @@ void HolyThread::KillConn(const std::string& ip_port) {
 extern ServerThread *NewHolyThread(
     int port,
     ConnFactory *conn_factory,
-    int cron_interval, const ServerHandle* handle,
-    const ThreadEnvHandle* ehandle) {
-  return new HolyThread(port, conn_factory, cron_interval,
-                        handle, ehandle);
+    int cron_interval, const ServerHandle* handle) {
+  return new HolyThread(port, conn_factory, cron_interval, handle);
 }
 extern ServerThread *NewHolyThread(
     const std::string &bind_ip, int port,
     ConnFactory *conn_factory,
-    int cron_interval, const ServerHandle* handle,
-    const ThreadEnvHandle* ehandle) {
-  return new HolyThread(bind_ip, port, conn_factory, cron_interval,
-                        handle, ehandle);
+    int cron_interval, const ServerHandle* handle) {
+  return new HolyThread(bind_ip, port, conn_factory, cron_interval, handle);
 }
 extern ServerThread *NewHolyThread(
     const std::set<std::string>& bind_ips, int port,
     ConnFactory *conn_factory,
-    int cron_interval, const ServerHandle* handle,
-    const ThreadEnvHandle* ehandle) {
-  return new HolyThread(bind_ips, port, conn_factory, cron_interval,
-                        handle, ehandle);
+    int cron_interval, const ServerHandle* handle) {
+  return new HolyThread(bind_ips, port, conn_factory, cron_interval, handle);
 }
 
 };  // namespace pink

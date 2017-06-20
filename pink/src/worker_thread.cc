@@ -137,21 +137,35 @@ void *WorkerThread::ThreadMain() {
     } // for (int i = 0; i < nfds; i++)
   } // while (!should_stop())
 
-  KillAllConns();
+  Cleanup();
   return NULL;
 }
 
 void WorkerThread::DoCronTask() {
-  if (keepalive_timeout_ <= 0) {
-    return;
-  }
-  // Check keepalive timeout connection
   struct timeval now;
   gettimeofday(&now, NULL);
   slash::WriteLock l(&rwlock_);
   std::map<int, PinkConn*>::iterator iter = conns_.begin();
   while (iter != conns_.end()) {
-    if (now.tv_sec - iter->second->last_interaction().tv_sec > keepalive_timeout_) {
+    // KillConn
+    {
+    slash::MutexLock l(&killer_mutex_);
+    if (deleting_conn_ipport_.count(iter->second->ip_port())) {
+      close(iter->first);
+      delete iter->second;
+      iter = conns_.erase(iter);
+      deleting_conn_ipport_.erase(iter->second->ip_port());
+      continue;
+    }
+    }
+    // KillAllConns
+    if (deleting_conn_ipport_.count(kKillAllConnsTask)) {
+      Cleanup();
+      return;
+    }
+    // Check keepalive timeout connection
+    if (keepalive_timeout_ > 0 &&
+        now.tv_sec - iter->second->last_interaction().tv_sec > keepalive_timeout_) {
       close(iter->first);
       delete iter->second;
       iter = conns_.erase(iter);
@@ -161,17 +175,28 @@ void WorkerThread::DoCronTask() {
   }
 }
 
-void WorkerThread::KillConn(const std::string& ip_port) {
+void WorkerThread::TryKillConn(const std::string& ip_port) {
+  bool find = false;
+  {
+  slash::ReadLock l(&rwlock_);
+  for (auto& iter : conns_) {
+    if (iter.second->ip_port() == ip_port) {
+      find = true;
+      break;
+    }
+  }
+  }
+  if (find || ip_port == kKillAllConnsTask) {
+    slash::MutexLock l(&killer_mutex_);
+    deleting_conn_ipport_.insert(ip_port);
+  }
 }
 
-void WorkerThread::KillAllConns() {
+void WorkerThread::Cleanup() {
   slash::WriteLock l(&rwlock_);
-  PinkConn *in_conn;
-  std::map<int, PinkConn *>::iterator iter = conns_.begin();
-  for (; iter != conns_.end(); iter++) {
-    close(iter->first);
-    in_conn = iter->second;
-    delete in_conn;
+  for (auto& iter : conns_) {
+    close(iter.first);
+    delete iter.second;
   }
   conns_.clear();
 }

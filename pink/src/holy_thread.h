@@ -50,10 +50,7 @@ class HolyThread: public ServerThread {
   virtual void KillConn(const std::string& ip_port) override;
 
  private:
-  /*
-   *  For external statistics
-   */
-  slash::RWMutex rwlock_;
+  slash::RWMutex rwlock_; /* For external statistics */
   std::map<int, PinkConn*> conns_;
 
   ConnFactory *conn_factory_;
@@ -63,8 +60,13 @@ class HolyThread: public ServerThread {
 
   void DoCronTask() override;
 
+  slash::Mutex killer_mutex_;
+  std::set<std::string> deleting_conn_ipport_;
+
   void HandleNewConn(int connfd, const std::string &ip_port) override;
   void HandleConnEvent(PinkFiredEvent *pfe) override;
+
+  void Cleanup();
 };  // class HolyThread
 
 

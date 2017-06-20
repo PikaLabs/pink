@@ -29,7 +29,7 @@ HolyThread::HolyThread(const std::set<std::string>& bind_ips, int port,
 }
 
 HolyThread::~HolyThread() {
-  KillAllConns();
+  Cleanup();
 }
 
 int HolyThread::StartThread() {
@@ -111,17 +111,30 @@ void HolyThread::HandleConnEvent(PinkFiredEvent *pfe) {
 }
 
 void HolyThread::DoCronTask() {
-  if (keepalive_timeout_ <= 0) {
-    return;
-  }
-
-  // Check keepalive timeout connection
   struct timeval now;
   gettimeofday(&now, NULL);
-    slash::WriteLock l(&rwlock_);
+  slash::WriteLock l(&rwlock_);
   std::map<int, PinkConn*>::iterator iter = conns_.begin();
   while (iter != conns_.end()) {
-    if (now.tv_sec - iter->second->last_interaction().tv_sec > keepalive_timeout_) {
+    // KillConn
+    {
+    slash::MutexLock l(&killer_mutex_);
+    if (deleting_conn_ipport_.count(iter->second->ip_port())) {
+      close(iter->first);
+      delete iter->second;
+      iter = conns_.erase(iter);
+      deleting_conn_ipport_.erase(iter->second->ip_port());
+      continue;
+    }
+    }
+    // KillAllConns
+    if (deleting_conn_ipport_.count(kKillAllConnsTask)) {
+      Cleanup();
+      return;
+    }
+    // Check keepalive timeout connection
+    if (keepalive_timeout_ > 0 &&
+        now.tv_sec - iter->second->last_interaction().tv_sec > keepalive_timeout_) {
       close(iter->first);
       delete iter->second;
       iter = conns_.erase(iter);
@@ -132,7 +145,7 @@ void HolyThread::DoCronTask() {
 }
 
 // clean all conns
-void HolyThread::KillAllConns() {
+void HolyThread::Cleanup() {
   slash::WriteLock l(&rwlock_);
   for (auto& iter : conns_) {
     close(iter.first);
@@ -141,16 +154,25 @@ void HolyThread::KillAllConns() {
   conns_.clear();
 }
 
+void HolyThread::KillAllConns() {
+  KillConn(kKillAllConnsTask);
+}
+
 void HolyThread::KillConn(const std::string& ip_port) {
-  slash::WriteLock l(&rwlock_);
-  PinkConn *in_conn;
-  std::map<int, PinkConn *>::iterator iter = conns_.begin();
-  for (; iter != conns_.end(); iter++) {
-    close(iter->first);
-    in_conn = iter->second;
-    delete in_conn;
+  bool find = false;
+  {
+  slash::ReadLock l(&rwlock_);
+  for (auto& iter : conns_) {
+    if (iter.second->ip_port() == ip_port) {
+      find = true;
+      break;
+    }
   }
-  conns_.clear();
+  }
+  if (find || ip_port == kKillAllConnsTask) {
+    slash::MutexLock l(&killer_mutex_);
+    deleting_conn_ipport_.insert(ip_port);
+  }
 }
 
 extern ServerThread *NewHolyThread(

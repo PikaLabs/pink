@@ -36,6 +36,8 @@ class ServerHandle {
   virtual int DeleteWorkerSpecificData(void* data) const { return 0; }
 };
 
+const std::string kKillAllConnsTask = "kill_all_conns";
+
 const int kDefaultKeepAliveTime = 60; // (s)
 
 class ServerThread : public Thread {

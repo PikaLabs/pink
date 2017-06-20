@@ -102,12 +102,13 @@ int DispatchThread::conn_num() {
 } 
 
 void DispatchThread::KillConn(const std::string& ip_port) {
+  for (int i = 0; i < work_num_; ++i) {
+    worker_thread_[i]->TryKillConn(ip_port);
+  }
 }
 
 void DispatchThread::KillAllConns() {
-  for (int i = 0; i < work_num_; ++i) {
-    worker_thread_[i]->KillAllConns();
-  }
+  KillConn(kKillAllConnsTask);
 }
 
 void DispatchThread::HandleNewConn(const int connfd, const std::string& ip_port) {

@@ -65,7 +65,7 @@ class WorkerThread : public Thread {
   }
   slash::Mutex mutex_;
 
-  slash::RWMutex rwlock_;
+  slash::RWMutex rwlock_; /* For external statistics */
   std::map<int, PinkConn*> conns_;
 
  private:
@@ -93,9 +93,12 @@ class WorkerThread : public Thread {
   virtual void *ThreadMain() override;
   void DoCronTask();
 
+  slash::Mutex killer_mutex_;
+  std::set<std::string> deleting_conn_ipport_;
+
   // clean conns
-  void KillAllConns();
-  void KillConn(const std::string& ip_port);
+  void Cleanup();
+  void TryKillConn(const std::string& ip_port);
 };  // class WorkerThread
 
 }  // namespace pink

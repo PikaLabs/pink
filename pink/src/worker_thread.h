@@ -50,7 +50,7 @@ class WorkerThread : public Thread {
 
 
   /*
-   * The PbItem queue is the fd queue, receive from dispatch thread
+   * The PbItem queue is the fd queue, receive from dispatcher
    */
   std::queue<PinkItem> conn_queue_;
 
@@ -69,7 +69,7 @@ class WorkerThread : public Thread {
   std::map<int, PinkConn*> conns_;
 
  private:
-  friend class DispatchThread;
+  friend class StandardServer;
 
   ServerThread* server_thread_;
   ConnFactory *conn_factory_;
@@ -78,7 +78,7 @@ class WorkerThread : public Thread {
   void* private_data_;
 
   /*
-   * These two fd receive the notify from dispatch thread
+   * These two fd receive the notify from dispatcher
    */
   int notify_receive_fd_;
   int notify_send_fd_;

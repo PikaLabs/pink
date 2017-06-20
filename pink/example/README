@@ -1,8 +1,6 @@
 myproto.proto  the proto buffer file used to test pb protocol
 
-myholy_srv.cc  server side of myproto.proto with holy thread
-
-mydispatch_srv.cc  server side of myproto.proto with dispatch thread and worker thread
+standard_server.cc  server side of myproto.proto
 
 myproto_cli.cc  client support myproto.proto
 

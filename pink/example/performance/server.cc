@@ -23,10 +23,11 @@ static atomic<int> num(0);
 
 class PingConn : public PbConn {
  public:
-  PingConn(int fd, std::string ip_port, pink::Thread* pself_thread = NULL) : 
-    PbConn(fd, ip_port, pself_thread) {
+  PingConn(int fd, const std::string& ip_port, ServerThread* thread,
+      void* worker_specific_data) : 
+    PbConn(fd, ip_port, thread) {
   }
-  virtual ~PingConn() {}
+  ~PingConn() {}
 
   int DealMessage() {
     num++;
@@ -51,8 +52,9 @@ class PingConn : public PbConn {
 
 class PingConnFactory : public ConnFactory {
  public:
-  virtual PinkConn *NewPinkConn(int connfd, const std::string &ip_port, Thread *thread) const {
-    return new PingConn(connfd, ip_port, thread);
+  virtual PinkConn *NewPinkConn(int connfd, const std::string &ip_port,
+      ServerThread *thread, void* worker_specific_data) const {
+    return new PingConn(connfd, ip_port, thread, worker_specific_data);
   }
 };
 
@@ -66,17 +68,11 @@ int main(int argc, char* argv[]) {
   std::string ip(argv[1]);
   int port = atoi(argv[2]);
 
-  Thread *my_worker[24];
   ConnFactory *my_conn_factory = new PingConnFactory();
-  for (int i = 0; i < 24; i++) {
-    my_worker[i] = NewWorkerThread(my_conn_factory, 1000);
-  }
 
   int my_port = (argc > 1) ? atoi(argv[1]) : 8221;
 
-  ConnFactory *conn_factory = new PingConnFactory();
-
-  ServerThread *st_thread = NewDispatchThread(ip, port, 24, my_worker, 1000);
+  ServerThread *st_thread = NewStandardServer(ip, port, 24, my_conn_factory, 1000);
   st_thread->StartThread();
   uint64_t st, ed;
 

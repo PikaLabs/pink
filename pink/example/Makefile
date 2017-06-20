@@ -5,7 +5,7 @@ else
 	CXXFLAGS = -O2 -pipe -fPIC -W -Wwrite-strings -Wpointer-arith -Wreorder -Wswitch -Wsign-promo -Wredundant-decls -Wformat -Wall -D_GNU_SOURCE -D__STDC_FORMAT_MACROS -std=c++11 -Wno-unused-variable -Wno-maybe-uninitialized -Wno-unused-parameter
 	# CXXFLAGS = -Wall -W -DDEBUG -g -O0 -D__XDEBUG__ 
 endif
-OBJECT = holy_srv holy_srv_chandle dispatch_srv myproto_cli http_server redis_cli bg_thread simple_http_server
+OBJECT = standard_server myproto_cli http_server redis_cli bg_thread simple_http_server
 
 ifndef SLASH_PATH
 SLASH_PATH = ../third/slash
@@ -44,26 +44,11 @@ all: $(OBJECT)
 	@echo "Success, go, go, go..."
 
 
-holy_srv: myholy_srv.cc myproto.pb.cc
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
-
-holy_srv_chandle: myholy_srv_chandle.cc myproto.pb.cc
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
-
-dispatch_srv: mydispatch_srv.cc myproto.pb.cc
+standard_server: standard_server.cc myproto.pb.cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
 myproto_cli: myproto_cli.cc myproto.pb.cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
-
-# holy: holy.cc holy_test.cc pink.pb.cc
-#   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
-
-# pika: pika.cc pika_thread.cc
-#   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
-# 
-# pika_holy: pika_holy.cc pika_holy_thread.cc
-#   $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
 redis_cli: redis_cli_test.cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)

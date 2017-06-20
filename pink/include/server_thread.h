@@ -69,8 +69,7 @@ class ServerThread : public Thread {
   PinkEpoll *pink_epoll_;
 
  private:
-  friend class DispatchThread;
-  friend class HolyThread;
+  friend class StandardServer;
 
   int cron_interval_;
   virtual void DoCronTask();
@@ -95,25 +94,9 @@ class ServerThread : public Thread {
 
 };
 
-extern ServerThread *NewHolyThread(
-    int port,
-    ConnFactory *conn_factory,
-    int cron_interval = 0,
-    const ServerHandle* handle = nullptr);
-extern ServerThread *NewHolyThread(
-    const std::string &bind_ip, int port,
-    ConnFactory *conn_factory,
-    int cron_interval = 0,
-    const ServerHandle* handle = nullptr);
-extern ServerThread *NewHolyThread(
-    const std::set<std::string>& bind_ips, int port,
-    ConnFactory *conn_factory,
-    int cron_interval = 0,
-    const ServerHandle* handle = nullptr);
-
 /**
- * This type Dispatch thread just get Connection and then Dispatch the fd to
- * worker thread
+ * Standard server gets Connection and Dispatches the fd to
+ * a worker thread (if work_num >= 1) or to itself (if work_num == 0)
  *
  * @brief
  *
@@ -124,25 +107,25 @@ extern ServerThread *NewHolyThread(
  * @param handle        the server's handle (e.g. CronHandle, AccessHandle...)
  * @param ehandle       the worker's enviroment setting handle
  */
-extern ServerThread *NewDispatchThread(
+
+extern ServerThread *NewStandardServer(
     int port,
     int work_num, ConnFactory* conn_factory,
-    int cron_interval = 0,
     int queue_limit = 1000,
+    int cron_interval = 0,
     const ServerHandle* handle = nullptr);
-extern ServerThread *NewDispatchThread(
+extern ServerThread *NewStandardServer(
     const std::string &ip, int port,
     int work_num, ConnFactory* conn_factory,
-    int cron_interval = 0,
     int queue_limit = 1000,
+    int cron_interval = 0,
     const ServerHandle* handle = nullptr);
-extern ServerThread *NewDispatchThread(
+extern ServerThread *NewStandardServer(
     const std::set<std::string>& ips, int port,
     int work_num, ConnFactory* conn_factory,
-    int cron_interval = 0,
     int queue_limit = 1000,
+    int cron_interval = 0,
     const ServerHandle* handle = nullptr);
-
 } // namespace pink
 
 #endif

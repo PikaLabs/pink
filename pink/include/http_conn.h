@@ -170,7 +170,7 @@ class HTTPHandles {
 
  protected:
   // Assigned in constructor of HttpConn
-  Thread* thread_ptr_;
+  ServerThread* thread_ptr_;
 
  private:
   friend class HTTPConn;
@@ -186,7 +186,7 @@ class HTTPConn: public PinkConn {
  public:
 
   HTTPConn(const int fd, const std::string &ip_port,
-           Thread *thread, std::shared_ptr<HTTPHandles> handles_);
+           ServerThread *sthread, std::shared_ptr<HTTPHandles> handles_);
   ~HTTPConn();
 
   virtual ReadStatus GetRequest() override;

@@ -40,25 +40,19 @@ class HolyThread: public ServerThread {
   }
 
   int conn_num() override {
-    slash::RWLock l(&rwlock_, false);
+    slash::ReadLock l(&rwlock_);
     return conns_.size();
   }
 
-  pthread_rwlock_t* conn_rwlock() override {
-    return &rwlock_;
-  }
+  void KillAllConns() override;
 
-  std::map<int, PinkConn*>* conns() override {
-    return &conns_;
-  }
-
-  void Cleanup() override;
+  void KillConn(const std::string& ip_port) override;
 
  private:
   /*
    *  For external statistics
    */
-  pthread_rwlock_t rwlock_;
+  slash::RWMutex rwlock_;
   std::map<int, PinkConn*> conns_;
 
   ConnFactory *conn_factory_;

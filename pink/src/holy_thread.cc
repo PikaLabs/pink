@@ -6,43 +6,43 @@
 
 namespace pink {
 
-HolyThread::HolyThread(int port, ConnFactory* conn_factory,
+HolyThread::HolyThread(int port,
+                       ConnFactory* conn_factory,
                        int cron_interval, const ServerHandle* handle,
                        const ThreadEnvHandle* ehandle)
     : ServerThread::ServerThread(port, cron_interval, handle),
       conn_factory_(conn_factory),
       keepalive_timeout_(kDefaultKeepAliveTime) {
   set_env_handle(ehandle);
-  pthread_rwlock_init(&rwlock_, nullptr);
 }
 
-HolyThread::HolyThread(const std::string& bind_ip, int port, ConnFactory* conn_factory,
+HolyThread::HolyThread(const std::string& bind_ip, int port,
+                       ConnFactory* conn_factory,
                        int cron_interval, const ServerHandle* handle,
                        const ThreadEnvHandle* ehandle)
     : ServerThread::ServerThread(bind_ip, port, cron_interval, handle),
       conn_factory_(conn_factory) {
   set_env_handle(ehandle);
-  pthread_rwlock_init(&rwlock_, nullptr);
 }
 
-HolyThread::HolyThread(const std::set<std::string>& bind_ips, int port, ConnFactory* conn_factory,
+HolyThread::HolyThread(const std::set<std::string>& bind_ips, int port,
+                       ConnFactory* conn_factory,
                        int cron_interval, const ServerHandle* handle,
                        const ThreadEnvHandle* ehandle)
     : ServerThread::ServerThread(bind_ips, port, cron_interval, handle),
       conn_factory_(conn_factory) {
   set_env_handle(ehandle);
-  pthread_rwlock_init(&rwlock_, nullptr);
 }
 
 HolyThread::~HolyThread() {
-  Cleanup();
+  KillAllConns();
 }
 
 void HolyThread::HandleNewConn(const int connfd, const std::string &ip_port) {
-  PinkConn *tc = conn_factory_->NewPinkConn(connfd, ip_port, this);
+  PinkConn *tc = conn_factory_->NewPinkConn(connfd, ip_port, this, get_private());
   tc->SetNonblock();
   {
-    slash::RWLock l(&rwlock_, true);
+    slash::WriteLock l(&rwlock_);
     conns_[connfd] = tc;
   }
 
@@ -57,7 +57,7 @@ void HolyThread::HandleConnEvent(PinkFiredEvent *pfe) {
   int should_close = 0;
   std::map<int, PinkConn *>::iterator iter;
   {
-    slash::RWLock l(&rwlock_, false);
+    slash::ReadLock l(&rwlock_);
     if ((iter = conns_.find(pfe->fd)) == conns_.end()) {
       pink_epoll_->PinkDelEvent(pfe->fd);
       return;
@@ -95,7 +95,7 @@ void HolyThread::HandleConnEvent(PinkFiredEvent *pfe) {
     delete(in_conn);
     in_conn = nullptr;
 
-    slash::RWLock l(&rwlock_, true);
+    slash::WriteLock l(&rwlock_);
     conns_.erase(pfe->fd);
   }
 }
@@ -108,7 +108,7 @@ void HolyThread::DoCronTask() {
   // Check keepalive timeout connection
   struct timeval now;
   gettimeofday(&now, NULL);
-  slash::RWLock l(&rwlock_, true);
+    slash::WriteLock l(&rwlock_);
   std::map<int, PinkConn*>::iterator iter = conns_.begin();
   while (iter != conns_.end()) {
     if (now.tv_sec - iter->second->last_interaction().tv_sec > keepalive_timeout_) {
@@ -121,9 +121,18 @@ void HolyThread::DoCronTask() {
   }
 }
 
-// clean conns
-void HolyThread::Cleanup() {
-  slash::RWLock l(&rwlock_, true);
+// clean all conns
+void HolyThread::KillAllConns() {
+  slash::WriteLock l(&rwlock_);
+  for (auto& iter : conns_) {
+    close(iter.first);
+    delete iter.second;
+  }
+  conns_.clear();
+}
+
+void HolyThread::KillConn(const std::string& ip_port) {
+  slash::WriteLock l(&rwlock_);
   PinkConn *in_conn;
   std::map<int, PinkConn *>::iterator iter = conns_.begin();
   for (; iter != conns_.end(); iter++) {

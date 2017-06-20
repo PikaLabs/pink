@@ -8,6 +8,7 @@
 #include <sys/time.h>
 #include <string>
 #include "pink/include/pink_define.h"
+#include "pink/include/server_thread.h"
 
 namespace pink {
 
@@ -15,7 +16,7 @@ class Thread;
 
 class PinkConn {
 public:
-  PinkConn(const int fd, const std::string &ip_port, Thread *thread);
+  PinkConn(const int fd, const std::string &ip_port, ServerThread *thread);
   virtual ~PinkConn();
   
   /*
@@ -56,8 +57,8 @@ public:
     return last_interaction_;
   };
 
-  Thread *thread() const {
-    return thread_;
+  ServerThread *thread() const {
+    return server_thread_;
   }
 
 private:
@@ -67,8 +68,8 @@ private:
   bool is_reply_;
   struct timeval last_interaction_;
   int flags_;
-  // the thread this conn belong to
-  Thread *thread_;
+  // the server thread this conn belong to
+  ServerThread *server_thread_;
 
   /*
    * No allowed copy and copy assign operator
@@ -84,7 +85,11 @@ private:
 class ConnFactory {
  public:
   virtual ~ConnFactory() {};
-  virtual PinkConn* NewPinkConn(int connfd, const std::string &ip_port, Thread *pink_thread) const = 0;
+  virtual PinkConn* NewPinkConn(
+    int connfd,
+    const std::string &ip_port,
+    ServerThread *server_thread,
+    void* worker_private_data /* Has set in ThreadEnvHandle */) const = 0;
 };
 
 }

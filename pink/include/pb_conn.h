@@ -21,7 +21,7 @@ using slash::Status;
 
 class PbConn: public PinkConn {
  public:
-  PbConn(const int fd, const std::string &ip_port, Thread *thread);
+  PbConn(const int fd, const std::string &ip_port, ServerThread *thread);
   virtual ~PbConn();
 
   ReadStatus GetRequest() override;

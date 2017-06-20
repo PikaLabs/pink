@@ -19,7 +19,6 @@ Thread::Thread()
 }
 
 Thread::~Thread() {
-  StopThread();
 }
 
 void* Thread::RunThread(void *arg) {

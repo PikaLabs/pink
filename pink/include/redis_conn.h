@@ -21,7 +21,7 @@ typedef std::vector<std::string> RedisCmdArgsType;
 
 class RedisConn: public PinkConn {
  public:
-  RedisConn(const int fd, const std::string &ip_port, Thread *thread);
+  RedisConn(const int fd, const std::string &ip_port, ServerThread *thread);
   virtual ~RedisConn();
   void ResetClient();
 

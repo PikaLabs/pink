@@ -1,4 +1,4 @@
-#include "pink/include/worker_thread.h"
+#include "pink/src/worker_thread.h"
 
 #include "pink/include/pink_conn.h"
 #include "pink/src/pink_item.h"
@@ -8,16 +8,16 @@
 namespace pink {
 
 
-WorkerThread::WorkerThread(ConnFactory *conn_factory, int cron_interval,
-                           const ThreadEnvHandle* ehandle)
-      : conn_factory_(conn_factory),
+WorkerThread::WorkerThread(ConnFactory *conn_factory, ServerThread* server_thread,
+                           int cron_interval, const ThreadEnvHandle* ehandle)
+      : server_thread_(server_thread),
+        conn_factory_(conn_factory),
         cron_interval_(cron_interval),
         keepalive_timeout_(kDefaultKeepAliveTime) {
   set_env_handle(ehandle);
   /*
    * install the protobuf handler here
    */
-  pthread_rwlock_init(&rwlock_, NULL);
   pink_epoll_ = new PinkEpoll();
   int fds[2];
   if (pipe(fds)) {
@@ -58,7 +58,6 @@ void *WorkerThread::ThreadMain() {
         timeout = (when.tv_sec - now.tv_sec) * 1000 + (when.tv_usec - now.tv_usec) / 1000;
       } else {
         DoCronTask();
-        CronHandle();
         when.tv_sec = now.tv_sec + (cron_interval_ / 1000);
         when.tv_usec = now.tv_usec + ((cron_interval_ % 1000 ) * 1000);
         timeout = cron_interval_;
@@ -77,10 +76,12 @@ void *WorkerThread::ThreadMain() {
             ti = conn_queue_.front();
             conn_queue_.pop();
           }
-          PinkConn *tc = conn_factory_->NewPinkConn(ti.fd(), ti.ip_port(), this);
+          PinkConn *tc = conn_factory_->NewPinkConn(ti.fd(), ti.ip_port(),
+                                                    server_thread_,
+                                                    get_private());
           tc->SetNonblock();
           {
-            slash::RWLock l(&rwlock_, true);
+            slash::WriteLock l(&rwlock_);
             conns_[ti.fd()] = tc;
           }
           pink_epoll_->PinkAddEvent(ti.fd(), EPOLLIN);
@@ -125,7 +126,7 @@ void *WorkerThread::ThreadMain() {
         }
         if ((pfe->mask & EPOLLERR) || (pfe->mask & EPOLLHUP) || should_close) {
           {
-            slash::RWLock l(&rwlock_, true);
+            slash::WriteLock l(&rwlock_);
             pink_epoll_->PinkDelEvent(pfe->fd);
             close(pfe->fd);
             delete(in_conn);
@@ -138,7 +139,7 @@ void *WorkerThread::ThreadMain() {
     } // for (int i = 0; i < nfds; i++)
   } // while (!should_stop())
 
-  Cleanup();
+  KillAllConns();
   return NULL;
 }
 
@@ -149,7 +150,7 @@ void WorkerThread::DoCronTask() {
   // Check keepalive timeout connection
   struct timeval now;
   gettimeofday(&now, NULL);
-  slash::RWLock l(&rwlock_, true);
+  slash::WriteLock l(&rwlock_);
   std::map<int, PinkConn*>::iterator iter = conns_.begin();
   while (iter != conns_.end()) {
     if (now.tv_sec - iter->second->last_interaction().tv_sec > keepalive_timeout_) {
@@ -162,8 +163,11 @@ void WorkerThread::DoCronTask() {
   }
 }
 
-void WorkerThread::Cleanup() {
-  slash::RWLock l(&rwlock_, true);
+void WorkerThread::KillConn(const std::string& ip_port) {
+}
+
+void WorkerThread::KillAllConns() {
+  slash::WriteLock l(&rwlock_);
   PinkConn *in_conn;
   std::map<int, PinkConn *>::iterator iter = conns_.begin();
   for (; iter != conns_.end(); iter++) {

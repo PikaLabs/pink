@@ -34,7 +34,8 @@ class ConnFactory;
 
 class WorkerThread : public Thread {
  public:
-  explicit WorkerThread(ConnFactory *conn_factory, int cron_interval = 0,
+  explicit WorkerThread(ConnFactory *conn_factory, ServerThread* server_thread,
+                        int cron_interval = 0,
                         const ThreadEnvHandle* thandle = nullptr);
 
   virtual ~WorkerThread();
@@ -44,7 +45,7 @@ class WorkerThread : public Thread {
   }
 
   int conn_num() {
-    slash::RWLock l(&rwlock_, false);
+    slash::ReadLock l(&rwlock_);
     return conns_.size();
   } 
 
@@ -68,11 +69,13 @@ class WorkerThread : public Thread {
   /*
    *  public for external statistics
    */
-  pthread_rwlock_t rwlock_;
+  slash::RWMutex rwlock_;
   std::map<int, PinkConn*> conns_;
 
  private:
   friend class DispatchThread;
+
+  ServerThread* server_thread_;
   ConnFactory *conn_factory_;
   int cron_interval_;
   /*
@@ -89,11 +92,11 @@ class WorkerThread : public Thread {
   std::atomic<int> keepalive_timeout_; // keepalive second
 
   virtual void *ThreadMain() override;
-  virtual void CronHandle() {}
   void DoCronTask();
 
   // clean conns
-  void Cleanup();
+  void KillAllConns();
+  void KillConn(const std::string& ip_port);
 };  // class WorkerThread
 
 }  // namespace pink

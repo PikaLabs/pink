@@ -123,7 +123,7 @@ static int split2args(const std::string& req_buf, RedisCmdArgsType& argv) {
   }
 }
 
-RedisConn::RedisConn(const int fd, const std::string &ip_port, Thread *thread) :
+RedisConn::RedisConn(const int fd, const std::string &ip_port, ServerThread *thread) :
   PinkConn(fd, ip_port, thread),
   wbuf_size_(REDIS_MAX_MESSAGE),
   wbuf_len_(0),

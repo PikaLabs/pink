@@ -30,30 +30,30 @@ static const ServerHandle* SanitizeHandle(const ServerHandle* raw_handle) {
 }
 
 ServerThread::ServerThread(int port,
-    int cron_interval, const ServerHandle* handle)
-  : pink_epoll_(NULL),
-    cron_interval_(cron_interval),
-    handle_(SanitizeHandle(handle)),
-    own_handle_(handle_ != handle),
-    port_(port) {
+                           int cron_interval, const ServerHandle* handle)
+    : pink_epoll_(NULL),
+      cron_interval_(cron_interval),
+      handle_(SanitizeHandle(handle)),
+      own_handle_(handle_ != handle),
+      port_(port) {
   ips_.insert("0.0.0.0");
 }
 
 ServerThread::ServerThread(const std::string& bind_ip, int port,
-    int cron_interval, const ServerHandle* handle)
-  : cron_interval_(cron_interval),
-    handle_(SanitizeHandle(handle)),
-    own_handle_(handle_ != handle),
-    port_(port) {
+                           int cron_interval, const ServerHandle* handle)
+    : cron_interval_(cron_interval),
+      handle_(SanitizeHandle(handle)),
+      own_handle_(handle_ != handle),
+      port_(port) {
   ips_.insert(bind_ip);
 }
 
 ServerThread::ServerThread(const std::set<std::string>& bind_ips, int port,
-    int cron_interval, const ServerHandle* handle)
-  : cron_interval_(cron_interval),
-    handle_(SanitizeHandle(handle)),
-    own_handle_(handle_ != handle),
-    port_(port) {
+                           int cron_interval, const ServerHandle* handle)
+    : cron_interval_(cron_interval),
+      handle_(SanitizeHandle(handle)),
+      own_handle_(handle_ != handle),
+      port_(port) {
   ips_ = bind_ips;
 }
 

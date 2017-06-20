@@ -92,7 +92,7 @@ class Response {
 
 class SimpleHTTPConn: public PinkConn {
  public:
-  SimpleHTTPConn(const int fd, const std::string &ip_port,  Thread *thread);
+  SimpleHTTPConn(const int fd, const std::string &ip_port, ServerThread *thread);
   virtual ~SimpleHTTPConn();
 
   virtual ReadStatus GetRequest() override;

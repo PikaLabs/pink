@@ -49,11 +49,8 @@ class ServerThread : public Thread {
 
   virtual int conn_num() = 0; 
 
-  virtual void Cleanup() = 0;
-
-  // FIXME (gaodq) Used for holythread only
-  virtual pthread_rwlock_t* conn_rwlock() { return nullptr; }
-  virtual std::map<int, PinkConn*>* conns() { return nullptr; }
+  virtual void KillAllConns() = 0;
+  virtual void KillConn(const std::string& ip_port) = 0;
 
   virtual ~ServerThread();
 
@@ -146,36 +143,6 @@ extern ServerThread *NewDispatchThread(
     int queue_limit = 1000,
     const ServerHandle* handle = nullptr,
     const ThreadEnvHandle* thandle = nullptr);
-
-/**
- * @brief
- *
- * @param port          the port number
- * @param ip, ips       the ip string
- * @param work_num
- * @param worker_thread the worker thred we define
- * @param cron_interval the cron job interval
- * @param queue_limit   the size limit of workers' connection queue
- * @param handle        the server's handle (e.g. CronHandle, AccessHandle...)
- */
-extern ServerThread* NewDispatchThread(
-    int port,
-    int work_num, WorkerThread** worker_thread,
-    int cron_interval = 0,
-    int queue_limit = 1000,
-    const ServerHandle* handle = nullptr);
-extern ServerThread* NewDispatchThread(
-    const std::string &ip, int port,
-    int work_num, WorkerThread** worker_thread,
-    int cron_interval = 0,
-    int queue_limit = 1000,
-    const ServerHandle* handle = nullptr);
-extern ServerThread* NewDispatchThread(
-    const std::set<std::string>& ips, int port,
-    int work_num, WorkerThread** worker_thread,
-    int cron_interval = 0,
-    int queue_limit = 1000,
-    const ServerHandle* handle = nullptr);
 
 } // namespace pink
 

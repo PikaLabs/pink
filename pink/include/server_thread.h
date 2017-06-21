@@ -141,20 +141,17 @@ extern ServerThread *NewHolyThread(
 extern ServerThread *NewDispatchThread(
     int port,
     int work_num, ConnFactory* conn_factory,
-    int cron_interval = 0,
-    int queue_limit = 1000,
+    int cron_interval = 0, int queue_limit = 1000,
     const ServerHandle* handle = nullptr);
 extern ServerThread *NewDispatchThread(
     const std::string &ip, int port,
     int work_num, ConnFactory* conn_factory,
-    int cron_interval = 0,
-    int queue_limit = 1000,
+    int cron_interval = 0, int queue_limit = 1000,
     const ServerHandle* handle = nullptr);
 extern ServerThread *NewDispatchThread(
     const std::set<std::string>& ips, int port,
     int work_num, ConnFactory* conn_factory,
-    int cron_interval = 0,
-    int queue_limit = 1000,
+    int cron_interval = 0, int queue_limit = 1000,
     const ServerHandle* handle = nullptr);
 
 } // namespace pink

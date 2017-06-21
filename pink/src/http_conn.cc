@@ -368,10 +368,10 @@ ReadStatus HTTPRequest::DoRead() {
       switch (sslerr) {
         case SSL_ERROR_WANT_READ:
         case SSL_ERROR_WANT_WRITE:
-        case SSL_ERROR_SSL:
           return kReadHalf;
         case SSL_ERROR_SYSCALL:
           break;
+        case SSL_ERROR_SSL:
         default:
           return kReadClose;
       }
@@ -556,10 +556,10 @@ bool HTTPResponse::Flush() {
         switch (sslerr) {
           case SSL_ERROR_WANT_READ:
           case SSL_ERROR_WANT_WRITE:
-          case SSL_ERROR_SSL:
             return true;
           case SSL_ERROR_SYSCALL:
             break;
+          case SSL_ERROR_SSL:
           default:
             return false;
         }
@@ -610,10 +610,10 @@ bool HTTPResponse::Flush() {
         switch (sslerr) {
           case SSL_ERROR_WANT_READ:
           case SSL_ERROR_WANT_WRITE:
-          case SSL_ERROR_SSL:
             return true;
           case SSL_ERROR_SYSCALL:
             break;
+          case SSL_ERROR_SSL:
           default:
             return false;
         }

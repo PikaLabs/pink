@@ -41,7 +41,8 @@ ServerThread::ServerThread(int port,
       cron_interval_(cron_interval),
       handle_(SanitizeHandle(handle)),
       own_handle_(handle_ != handle),
-      port_(port) {
+      port_(port),
+      security_(false) {
   ips_.insert("0.0.0.0");
 }
 
@@ -50,7 +51,8 @@ ServerThread::ServerThread(const std::string& bind_ip, int port,
     : cron_interval_(cron_interval),
       handle_(SanitizeHandle(handle)),
       own_handle_(handle_ != handle),
-      port_(port) {
+      port_(port),
+      security_(false) {
   ips_.insert(bind_ip);
 }
 
@@ -59,11 +61,16 @@ ServerThread::ServerThread(const std::set<std::string>& bind_ips, int port,
     : cron_interval_(cron_interval),
       handle_(SanitizeHandle(handle)),
       own_handle_(handle_ != handle),
-      port_(port) {
+      port_(port),
+      security_(false) {
   ips_ = bind_ips;
 }
 
 ServerThread::~ServerThread() {
+  if (security_) {
+    SSL_CTX_free(ssl_ctx_);
+    EVP_cleanup();
+  }
   delete(pink_epoll_);
   for (std::vector<ServerSocket*>::iterator iter = server_sockets_.begin();
        iter != server_sockets_.end();
@@ -200,6 +207,92 @@ void *ServerThread::ThreadMain() {
     }
   }
   return nullptr;
+}
+
+static std::vector<std::unique_ptr<slash::Mutex>> ssl_mutex_;
+
+static void SSLLockingCallback(int mode, int type, const char* file, int line) {
+  if (mode & CRYPTO_LOCK) {
+    ssl_mutex_[type]->Lock();
+  } else {
+    ssl_mutex_[type]->Unlock();
+  }
+}
+
+static unsigned long SSLIdCallback() {
+  return (unsigned long)pthread_self();
+}
+
+int ServerThread::EnableSecurity(const std::string& cert_file,
+                                 const std::string& key_file) {
+  if (cert_file.empty() || key_file.empty()) {
+    log_warn("cert_file and key_file can not be empty!");
+  }
+  // Init Security Env
+  // 1. Create multithread mutex used by openssl
+  ssl_mutex_.resize(CRYPTO_num_locks());
+  for (auto& sm : ssl_mutex_) {
+    sm.reset(new slash::Mutex());
+  }
+  CRYPTO_set_locking_callback(SSLLockingCallback);
+  CRYPTO_set_id_callback(SSLIdCallback);
+    
+  // 2. Use default configuration
+  OPENSSL_config(NULL);
+
+  // 3. Init library, load all algorithms
+  SSL_library_init();
+  SSL_load_error_strings();
+  OpenSSL_add_all_algorithms();
+
+  // 4. Create ssl context
+  ssl_ctx_ = SSL_CTX_new(SSLv23_server_method());
+  if (!ssl_ctx_) {
+    log_warn("Unable to create SSL context");
+    return -1;
+  }
+
+  // 5. Set cert file and key file, then check key file
+  if (SSL_CTX_use_certificate_file(ssl_ctx_, cert_file.c_str(), SSL_FILETYPE_PEM) != 1) {
+    log_warn("SSL_CTX_use_certificate_file(%s) failed", cert_file.c_str());
+    return -1;
+  }
+
+  if (SSL_CTX_use_PrivateKey_file(ssl_ctx_, key_file.c_str(), SSL_FILETYPE_PEM) != 1) {
+    log_warn("SSL_CTX_use_PrivateKey_file(%s)", key_file.c_str());
+    return -1;
+  }
+
+  if(SSL_CTX_check_private_key(ssl_ctx_) != 1) {
+    log_warn("SSL_CTX_check_private_key(%s)", key_file.c_str());
+    return -1;
+  }
+
+  // https://wiki.openssl.org/index.php/Manual:SSL_CTX_set_read_ahead(3)
+  // read data as more as possible
+  SSL_CTX_set_read_ahead(ssl_ctx_, true);
+
+  // Force using TLS 1.2
+  SSL_CTX_set_options(ssl_ctx_, SSL_OP_NO_SSLv2);
+  SSL_CTX_set_options(ssl_ctx_, SSL_OP_NO_SSLv3);
+  SSL_CTX_set_options(ssl_ctx_, SSL_OP_NO_TLSv1);
+
+  // Enable ECDH
+  // https://en.wikipedia.org/wiki/Elliptic_curve_Diffie%E2%80%93Hellman
+  // https://wiki.openssl.org/index.php/Diffie_Hellman
+  // https://wiki.openssl.org/index.php/Diffie-Hellman_parameters
+  EC_KEY *ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
+  if (!ecdh) {
+    log_warn("EC_KEY_new_by_curve_name(%d)", NID_X9_62_prime256v1);
+    return -1;
+  }
+
+  SSL_CTX_set_options(ssl_ctx_, SSL_OP_SINGLE_ECDH_USE);
+  SSL_CTX_set_tmp_ecdh(ssl_ctx_, ecdh);
+  EC_KEY_free(ecdh);
+
+  security_ = true;
+  return 0;
 }
 
 }  // namespace pink

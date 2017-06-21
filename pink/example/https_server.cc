@@ -100,6 +100,12 @@ int main(int argc, char* argv[]) {
   ConnFactory* my_conn_factory = new MyConnFactory();
   ServerThread *st = NewDispatchThread(port, 4, my_conn_factory, 1000);
 
+  if (st->EnableSecurity("/complete_path_to/host.crt",
+                         "/complete_path_to/host.key") != 0) {
+    printf("EnableSecurity error happened!\n");
+    exit(-1);
+  }
+
   if (st->StartThread() != 0) {
     printf("StartThread error happened!\n");
     exit(-1);

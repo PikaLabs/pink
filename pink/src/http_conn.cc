@@ -10,6 +10,8 @@
 #include <string>
 #include <algorithm>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 #include "slash/include/xdebug.h"
 #include "slash/include/slash_string.h"
 #include "pink/include/pink_define.h"
@@ -264,10 +266,12 @@ bool HTTPResponse::SerializeHeader() {
 }
 
 HTTPConn::HTTPConn(const int fd, const std::string &ip_port,
-                   ServerThread *thread, std::shared_ptr<HTTPHandles> handles)
+                   ServerThread *thread, std::shared_ptr<HTTPHandles> handles,
+                   void* worker_specific_data)
       : PinkConn(fd, ip_port, thread),
-        handles_(handles) {
-  handles_->thread_ptr_ = thread;
+        handles_(handles),
+        security_(thread->security()) {
+  handles_->worker_specific_data_ = worker_specific_data;
   // this pointer is safe here
   request_ = new HTTPRequest(this);
   response_ = new HTTPResponse(this);
@@ -355,8 +359,27 @@ void HTTPRequest::Reset() {
 }
 
 ReadStatus HTTPRequest::DoRead() {
-  ssize_t nread = read(conn_->fd(), rbuf_ + rbuf_pos_,
-                       kHTTPMaxMessage - rbuf_pos_);
+  ssize_t nread;
+  if (conn_->security_) {
+    nread = SSL_read(conn_->ssl(), rbuf_ + rbuf_pos_,
+                     static_cast<int>(kHTTPMaxMessage));
+    if (nread <= 0) {
+      int sslerr = SSL_get_error(conn_->ssl(), static_cast<int>(nread));
+      switch (sslerr) {
+        case SSL_ERROR_WANT_READ:
+        case SSL_ERROR_WANT_WRITE:
+        case SSL_ERROR_SSL:
+          return kReadHalf;
+        case SSL_ERROR_SYSCALL:
+          break;
+        default:
+          return kReadClose;
+      }
+    }
+  } else {
+    nread = read(conn_->fd(), rbuf_ + rbuf_pos_,
+                 kHTTPMaxMessage - rbuf_pos_);
+  }
   if (nread > 0) {
     rbuf_pos_ += nread;
     if (req_status_ == kBodyReceiving) {
@@ -523,7 +546,27 @@ bool HTTPResponse::Flush() {
     resp_status_ = kSendingHeader;
   }
   if (resp_status_ == kSendingHeader) {
-    ssize_t nwritten = write(conn_->fd(), wbuf_ + wbuf_pos_, buf_len_);
+    ssize_t nwritten;
+    if (conn_->security_) {
+      nwritten = SSL_write(conn_->ssl(), wbuf_ + wbuf_pos_,
+                           static_cast<int>(buf_len_));
+      if (nwritten <= 0) {
+        // FIXME (gaodq)
+        int sslerr = SSL_get_error(conn_->ssl(), static_cast<int>(nwritten));
+        switch (sslerr) {
+          case SSL_ERROR_WANT_READ:
+          case SSL_ERROR_WANT_WRITE:
+          case SSL_ERROR_SSL:
+            return true;
+          case SSL_ERROR_SYSCALL:
+            break;
+          default:
+            return false;
+        }
+      }
+    } else {
+      nwritten = write(conn_->fd(), wbuf_ + wbuf_pos_, buf_len_);
+    }
     if (nwritten == -1 && errno == EAGAIN) {
       return true;
     } else if (nwritten <= 0) {
@@ -557,7 +600,27 @@ bool HTTPResponse::Flush() {
       size_t needed_size = std::min(remain_buf, remain_send_len_);
       buf_len_ = conn_->handles_->WriteResponseBody(wbuf_ + wbuf_pos_, needed_size);
     }
-    ssize_t nwritten = write(conn_->fd(), wbuf_ + wbuf_pos_, buf_len_);
+    ssize_t nwritten;
+    if (conn_->security_) {
+      nwritten = SSL_write(conn_->ssl(), wbuf_ + wbuf_pos_,
+                           static_cast<int>(buf_len_));
+      if (nwritten <= 0) {
+        // FIXME (gaodq)
+        int sslerr = SSL_get_error(conn_->ssl(), static_cast<int>(nwritten));
+        switch (sslerr) {
+          case SSL_ERROR_WANT_READ:
+          case SSL_ERROR_WANT_WRITE:
+          case SSL_ERROR_SSL:
+            return true;
+          case SSL_ERROR_SYSCALL:
+            break;
+          default:
+            return false;
+        }
+      }
+    } else {
+      nwritten = write(conn_->fd(), wbuf_ + wbuf_pos_, buf_len_);
+    }
     if (nwritten == -1 && errno == EAGAIN) {
       return true;
     } else if (nwritten <= 0) {

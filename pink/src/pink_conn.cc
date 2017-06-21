@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include "slash/include/xdebug.h"
 #include "pink/include/pink_conn.h"
 #include "pink/include/pink_thread.h"
 #include "pink/src/pink_util.h"
@@ -16,12 +17,14 @@ PinkConn::PinkConn(const int fd, const std::string &ip_port, ServerThread *threa
     : fd_(fd),
       ip_port_(ip_port),
       is_reply_(false),
-      server_thread_(thread) {
-  gettimeofday(&last_interaction_, NULL);
+      server_thread_(thread),
+      ssl_(nullptr) {
+  gettimeofday(&last_interaction_, nullptr);
 }
 
 PinkConn::~PinkConn() {
-//  close(fd_);
+  SSL_free(ssl_);
+  ssl_ = nullptr;
 }
 
 bool PinkConn::SetNonblock() {
@@ -29,6 +32,23 @@ bool PinkConn::SetNonblock() {
   if (flags_ == -1) {
     return false;
   }
+  return true;
+}
+
+bool PinkConn::CreateSSL(SSL_CTX* ssl_ctx) {
+  ssl_ = SSL_new(ssl_ctx);
+  if (!ssl_) {
+    log_warn("SSL_new() failed");
+    return false;
+  }
+
+  if (SSL_set_fd(ssl_, fd_) == 0) {
+    log_warn("SSL_set_fd() failed");
+    return false;
+  }
+
+  SSL_set_accept_state(ssl_);
+
   return true;
 }
 

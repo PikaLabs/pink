@@ -77,10 +77,23 @@ void *WorkerThread::ThreadMain() {
           }
           PinkConn *tc = conn_factory_->NewPinkConn(ti.fd(), ti.ip_port(),
                                                     server_thread_, private_data_);
-          tc->SetNonblock();
+          if (!tc || !tc->SetNonblock()) {
+            close(tc->fd());
+            delete tc;
+            continue;
+          }
+
+          // Create SSL failed
+          if (server_thread_->security() &&
+              !tc->CreateSSL(server_thread_->ssl_ctx())) {
+            close(tc->fd());
+            delete tc;
+            continue;
+          }
+
           {
-            slash::WriteLock l(&rwlock_);
-            conns_[ti.fd()] = tc;
+          slash::WriteLock l(&rwlock_);
+          conns_[ti.fd()] = tc;
           }
           pink_epoll_->PinkAddEvent(ti.fd(), EPOLLIN);
         } else {

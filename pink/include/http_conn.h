@@ -169,8 +169,11 @@ class HTTPHandles {
   }
 
  protected:
-  // Assigned in constructor of HttpConn
-  ServerThread* thread_ptr_;
+  /*
+   * Assigned in ServerHandle's CreateWorkerSpecificData
+   * Used for handles above
+   */
+  void* worker_specific_data_;
 
  private:
   friend class HTTPConn;
@@ -186,7 +189,8 @@ class HTTPConn: public PinkConn {
  public:
 
   HTTPConn(const int fd, const std::string &ip_port,
-           ServerThread *sthread, std::shared_ptr<HTTPHandles> handles_);
+           ServerThread *sthread, std::shared_ptr<HTTPHandles> handles_,
+           void* worker_specific_data);
   ~HTTPConn();
 
   virtual ReadStatus GetRequest() override;
@@ -200,6 +204,8 @@ class HTTPConn: public PinkConn {
   HTTPResponse* response_;
 
   std::shared_ptr<HTTPHandles> handles_;
+
+  bool security_;
 };
 
 }  // namespace pink

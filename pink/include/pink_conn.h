@@ -7,6 +7,9 @@
 
 #include <sys/time.h>
 #include <string>
+
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 #include "pink/include/pink_define.h"
 #include "pink/include/server_thread.h"
 
@@ -15,7 +18,7 @@ namespace pink {
 class Thread;
 
 class PinkConn {
-public:
+ public:
   PinkConn(const int fd, const std::string &ip_port, ServerThread *thread);
   virtual ~PinkConn();
   
@@ -23,6 +26,8 @@ public:
    * Set the fd to nonblock && set the flag_ the the fd flag
    */
   bool SetNonblock();
+
+  bool CreateSSL(SSL_CTX* ssl_ctx);
 
   virtual ReadStatus GetRequest() = 0;
   virtual WriteStatus SendReply() = 0;
@@ -57,12 +62,19 @@ public:
     return last_interaction_;
   };
 
-  ServerThread *thread() const {
+  ServerThread *server_thread() const {
     return server_thread_;
   }
 
-private:
-  
+  SSL* ssl() {
+    return ssl_;
+  }
+
+  bool security() {
+    return ssl_ != nullptr;
+  }
+
+ private:
   int fd_;
   std::string ip_port_;
   bool is_reply_;
@@ -70,6 +82,8 @@ private:
   int flags_;
   // the server thread this conn belong to
   ServerThread *server_thread_;
+
+  SSL* ssl_;
 
   /*
    * No allowed copy and copy assign operator

@@ -5,7 +5,7 @@ else
 	CXXFLAGS = -O2 -pipe -fPIC -W -Wwrite-strings -Wpointer-arith -Wreorder -Wswitch -Wsign-promo -Wredundant-decls -Wformat -Wall -D_GNU_SOURCE -D__STDC_FORMAT_MACROS -std=c++11 -Wno-unused-variable -Wno-maybe-uninitialized -Wno-unused-parameter
 	# CXXFLAGS = -Wall -W -DDEBUG -g -O0 -D__XDEBUG__ 
 endif
-OBJECT = holy_srv holy_srv_chandle dispatch_srv myproto_cli http_server redis_cli bg_thread simple_http_server
+OBJECT = holy_srv holy_srv_chandle dispatch_srv myproto_cli http_server https_server redis_cli bg_thread simple_http_server
 
 ifndef SLASH_PATH
 SLASH_PATH = ../third/slash
@@ -21,6 +21,8 @@ LIB_PATH = -L../lib/ \
 LIBS = -lpink \
 			 -lslash \
 			 -lprotobuf \
+			 -lcrypto \
+			 -lssl \
 			 -lpthread
 
 INCLUDE_PATH = -I../../ \
@@ -72,6 +74,9 @@ bg_thread: bg_thread.cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
 http_server: http_server.cc
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
+
+https_server: https_server.cc
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE_PATH) $(LIB_PATH) $(LIBS)
 
 simple_http_server: simple_http_server.cc

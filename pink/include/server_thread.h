@@ -49,6 +49,12 @@ const int kDefaultKeepAliveTime = 60; // (s)
 
 class ServerThread : public Thread {
  public:
+  ServerThread(int port, int cron_interval, const ServerHandle *handle);
+  ServerThread(const std::string& bind_ip, int port, int cron_interval,
+               const ServerHandle *handle);
+  ServerThread(const std::set<std::string>& bind_ips, int port,
+               int cron_interval, const ServerHandle *handle);
+
 #ifdef __ENABLE_SSL
   /*
    * Enable TLS, set before StartThread, default: false
@@ -74,12 +80,6 @@ class ServerThread : public Thread {
   virtual ~ServerThread();
 
  protected:
-  ServerThread(int port, int cron_interval, const ServerHandle *handle);
-  ServerThread(const std::string& bind_ip, int port, int cron_interval,
-               const ServerHandle *handle);
-  ServerThread(const std::set<std::string>& bind_ips, int port,
-               int cron_interval, const ServerHandle *handle);
-
   /*
    * The Epoll event handler
    */

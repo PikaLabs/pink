@@ -15,5 +15,5 @@ compiler:
 language: cpp
 
 script:
-  - make -C pink
+  - make -C pink __ENABLE_SSL=1
   - make -C pink/example

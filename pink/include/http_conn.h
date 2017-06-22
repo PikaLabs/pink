@@ -203,9 +203,11 @@ class HTTPConn: public PinkConn {
   HTTPRequest* request_;
   HTTPResponse* response_;
 
-  std::shared_ptr<HTTPHandles> handles_;
-
+#ifdef __ENABLE_SSL
   bool security_;
+#endif
+
+  std::shared_ptr<HTTPHandles> handles_;
 };
 
 }  // namespace pink

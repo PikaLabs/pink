@@ -10,8 +10,6 @@
 #include <string>
 #include <algorithm>
 
-#include <openssl/ssl.h>
-#include <openssl/err.h>
 #include "slash/include/xdebug.h"
 #include "slash/include/slash_string.h"
 #include "pink/include/pink_define.h"
@@ -269,8 +267,10 @@ HTTPConn::HTTPConn(const int fd, const std::string &ip_port,
                    ServerThread *thread, std::shared_ptr<HTTPHandles> handles,
                    void* worker_specific_data)
       : PinkConn(fd, ip_port, thread),
-        handles_(handles),
-        security_(thread->security()) {
+#ifdef __ENABLE_SSL
+        security_(thread->security()),
+#endif
+        handles_(handles) {
   handles_->worker_specific_data_ = worker_specific_data;
   // this pointer is safe here
   request_ = new HTTPRequest(this);
@@ -360,6 +360,7 @@ void HTTPRequest::Reset() {
 
 ReadStatus HTTPRequest::DoRead() {
   ssize_t nread;
+#ifdef __ENABLE_SSL
   if (conn_->security_) {
     nread = SSL_read(conn_->ssl(), rbuf_ + rbuf_pos_,
                      static_cast<int>(kHTTPMaxMessage));
@@ -376,7 +377,10 @@ ReadStatus HTTPRequest::DoRead() {
           return kReadClose;
       }
     }
-  } else {
+  }
+  else
+#endif
+  {
     nread = read(conn_->fd(), rbuf_ + rbuf_pos_,
                  kHTTPMaxMessage - rbuf_pos_);
   }
@@ -547,6 +551,7 @@ bool HTTPResponse::Flush() {
   }
   if (resp_status_ == kSendingHeader) {
     ssize_t nwritten;
+#ifdef __ENABLE_SSL
     if (conn_->security_) {
       nwritten = SSL_write(conn_->ssl(), wbuf_ + wbuf_pos_,
                            static_cast<int>(buf_len_));
@@ -564,7 +569,10 @@ bool HTTPResponse::Flush() {
             return false;
         }
       }
-    } else {
+    }
+    else
+#endif
+    {
       nwritten = write(conn_->fd(), wbuf_ + wbuf_pos_, buf_len_);
     }
     if (nwritten == -1 && errno == EAGAIN) {
@@ -601,6 +609,7 @@ bool HTTPResponse::Flush() {
       buf_len_ = conn_->handles_->WriteResponseBody(wbuf_ + wbuf_pos_, needed_size);
     }
     ssize_t nwritten;
+#ifdef __ENABLE_SSL
     if (conn_->security_) {
       nwritten = SSL_write(conn_->ssl(), wbuf_ + wbuf_pos_,
                            static_cast<int>(buf_len_));
@@ -618,7 +627,10 @@ bool HTTPResponse::Flush() {
             return false;
         }
       }
-    } else {
+    }
+    else
+#endif
+    {
       nwritten = write(conn_->fd(), wbuf_ + wbuf_pos_, buf_len_);
     }
     if (nwritten == -1 && errno == EAGAIN) {

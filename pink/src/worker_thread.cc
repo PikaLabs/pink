@@ -83,6 +83,7 @@ void *WorkerThread::ThreadMain() {
             continue;
           }
 
+#ifdef __ENABLE_SSL
           // Create SSL failed
           if (server_thread_->security() &&
               !tc->CreateSSL(server_thread_->ssl_ctx())) {
@@ -90,6 +91,7 @@ void *WorkerThread::ThreadMain() {
             delete tc;
             continue;
           }
+#endif
 
           {
           slash::WriteLock l(&rwlock_);

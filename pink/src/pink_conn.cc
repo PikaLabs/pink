@@ -17,14 +17,18 @@ PinkConn::PinkConn(const int fd, const std::string &ip_port, ServerThread *threa
     : fd_(fd),
       ip_port_(ip_port),
       is_reply_(false),
-      server_thread_(thread),
-      ssl_(nullptr) {
+#ifdef __ENABLE_SSL
+      ssl_(nullptr),
+#endif
+      server_thread_(thread) {
   gettimeofday(&last_interaction_, nullptr);
 }
 
 PinkConn::~PinkConn() {
+#ifdef __ENABLE_SSL
   SSL_free(ssl_);
   ssl_ = nullptr;
+#endif
 }
 
 bool PinkConn::SetNonblock() {
@@ -35,6 +39,7 @@ bool PinkConn::SetNonblock() {
   return true;
 }
 
+#ifdef __ENABLE_SSL
 bool PinkConn::CreateSSL(SSL_CTX* ssl_ctx) {
   ssl_ = SSL_new(ssl_ctx);
   if (!ssl_) {
@@ -51,5 +56,6 @@ bool PinkConn::CreateSSL(SSL_CTX* ssl_ctx) {
 
   return true;
 }
+#endif
 
 }  // namespace pink

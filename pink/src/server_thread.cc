@@ -41,8 +41,10 @@ ServerThread::ServerThread(int port,
       cron_interval_(cron_interval),
       handle_(SanitizeHandle(handle)),
       own_handle_(handle_ != handle),
-      port_(port),
-      security_(false) {
+#ifdef __ENABLE_SSL
+      security_(false),
+#endif
+      port_(port) {
   ips_.insert("0.0.0.0");
 }
 
@@ -51,8 +53,10 @@ ServerThread::ServerThread(const std::string& bind_ip, int port,
     : cron_interval_(cron_interval),
       handle_(SanitizeHandle(handle)),
       own_handle_(handle_ != handle),
-      port_(port),
-      security_(false) {
+#ifdef __ENABLE_SSL
+      security_(false),
+#endif
+      port_(port) {
   ips_.insert(bind_ip);
 }
 
@@ -61,16 +65,20 @@ ServerThread::ServerThread(const std::set<std::string>& bind_ips, int port,
     : cron_interval_(cron_interval),
       handle_(SanitizeHandle(handle)),
       own_handle_(handle_ != handle),
-      port_(port),
-      security_(false) {
+#ifdef __ENABLE_SSL
+      security_(false),
+#endif
+      port_(port) {
   ips_ = bind_ips;
 }
 
 ServerThread::~ServerThread() {
+#ifdef __ENABLE_SSL
   if (security_) {
     SSL_CTX_free(ssl_ctx_);
     EVP_cleanup();
   }
+#endif
   delete(pink_epoll_);
   for (std::vector<ServerSocket*>::iterator iter = server_sockets_.begin();
        iter != server_sockets_.end();
@@ -209,6 +217,7 @@ void *ServerThread::ThreadMain() {
   return nullptr;
 }
 
+#ifdef __ENABLE_SSL
 static std::vector<std::unique_ptr<slash::Mutex>> ssl_mutex_;
 
 static void SSLLockingCallback(int mode, int type, const char* file, int line) {
@@ -294,5 +303,6 @@ int ServerThread::EnableSecurity(const std::string& cert_file,
   security_ = true;
   return 0;
 }
+#endif
 
 }  // namespace pink

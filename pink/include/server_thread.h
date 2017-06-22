@@ -12,9 +12,12 @@
 #include <vector>
 #include <memory>
 
+#ifdef __ENABLE_SSL
 #include <openssl/ssl.h>
 #include <openssl/conf.h>
 #include <openssl/err.h>
+#endif
+
 #include "slash/include/slash_status.h"
 #include "slash/include/slash_mutex.h"
 #include "pink/include/pink_define.h"
@@ -46,6 +49,7 @@ const int kDefaultKeepAliveTime = 60; // (s)
 
 class ServerThread : public Thread {
  public:
+#ifdef __ENABLE_SSL
   /*
    * Enable TLS, set before StartThread, default: false
    * Just HTTPConn has supported for now.
@@ -53,6 +57,7 @@ class ServerThread : public Thread {
   int EnableSecurity(const std::string& cert_file, const std::string& key_file);
   SSL_CTX* ssl_ctx() { return ssl_ctx_; }
   bool security() { return security_; }
+#endif
 
   /*
    * StartThread will return the error code as pthread_create
@@ -89,6 +94,12 @@ class ServerThread : public Thread {
 
   const ServerHandle *handle_;
   bool own_handle_;
+
+#ifdef __ENABLE_SSL
+  bool security_;
+  SSL_CTX* ssl_ctx_;
+#endif
+
   /*
    * The tcp server port and address
    */
@@ -104,9 +115,6 @@ class ServerThread : public Thread {
    */
   virtual void HandleNewConn(int connfd, const std::string& ip_port) = 0;
   virtual void HandleConnEvent(PinkFiredEvent *pfe) = 0;
-
-  bool security_;
-  SSL_CTX* ssl_ctx_;
 };
 
 extern ServerThread *NewHolyThread(

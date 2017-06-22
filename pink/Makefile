@@ -10,6 +10,10 @@ ifndef SLASH_PATH
 SLASH_PATH = ./third/slash
 endif
 
+ifdef __ENABLE_SSL
+CXXFLAGS += -D__ENABLE_SSL
+endif
+
 SRC_DIR = ./src
 LIB_DIR = ./lib
 

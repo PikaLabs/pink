@@ -8,8 +8,11 @@
 #include <sys/time.h>
 #include <string>
 
+#ifdef __ENABLE_SSL
 #include <openssl/err.h>
 #include <openssl/ssl.h>
+#endif
+
 #include "pink/include/pink_define.h"
 #include "pink/include/server_thread.h"
 
@@ -27,7 +30,9 @@ class PinkConn {
    */
   bool SetNonblock();
 
+#ifdef __ENABLE_SSL
   bool CreateSSL(SSL_CTX* ssl_ctx);
+#endif
 
   virtual ReadStatus GetRequest() = 0;
   virtual WriteStatus SendReply() = 0;
@@ -66,6 +71,7 @@ class PinkConn {
     return server_thread_;
   }
 
+#ifdef __ENABLE_SSL
   SSL* ssl() {
     return ssl_;
   }
@@ -73,6 +79,7 @@ class PinkConn {
   bool security() {
     return ssl_ != nullptr;
   }
+#endif
 
  private:
   int fd_;
@@ -80,10 +87,13 @@ class PinkConn {
   bool is_reply_;
   struct timeval last_interaction_;
   int flags_;
+
+#ifdef __ENABLE_SSL
+  SSL* ssl_;
+#endif
+
   // the server thread this conn belong to
   ServerThread *server_thread_;
-
-  SSL* ssl_;
 
   /*
    * No allowed copy and copy assign operator

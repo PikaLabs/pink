@@ -40,14 +40,17 @@ class HolyThread: public ServerThread {
     keepalive_timeout_ = timeout;
   }
 
-  virtual int conn_num() override {
-    slash::ReadLock l(&rwlock_);
-    return conns_.size();
-  }
+  virtual bool fd_exist(int fd) override;
+
+  virtual int conn_num() override;
+
+  virtual std::map<int, PinkConn*> conns() override;
+
+  virtual void DelEvent(int fd) override;
 
   virtual void KillAllConns() override;
 
-  virtual void KillConn(const std::string& ip_port) override;
+  virtual bool KillConn(const std::string& ip_port) override;
 
  private:
   slash::RWMutex rwlock_; /* For external statistics */
@@ -66,6 +69,7 @@ class HolyThread: public ServerThread {
   void HandleNewConn(int connfd, const std::string &ip_port) override;
   void HandleConnEvent(PinkFiredEvent *pfe) override;
 
+  void CloseFd(PinkConn* conn);
   void Cleanup();
 };  // class HolyThread
 

@@ -43,11 +43,13 @@ class WorkerThread : public Thread {
     keepalive_timeout_ = timeout;
   }
 
-  int conn_num() {
-    slash::ReadLock l(&rwlock_);
-    return conns_.size();
-  } 
+  bool fd_exist(int fd);
 
+  int conn_num();
+
+  std::map<int, PinkConn*> conns();
+
+  void DelEvent(int fd);
 
   /*
    * The PbItem queue is the fd queue, receive from dispatch thread
@@ -97,8 +99,9 @@ class WorkerThread : public Thread {
   std::set<std::string> deleting_conn_ipport_;
 
   // clean conns
+  void CloseFd(PinkConn* conn);
   void Cleanup();
-  void TryKillConn(const std::string& ip_port);
+  bool TryKillConn(const std::string& ip_port);
 };  // class WorkerThread
 
 }  // namespace pink

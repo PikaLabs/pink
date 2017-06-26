@@ -45,11 +45,17 @@ class DispatchThread : public ServerThread {
   
   virtual void set_keepalive_timeout(int timeout) override;
 
-  virtual int conn_num() override; 
+  virtual bool fd_exist(int fd) override;
+
+  virtual int conn_num() override;
+
+  virtual std::map<int, PinkConn*> conns() override;
+
+  virtual void DelEvent(int fd) override;
 
 	virtual void KillAllConns() override;
 
-	virtual void KillConn(const std::string& ip_port) override;
+	virtual bool KillConn(const std::string& ip_port) override;
 
  private:
   /*
@@ -66,7 +72,9 @@ class DispatchThread : public ServerThread {
   std::map<WorkerThread*, void*> localdata_;
 
   void HandleNewConn(const int connfd, const std::string& ip_port) override;
-  void HandleConnEvent(PinkFiredEvent *pfe) override {}
+  void HandleConnEvent(PinkFiredEvent *pfe) override {
+    UNUSED(pfe);
+  }
 
   // No copying allowed
   DispatchThread(const DispatchThread&);

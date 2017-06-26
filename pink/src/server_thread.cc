@@ -17,13 +17,24 @@ using slash::Status;
 class DefaultServerHandle : public ServerHandle {
 public:
   virtual void CronHandle() const override {}
+  virtual void FdTimeoutHandle(int fd, const std::string& ip_port) const override {
+    UNUSED(fd);
+    UNUSED(ip_port);
+  }
+  virtual void FdClosedHandle(int fd, const std::string& ip_port) const override {
+    UNUSED(fd);
+    UNUSED(ip_port);
+  }
   virtual bool AccessHandle(std::string& ip) const override {
+    UNUSED(ip);
     return true;
   }
   virtual int CreateWorkerSpecificData(void** data) const override {
+    UNUSED(data);
     return 0;
   }
   virtual int DeleteWorkerSpecificData(void* data) const override {
+    UNUSED(data);
     return 0;
   }
 };

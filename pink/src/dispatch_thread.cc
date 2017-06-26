@@ -93,6 +93,15 @@ void DispatchThread::set_keepalive_timeout(int timeout) {
   } 
 }
 
+bool DispatchThread::fd_exist(int fd) {
+  for (int i = 0; i < work_num_; ++i) {
+    if (worker_thread_[i]->fd_exist(fd)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 int DispatchThread::conn_num() {
   int num = 0;
   for (int i = 0; i < work_num_; ++i) {
@@ -101,10 +110,27 @@ int DispatchThread::conn_num() {
   return num;
 } 
 
-void DispatchThread::KillConn(const std::string& ip_port) {
+std::map<int, PinkConn*> DispatchThread::conns() {
+  std::map<int, PinkConn*> result;
   for (int i = 0; i < work_num_; ++i) {
-    worker_thread_[i]->TryKillConn(ip_port);
+    auto worker_conns = worker_thread_[i]->conns();
+    result.insert(worker_conns.begin(), worker_conns.end());
   }
+  return result;
+}
+
+void DispatchThread::DelEvent(int fd) {
+  for (int i = 0; i < work_num_; ++i) {
+    worker_thread_[i]->DelEvent(fd);
+  }
+}
+
+bool DispatchThread::KillConn(const std::string& ip_port) {
+  bool result = false;
+  for (int i = 0; i < work_num_; ++i) {
+    result = result || worker_thread_[i]->TryKillConn(ip_port);
+  }
+  return result;
 }
 
 void DispatchThread::KillAllConns() {

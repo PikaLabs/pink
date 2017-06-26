@@ -23,6 +23,9 @@
 #include "pink/include/pink_define.h"
 #include "pink/include/pink_thread.h"
 
+// remove 'unused parameter' warning
+#define UNUSED(expr) do { (void)(expr); } while (0)
+
 namespace pink {
 
 class ServerSocket;
@@ -37,10 +40,27 @@ class ServerHandle {
   ServerHandle() {}
   virtual ~ServerHandle() {}
 
-  virtual void CronHandle() const {};
-  virtual bool AccessHandle(std::string& ip) const { return true; };
-  virtual int CreateWorkerSpecificData(void** data) const { return 0; }
-  virtual int DeleteWorkerSpecificData(void* data) const { return 0; }
+  virtual void CronHandle() const {}
+  virtual void FdTimeoutHandle(int fd, const std::string& ip_port) const {
+    UNUSED(fd);
+    UNUSED(ip_port);
+  }
+  virtual void FdClosedHandle(int fd, const std::string& ip_port) const {
+    UNUSED(fd);
+    UNUSED(ip_port);
+  }
+  virtual bool AccessHandle(std::string& ip) const {
+    UNUSED(ip);
+    return true;
+  }
+  virtual int CreateWorkerSpecificData(void** data) const {
+    UNUSED(data);
+    return 0;
+  }
+  virtual int DeleteWorkerSpecificData(void* data) const {
+    UNUSED(data);
+    return 0;
+  }
 };
 
 const std::string kKillAllConnsTask = "kill_all_conns";
@@ -72,10 +92,15 @@ class ServerThread : public Thread {
 
   virtual void set_keepalive_timeout(int timeout) = 0;
 
-  virtual int conn_num() = 0; 
+  // You'd better call in CronHandle avoiding new connection
+  virtual bool fd_exist(int fd) = 0;
 
+  virtual int conn_num() = 0; 
+  virtual std::map<int, PinkConn*> conns() = 0;
+
+  virtual void DelEvent(int fd) = 0;
   virtual void KillAllConns() = 0;
-  virtual void KillConn(const std::string& ip_port) = 0;
+  virtual bool KillConn(const std::string& ip_port) = 0;
 
   virtual ~ServerThread();
 
@@ -86,8 +111,9 @@ class ServerThread : public Thread {
   PinkEpoll *pink_epoll_;
 
  private:
-  friend class DispatchThread;
   friend class HolyThread;
+  friend class DispatchThread;
+  friend class WorkerThread;
 
   int cron_interval_;
   virtual void DoCronTask();

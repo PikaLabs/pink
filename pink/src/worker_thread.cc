@@ -31,6 +31,37 @@ WorkerThread::~WorkerThread() {
   delete(pink_epoll_);
 }
 
+bool WorkerThread::fd_exist(int fd) {
+  slash::ReadLock l(&rwlock_);
+  for (auto& conn : conns_) {
+    if (conn.first == fd) {
+      return true;
+    }
+  }
+  return false;
+}
+
+int WorkerThread::conn_num() {
+  slash::ReadLock l(&rwlock_);
+  return conns_.size();
+}
+
+std::map<int, PinkConn*> WorkerThread::conns() {
+  slash::ReadLock l(&rwlock_);
+  return conns_;
+}
+
+void WorkerThread::DelEvent(int fd) {
+  slash::WriteLock l(&rwlock_);
+  for (auto& conn : conns_) {
+    if (conn.first == fd) {
+      conns_.erase(fd);
+      pink_epoll_->PinkDelEvent(fd);
+      return;
+    }
+  }
+}
+
 void *WorkerThread::ThreadMain() {
   int nfds;
   PinkFiredEvent *pfe = NULL;
@@ -78,7 +109,6 @@ void *WorkerThread::ThreadMain() {
           PinkConn *tc = conn_factory_->NewPinkConn(ti.fd(), ti.ip_port(),
                                                     server_thread_, private_data_);
           if (!tc || !tc->SetNonblock()) {
-            close(tc->fd());
             delete tc;
             continue;
           }
@@ -87,7 +117,7 @@ void *WorkerThread::ThreadMain() {
           // Create SSL failed
           if (server_thread_->security() &&
               !tc->CreateSSL(server_thread_->ssl_ctx())) {
-            close(tc->fd());
+            CloseFd(tc);
             delete tc;
             continue;
           }
@@ -141,7 +171,7 @@ void *WorkerThread::ThreadMain() {
           {
             slash::WriteLock l(&rwlock_);
             pink_epoll_->PinkDelEvent(pfe->fd);
-            close(pfe->fd);
+            CloseFd(in_conn);
             delete(in_conn);
             in_conn = NULL;
 
@@ -166,10 +196,11 @@ void WorkerThread::DoCronTask() {
     {
     slash::MutexLock l(&killer_mutex_);
     if (deleting_conn_ipport_.count(iter->second->ip_port())) {
-      close(iter->first);
+      CloseFd(iter->second);
+      server_thread_->handle_->FdTimeoutHandle(iter->first, iter->second->ip_port());
+      deleting_conn_ipport_.erase(iter->second->ip_port());
       delete iter->second;
       iter = conns_.erase(iter);
-      deleting_conn_ipport_.erase(iter->second->ip_port());
       continue;
     }
     }
@@ -181,7 +212,7 @@ void WorkerThread::DoCronTask() {
     // Check keepalive timeout connection
     if (keepalive_timeout_ > 0 &&
         now.tv_sec - iter->second->last_interaction().tv_sec > keepalive_timeout_) {
-      close(iter->first);
+      CloseFd(iter->second);
       delete iter->second;
       iter = conns_.erase(iter);
       continue;
@@ -190,27 +221,34 @@ void WorkerThread::DoCronTask() {
   }
 }
 
-void WorkerThread::TryKillConn(const std::string& ip_port) {
+bool WorkerThread::TryKillConn(const std::string& ip_port) {
   bool find = false;
-  {
-  slash::ReadLock l(&rwlock_);
-  for (auto& iter : conns_) {
-    if (iter.second->ip_port() == ip_port) {
-      find = true;
-      break;
+  if (ip_port != kKillAllConnsTask) {
+    slash::ReadLock l(&rwlock_);
+    for (auto& iter : conns_) {
+      if (iter.second->ip_port() == ip_port) {
+        find = true;
+        break;
+      }
     }
-  }
   }
   if (find || ip_port == kKillAllConnsTask) {
     slash::MutexLock l(&killer_mutex_);
     deleting_conn_ipport_.insert(ip_port);
+    return true;
   }
+  return false;
+}
+
+void WorkerThread::CloseFd(PinkConn* conn) {
+  close(conn->fd());
+  server_thread_->handle_->FdClosedHandle(conn->fd(), conn->ip_port());
 }
 
 void WorkerThread::Cleanup() {
   slash::WriteLock l(&rwlock_);
   for (auto& iter : conns_) {
-    close(iter.first);
+    CloseFd(iter.second);
     delete iter.second;
   }
   conns_.clear();

@@ -155,7 +155,11 @@ void HolyThread::DoCronTask() {
     }
     // KillAllConns
     if (deleting_conn_ipport_.count(kKillAllConnsTask)) {
-      Cleanup();
+      for (auto& conn : conns_) {
+        CloseFd(conn.second);
+        delete conn.second;
+      }
+      conns_.clear();
       return;
     }
     // Check keepalive timeout connection

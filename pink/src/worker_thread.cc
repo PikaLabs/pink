@@ -197,12 +197,10 @@ void WorkerThread::DoCronTask() {
     slash::MutexLock l(&killer_mutex_);
     if (deleting_conn_ipport_.count(iter->second->ip_port())) {
       CloseFd(iter->second);
-      server_thread_->handle_->FdTimeoutHandle(iter->first, iter->second->ip_port());
       deleting_conn_ipport_.erase(iter->second->ip_port());
       delete iter->second;
       iter = conns_.erase(iter);
       continue;
-    }
     }
     // KillAllConns
     if (deleting_conn_ipport_.count(kKillAllConnsTask)) {
@@ -213,10 +211,12 @@ void WorkerThread::DoCronTask() {
       conns_.clear();
       return;
     }
+    } // slash::MutexLock l(&killer_mutex_);
     // Check keepalive timeout connection
     if (keepalive_timeout_ > 0 &&
         now.tv_sec - iter->second->last_interaction().tv_sec > keepalive_timeout_) {
       CloseFd(iter->second);
+      server_thread_->handle_->FdTimeoutHandle(iter->first, iter->second->ip_port());
       delete iter->second;
       iter = conns_.erase(iter);
       continue;

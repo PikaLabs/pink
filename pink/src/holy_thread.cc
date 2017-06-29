@@ -147,9 +147,9 @@ void HolyThread::DoCronTask() {
     slash::MutexLock l(&killer_mutex_);
     if (deleting_conn_ipport_.count(iter->second->ip_port())) {
       CloseFd(iter->second);
+      deleting_conn_ipport_.erase(iter->second->ip_port());
       delete iter->second;
       iter = conns_.erase(iter);
-      deleting_conn_ipport_.erase(iter->second->ip_port());
       continue;
     }
     }

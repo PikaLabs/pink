@@ -152,7 +152,6 @@ void HolyThread::DoCronTask() {
       iter = conns_.erase(iter);
       continue;
     }
-    }
     // KillAllConns
     if (deleting_conn_ipport_.count(kKillAllConnsTask)) {
       for (auto& conn : conns_) {
@@ -162,6 +161,7 @@ void HolyThread::DoCronTask() {
       conns_.clear();
       return;
     }
+    } // slash::MutexLock l(&killer_mutex_);
     // Check keepalive timeout connection
     if (keepalive_timeout_ > 0 &&
         now.tv_sec - iter->second->last_interaction().tv_sec > keepalive_timeout_) {

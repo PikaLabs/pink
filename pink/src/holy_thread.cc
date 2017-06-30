@@ -140,11 +140,22 @@ void HolyThread::DoCronTask() {
   struct timeval now;
   gettimeofday(&now, NULL);
   slash::WriteLock l(&rwlock_);
+
+  // Check whether close all connection
+  slash::MutexLock kl(&killer_mutex_);
+  if (deleting_conn_ipport_.count(kKillAllConnsTask)) {
+    for (auto& conn : conns_) {
+      CloseFd(conn.second);
+      delete conn.second;
+    }
+    conns_.clear();
+    deleting_conn_ipport_.clear();
+    return;
+  }
+
   std::map<int, PinkConn*>::iterator iter = conns_.begin();
   while (iter != conns_.end()) {
-    // KillConn
-    {
-    slash::MutexLock l(&killer_mutex_);
+    // Check connection should be closed
     if (deleting_conn_ipport_.count(iter->second->ip_port())) {
       CloseFd(iter->second);
       deleting_conn_ipport_.erase(iter->second->ip_port());
@@ -152,16 +163,7 @@ void HolyThread::DoCronTask() {
       iter = conns_.erase(iter);
       continue;
     }
-    // KillAllConns
-    if (deleting_conn_ipport_.count(kKillAllConnsTask)) {
-      for (auto& conn : conns_) {
-        CloseFd(conn.second);
-        delete conn.second;
-      }
-      conns_.clear();
-      return;
-    }
-    } // slash::MutexLock l(&killer_mutex_);
+
     // Check keepalive timeout connection
     if (keepalive_timeout_ > 0 &&
         now.tv_sec - iter->second->last_interaction().tv_sec > keepalive_timeout_) {

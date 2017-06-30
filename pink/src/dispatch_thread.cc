@@ -93,36 +93,31 @@ void DispatchThread::set_keepalive_timeout(int timeout) {
   } 
 }
 
-bool DispatchThread::fd_exist(int fd) {
+int DispatchThread::conn_num() const {
+  int conn_num = 0;
   for (int i = 0; i < work_num_; ++i) {
-    if (worker_thread_[i]->fd_exist(fd)) {
-      return true;
-    }
+    conn_num += worker_thread_[i]->conn_num();
   }
-  return false;
+  return conn_num;
 }
 
-int DispatchThread::conn_num() {
-  int num = 0;
+std::vector<ServerThread::ConnInfo> DispatchThread::conns_info() const {
+  std::vector<ServerThread::ConnInfo> result;
   for (int i = 0; i < work_num_; ++i) {
-    num += worker_thread_[i]->conn_num();
-  }
-  return num;
-} 
-
-std::map<int, PinkConn*> DispatchThread::conns() {
-  std::map<int, PinkConn*> result;
-  for (int i = 0; i < work_num_; ++i) {
-    auto worker_conns = worker_thread_[i]->conns();
-    result.insert(worker_conns.begin(), worker_conns.end());
+    const auto worker_conns_info = worker_thread_[i]->conns_info();
+    result.insert(result.end(), worker_conns_info.begin(), worker_conns_info.end());
   }
   return result;
 }
 
-void DispatchThread::DelEvent(int fd) {
+PinkConn* DispatchThread::MoveConnOut(int fd) {
   for (int i = 0; i < work_num_; ++i) {
-    worker_thread_[i]->DelEvent(fd);
+    PinkConn* conn = worker_thread_[i]->MoveConnOut(fd);
+    if (conn != nullptr) {
+      return conn;
+    }
   }
+  return nullptr;
 }
 
 bool DispatchThread::KillConn(const std::string& ip_port) {

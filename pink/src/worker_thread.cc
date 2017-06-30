@@ -31,35 +31,35 @@ WorkerThread::~WorkerThread() {
   delete(pink_epoll_);
 }
 
-bool WorkerThread::fd_exist(int fd) {
-  slash::ReadLock l(&rwlock_);
-  for (auto& conn : conns_) {
-    if (conn.first == fd) {
-      return true;
-    }
-  }
-  return false;
-}
-
-int WorkerThread::conn_num() {
+int WorkerThread::conn_num() const {
   slash::ReadLock l(&rwlock_);
   return conns_.size();
 }
 
-std::map<int, PinkConn*> WorkerThread::conns() {
+std::vector<ServerThread::ConnInfo> WorkerThread::conns_info() const {
+  std::vector<ServerThread::ConnInfo> result;
   slash::ReadLock l(&rwlock_);
-  return conns_;
+  for (auto& conn : conns_) {
+    result.push_back({
+                      conn.first,
+                      conn.second->ip_port(),
+                      conn.second->last_interaction()
+                     });
+  }
+  return result;
 }
 
-void WorkerThread::DelEvent(int fd) {
+PinkConn* WorkerThread::MoveConnOut(int fd) {
   slash::WriteLock l(&rwlock_);
-  for (auto& conn : conns_) {
-    if (conn.first == fd) {
-      conns_.erase(fd);
-      pink_epoll_->PinkDelEvent(fd);
-      return;
-    }
+  PinkConn* conn = nullptr;
+  auto iter = conns_.find(fd);
+  if (iter != conns_.end()) {
+    int fd = iter->first;
+    conn = iter->second;
+    pink_epoll_->PinkDelEvent(fd);
+    conns_.erase(iter);
   }
+  return conn;
 }
 
 void *WorkerThread::ThreadMain() {

@@ -123,7 +123,7 @@ PinkConn* DispatchThread::MoveConnOut(int fd) {
 bool DispatchThread::KillConn(const std::string& ip_port) {
   bool result = false;
   for (int i = 0; i < work_num_; ++i) {
-    result = result || worker_thread_[i]->TryKillConn(ip_port);
+    result = worker_thread_[i]->TryKillConn(ip_port) || result;
   }
   return result;
 }

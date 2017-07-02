@@ -323,15 +323,16 @@ bool SimpleHTTPConn::BuildRequestHeader() {
   if (!request_->ParseHeadFromArray(rbuf_, header_len_)) {
     return false;  
   }
-  auto iter = request_->headers.begin();
-  iter = request_->headers.find("content-length");
+  auto iter = request_->headers.find("content-length");
   if (iter == request_->headers.end()) {
     remain_packet_len_ = 0;
   } else {
-    int64_t tmp = 0;
-    slash::string2l(iter->second.data(), iter->second.size(),
-        static_cast<long*>(&tmp));
-    remain_packet_len_ = tmp;
+    long tmp = 0;
+    if (slash::string2l(iter->second.data(), iter->second.size(), &tmp)) {
+      remain_packet_len_ = tmp;
+    } else {
+      remain_packet_len_ = 0;
+    }
   }
 
   if (rbuf_pos_ > header_len_) {

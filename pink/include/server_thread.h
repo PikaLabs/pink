@@ -92,13 +92,18 @@ class ServerThread : public Thread {
 
   virtual void set_keepalive_timeout(int timeout) = 0;
 
-  // You'd better call in CronHandle avoiding new connection
-  virtual bool fd_exist(int fd) = 0;
+  virtual int conn_num() const = 0;
 
-  virtual int conn_num() = 0; 
-  virtual std::map<int, PinkConn*> conns() = 0;
+  struct ConnInfo {
+    int fd;
+    std::string ip_port;
+    struct timeval last_interaction;
+  };
+  virtual std::vector<ConnInfo> conns_info() const = 0;
 
-  virtual void DelEvent(int fd) = 0;
+  // Move out from server thread
+  virtual PinkConn* MoveConnOut(int fd) = 0;
+
   virtual void KillAllConns() = 0;
   virtual bool KillConn(const std::string& ip_port) = 0;
 

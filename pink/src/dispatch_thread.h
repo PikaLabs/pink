@@ -45,13 +45,11 @@ class DispatchThread : public ServerThread {
   
   virtual void set_keepalive_timeout(int timeout) override;
 
-  virtual bool fd_exist(int fd) override;
+  virtual int conn_num() const override;
 
-  virtual int conn_num() override;
+  virtual std::vector<ServerThread::ConnInfo> conns_info() const override;
 
-  virtual std::map<int, PinkConn*> conns() override;
-
-  virtual void DelEvent(int fd) override;
+  virtual PinkConn* MoveConnOut(int fd) override;
 
 	virtual void KillAllConns() override;
 

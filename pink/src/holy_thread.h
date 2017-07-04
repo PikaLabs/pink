@@ -40,20 +40,18 @@ class HolyThread: public ServerThread {
     keepalive_timeout_ = timeout;
   }
 
-  virtual bool fd_exist(int fd) override;
+  virtual int conn_num() const override;
 
-  virtual int conn_num() override;
+  virtual std::vector<ServerThread::ConnInfo> conns_info() const override;
 
-  virtual std::map<int, PinkConn*> conns() override;
-
-  virtual void DelEvent(int fd) override;
+  virtual PinkConn* MoveConnOut(int fd) override;
 
   virtual void KillAllConns() override;
 
   virtual bool KillConn(const std::string& ip_port) override;
 
  private:
-  slash::RWMutex rwlock_; /* For external statistics */
+  mutable slash::RWMutex rwlock_; /* For external statistics */
   std::map<int, PinkConn*> conns_;
 
   ConnFactory *conn_factory_;

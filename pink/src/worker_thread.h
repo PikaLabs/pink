@@ -43,13 +43,11 @@ class WorkerThread : public Thread {
     keepalive_timeout_ = timeout;
   }
 
-  bool fd_exist(int fd);
+  int conn_num() const;
 
-  int conn_num();
+  std::vector<ServerThread::ConnInfo> conns_info() const;
 
-  std::map<int, PinkConn*> conns();
-
-  void DelEvent(int fd);
+  PinkConn* MoveConnOut(int fd);
 
   /*
    * The PbItem queue is the fd queue, receive from dispatch thread
@@ -65,19 +63,19 @@ class WorkerThread : public Thread {
   PinkEpoll* pink_epoll() {
     return pink_epoll_;
   }
+  bool TryKillConn(const std::string& ip_port);
+
   slash::Mutex mutex_;
 
-  slash::RWMutex rwlock_; /* For external statistics */
+  mutable slash::RWMutex rwlock_; /* For external statistics */
   std::map<int, PinkConn*> conns_;
 
- private:
-  friend class DispatchThread;
+  void* private_data_;
 
+ private:
   ServerThread* server_thread_;
   ConnFactory *conn_factory_;
   int cron_interval_;
-
-  void* private_data_;
 
   /*
    * These two fd receive the notify from dispatch thread
@@ -101,7 +99,6 @@ class WorkerThread : public Thread {
   // clean conns
   void CloseFd(PinkConn* conn);
   void Cleanup();
-  bool TryKillConn(const std::string& ip_port);
 };  // class WorkerThread
 
 }  // namespace pink

@@ -4,10 +4,10 @@
 #include <sys/time.h>
 #include <stdint.h>
 
-#include "include/server_thread.h"
-#include "include/pink_conn.h"
-#include "include/pb_conn.h"
-#include "include/pink_thread.h"
+#include "pink/include/server_thread.h"
+#include "pink/include/pink_conn.h"
+#include "pink/include/pb_conn.h"
+#include "pink/include/pink_thread.h"
 #include "message.pb.h"
 
 using namespace pink;
@@ -23,7 +23,7 @@ static atomic<int> num(0);
 
 class PingConn : public PbConn {
  public:
-  PingConn(int fd, std::string ip_port, pink::Thread* pself_thread = NULL) : 
+  PingConn(int fd, std::string ip_port, pink::ServerThread* pself_thread = NULL) : 
     PbConn(fd, ip_port, pself_thread) {
   }
   virtual ~PingConn() {}
@@ -37,6 +37,8 @@ class PingConn : public PbConn {
     res_ = &response_;
 
     set_is_reply(true);
+
+    return 0;
   }
 
  private:
@@ -51,7 +53,11 @@ class PingConn : public PbConn {
 
 class PingConnFactory : public ConnFactory {
  public:
-  virtual PinkConn *NewPinkConn(int connfd, const std::string &ip_port, Thread *thread) const {
+  virtual PinkConn *NewPinkConn(
+      int connfd,
+      const std::string &ip_port,
+      ServerThread *thread,
+      void* worker_specific_data) const {
     return new PingConn(connfd, ip_port, thread);
   }
 };
@@ -66,17 +72,9 @@ int main(int argc, char* argv[]) {
   std::string ip(argv[1]);
   int port = atoi(argv[2]);
 
-  Thread *my_worker[24];
-  ConnFactory *my_conn_factory = new PingConnFactory();
-  for (int i = 0; i < 24; i++) {
-    my_worker[i] = NewWorkerThread(my_conn_factory, 1000);
-  }
+  PingConnFactory conn_factory;
 
-  int my_port = (argc > 1) ? atoi(argv[1]) : 8221;
-
-  ConnFactory *conn_factory = new PingConnFactory();
-
-  ServerThread *st_thread = NewDispatchThread(ip, port, 24, my_worker, 1000);
+  ServerThread *st_thread = NewDispatchThread(ip, port, 24, &conn_factory, 1000);
   st_thread->StartThread();
   uint64_t st, ed;
 
@@ -89,7 +87,7 @@ int main(int argc, char* argv[]) {
     printf("mmap cost time microsecond(us) %lld\n", ed - st);
     printf("average qps %lf\n", (double)(num.load() - prv) / ((double)(ed - st) / 1000000));
   }
-  st_thread->JoinThread();
+  st_thread->StopThread();
 
   delete st_thread;
 

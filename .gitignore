@@ -33,3 +33,7 @@ pink/example/*.pb.h
 pink/example/*.pb.cc
 pink/example/output/
 pink/example/cli/cli
+pink/example/performance/client
+pink/example/performance/message.pb.cc
+pink/example/performance/message.pb.h
+pink/example/performance/server

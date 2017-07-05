@@ -18,31 +18,32 @@ DispatchThread + Multi WorkerThread
 ![](http://i.imgur.com/XXfibpV.png)
 
 Now pink support these type of thread:
+
 #### DispatchThread: 
 
-DispatchThread is used for listen a port, and get an accept connection. And then dispatch this connection to the worker thread. the usage example is:
+DispatchThread is used for listen a port, and get an accept connection. And then
+dispatch this connection to the worker thread, you can use different protocol,
+now we have support google protobuf protocol. And you just need write the
+protocol, and then generate the code. The worker threads will deal with the
+protocol analysis, so it simplify your job.
+
+Basic usage example:
 
 ```
-Thread *t = new DispatchThread<BadaConn>(9211, 1, reinterpret_cast<WorkerThread<BadaConn> **>(badaThread));
+PikaConnFactory conn_factory;
+PikaServerHandle server_handle;
+ServerThread *t = new NewDispatchThread(9211, /* server port */
+                                        4,    /* worker's number */
+                                        &conn_factory,
+                                        1000,  /* cron interval */
+                                        1000,  /* queue limit */
+                                        &server_handle);
+t->StartThread();
 
 ```
 
-You can see example/bada.cc for more detail example
+You can see example/mydispatch_srv.cc for more detail
 
-#### WorkerThread:
-
-WorkerThread is the working thread, working thread use to communicate with
-client, you can use different protocol, now we have support google protobuf
-protocol. And you just need write the protocol, and then generate the code. The
-WorkerThread will deal with the protocol analysis, so it simplify your job.
-
-the usage example is:
-
-```
-class BadaThread : public WorkerThread<BadaConn>
-```
-
-You can see example/bada_thread.h example/bada_thread.cc for more detail example
 
 #### HolyThread:
 
@@ -50,21 +51,23 @@ HolyThread just like the redis's main thread, it is the thread that both listen 
 the job. When should you use HolyThread and When should you use DispatchThread
 combine with WorkerThread, if your job is not so busy, so you can use HolyThread
 do the all job. if your job is deal lots of client's request, we suggest you use
-WorkerThreads
+DispathThread with worker threads.
 
-the usage example is:
+Basic usage example:
+
+```
+PikaConnFactory conn_factory;
+PikaServerHandle server_handle;
+ServerThread *t = new NewHolyThread(9211, /* server port */
+                                    &conn_factory,
+                                    1000,  /* cron interval */
+                                    &server_handle);
+t->StartThread();
 
 ```
 
-class PinkThread : public HolyThread<PinkHolyConn>
+You can see example/myholy_srv_chandle.cc example/myholy_srv.cc for more detail
 
-Thread *t = new PinkThread(9211);
-t->Start();
-
-```
-
-You can see example/holy_test.h example/holy_test.cc for more detail example
-
-Now we will use pink build our project pika, floyd, zeppelin
+Now we will use pink build our project [pika](https://github.com/Qihoo360/pika), [floyd](https://github.com/Qihoo360/floyd), [zeppelin](https://github.com/Qihoo360/zeppelin)
 
 In the future, I will add some thread manager in pink.

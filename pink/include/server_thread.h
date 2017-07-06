@@ -35,28 +35,61 @@ struct PinkFiredEvent;
 class ConnFactory;
 class WorkerThread;
 
+/*
+ *  ServerHandle will be invoked at appropriate occasion
+ *  in server thread's main loop.
+ */
 class ServerHandle {
  public:
   ServerHandle() {}
   virtual ~ServerHandle() {}
 
+  /*
+   *  CronHandle() will be invoked on every cron_interval elapsed.
+   */
   virtual void CronHandle() const {}
+
+  /*
+   *  FdTimeoutHandle(...) will be invoked after connection timeout.
+   */
   virtual void FdTimeoutHandle(int fd, const std::string& ip_port) const {
     UNUSED(fd);
     UNUSED(ip_port);
   }
+
+  /*
+   *  FdClosedHandle(...) will be invoked before connection closed.
+   */
   virtual void FdClosedHandle(int fd, const std::string& ip_port) const {
     UNUSED(fd);
     UNUSED(ip_port);
   }
+
+  /*
+   *  AccessHandle(...) will be invoked after client fd accept()
+   *  but before handled.
+   */
   virtual bool AccessHandle(std::string& ip) const {
     UNUSED(ip);
     return true;
   }
+
+  /*
+   *  CreateWorkerSpecificData(...) will be invoked in StartThread() routine.
+   *  'data' pointer should be assigned, we will pass the pointer as parameter
+   *  in every connection's factory create function.
+   */
   virtual int CreateWorkerSpecificData(void** data) const {
     UNUSED(data);
     return 0;
   }
+
+  /*
+   *  DeleteWorkerSpecificData(...) is related to CreateWorkerSpecificData(...),
+   *  it will be invoked in StopThread(...) routine,
+   *  resources assigned in CreateWorkerSpecificData(...) should be deleted in
+   *  this handle
+   */
   virtual int DeleteWorkerSpecificData(void* data) const {
     UNUSED(data);
     return 0;
@@ -87,6 +120,7 @@ class ServerThread : public Thread {
 
   /*
    * StartThread will return the error code as pthread_create
+   * Return 0 if success
    */
   virtual int StartThread() override;
 

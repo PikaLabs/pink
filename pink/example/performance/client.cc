@@ -4,8 +4,8 @@
 #include <arpa/inet.h>
 
 #include "message.pb.h"
-#include "include/pink_cli.h"
-#include "include/pink_define.h"
+#include "pink/include/pink_cli.h"
+#include "pink/include/pink_define.h"
 
 using namespace pink;
 

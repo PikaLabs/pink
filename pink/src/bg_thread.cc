@@ -16,10 +16,8 @@ void BGThread::Schedule(void (*function)(void*), void* arg) {
   while (queue_.size() >= full_ && !should_stop()) {
     wsignal_.Wait();
   }
-  if (queue_.size() < full_) {
-    queue_.push(BGItem(function, arg));
-    rsignal_.Signal();
-  }
+  queue_.push(BGItem(function, arg));
+  rsignal_.Signal();
   mu_.Unlock();
 }
 
@@ -55,7 +53,6 @@ void *BGThread::ThreadMain() {
         void (*function)(void*) = timer_item.function;
         void* arg = timer_item.arg;
         timer_queue_.pop();
-        wsignal_.Signal();
         mu_.Unlock();
         (*function)(arg);
         continue;

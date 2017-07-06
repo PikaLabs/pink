@@ -28,8 +28,10 @@ class Thread {
     return should_stop_.load();
   }
 
-  void set_should_stop(bool value) {
-    should_stop_.store(value);
+  void set_should_stop() {
+    should_stop_.store(true);
+    slash::MutexLock l(&running_mu_);
+    running_ = false;
   }
 
   bool is_running() {

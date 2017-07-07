@@ -30,8 +30,6 @@ class Thread {
 
   void set_should_stop() {
     should_stop_.store(true);
-    slash::MutexLock l(&running_mu_);
-    running_ = false;
   }
 
   bool is_running() {

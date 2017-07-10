@@ -25,7 +25,12 @@ public:
     UNUSED(fd);
     UNUSED(ip_port);
   }
-  virtual bool AccessHandle(std::string& ip) const override {
+  virtual bool AccessHandle(const std::string& ip) const override {
+    UNUSED(ip);
+    return true;
+  }
+  virtual bool AccessHandle(int fd, const std::string& ip) const override {
+    UNUSED(fd);
     UNUSED(ip);
     return true;
   }
@@ -192,9 +197,11 @@ void *ServerThread::ThreadMain() {
           }
           fcntl(connfd, F_SETFD, fcntl(connfd, F_GETFD) | FD_CLOEXEC);
 
+          // Just ip
           ip_port = inet_ntop(AF_INET, &cliaddr.sin_addr, ip_addr, sizeof(ip_addr));
 
-          if (!handle_->AccessHandle(ip_port)) {
+          if (!handle_->AccessHandle(ip_port) ||
+              !handle_->AccessHandle(connfd, ip_port)) {
             close(connfd);
             continue;
           }

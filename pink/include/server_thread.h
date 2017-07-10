@@ -69,7 +69,13 @@ class ServerHandle {
    *  AccessHandle(...) will be invoked after client fd accept()
    *  but before handled.
    */
-  virtual bool AccessHandle(std::string& ip) const {
+  virtual bool AccessHandle(const std::string& ip) const {
+    UNUSED(ip);
+    return true;
+  }
+
+  virtual bool AccessHandle(int fd, const std::string& ip) const {
+    UNUSED(fd);
     UNUSED(ip);
     return true;
   }

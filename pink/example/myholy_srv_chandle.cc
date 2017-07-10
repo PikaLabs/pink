@@ -70,7 +70,7 @@ public:
   virtual void CronHandle() const override {
     printf ("Cron operation\n");
   }
-  virtual bool AccessHandle(const std::string& ip) const override {
+  virtual bool AccessHandle(std::string& ip) const override {
     printf ("Access operation, receive:%s\n", ip.c_str());
     return true;
   }

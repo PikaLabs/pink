@@ -25,11 +25,11 @@ public:
     UNUSED(fd);
     UNUSED(ip_port);
   }
-  virtual bool AccessHandle(const std::string& ip) const override {
+  virtual bool AccessHandle(std::string& ip) const override {
     UNUSED(ip);
     return true;
   }
-  virtual bool AccessHandle(int fd, const std::string& ip) const override {
+  virtual bool AccessHandle(int fd, std::string& ip) const override {
     UNUSED(fd);
     UNUSED(ip);
     return true;

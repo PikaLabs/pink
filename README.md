@@ -71,3 +71,25 @@ You can see example/myholy_srv_chandle.cc example/myholy_srv.cc for more detail
 Now we will use pink build our project [pika](https://github.com/Qihoo360/pika), [floyd](https://github.com/Qihoo360/floyd), [zeppelin](https://github.com/Qihoo360/zeppelin)
 
 In the future, I will add some thread manager in pink.
+
+### Performance
+
+Test machines:
+
+```
+  --------         --------------
+ |        |  <--- | Clients x200 |
+ | Server |        --------------
+ |        |        --------------
+  --------   <--- | Clients x200 |
+                   --------------
+```
+
+CPU, Intel(R) Xeon(R) CPU E5-2630 0 @ 2.30GHz, 24 cores
+
+Memory, 142 GB
+
+[test
+program](https://github.com/Qihoo360/pink/tree/master/pink/example/performance)
+
+![](https://ws2.sinaimg.cn/large/006tNc79ly1fhh2u0spwaj30fa0bjq3q.jpg)

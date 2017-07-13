@@ -13,8 +13,6 @@
 
 namespace pink {
 
-class ConnFactory;
-
 class Thread {
  public:
   Thread();

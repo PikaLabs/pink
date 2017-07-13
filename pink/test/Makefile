@@ -21,7 +21,7 @@ GMOCK_DIR = gmock
 
 # Where to find user code.
 PINK_DIR = ../..
-PINK_SRC = $(PINK_DIR)/pink/src
+PINK_TESTS_SRC = $(PINK_DIR)/pink/src/test
 
 DEP_LIBS = \
 					 ../lib/libpink.a \
@@ -102,5 +102,5 @@ gmock_main.a : gmock-all.o gtest-all.o gmock_main.o
 
 # Builds pink tests.
 
-pink_thread_test: $(PINK_SRC)/pink_thread_test.cc gmock_main.a $(DEP_LIBS)
+pink_thread_test: $(PINK_TESTS_SRC)/pink_thread_test.cc gmock_main.a $(DEP_LIBS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(PINK_INC) -lpthread $^ -o $@

@@ -34,10 +34,11 @@ LIBRARY = libpink.a
 
 .PHONY: all clean distclean
 
-
+TEST_OBJS := $(wildcard $(SRC_DIR)/*_test.cc)
 BASE_OBJS := $(wildcard $(SRC_DIR)/*.cc)
 BASE_OBJS += $(wildcard $(SRC_DIR)/*.c)
 BASE_OBJS += $(wildcard $(SRC_DIR)/*.cpp)
+BASE_OBJS := $(filter-out $(TEST_OBJS), $(BASE_OBJS))
 OBJS = $(patsubst %.cc,%.o,$(BASE_OBJS))
 
 SLASH = $(SLASH_PATH)/slash/lib/libslash.a

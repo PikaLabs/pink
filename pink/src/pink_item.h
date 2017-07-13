@@ -6,18 +6,14 @@
 #ifndef PINK_ITEM_H_
 #define PINK_ITEM_H_
 
-#include "slash/include/slash_status.h"
-
 #include "pink/include/pink_define.h"
 
 namespace pink {
   
-class PinkItem
-{
-public:
+class PinkItem {
+ public:
   PinkItem() {};
   PinkItem(const int fd, const std::string &ip_port);
-  ~PinkItem();
 
   int fd() const {
     return fd_;
@@ -26,8 +22,7 @@ public:
     return ip_port_;
   }
 
-private:
-
+ private:
   int fd_;
   std::string ip_port_;
 

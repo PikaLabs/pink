@@ -5,10 +5,13 @@
 
 #include "pink/include/server_thread.h"
 
+#include <arpa/inet.h>
+#include <sys/time.h>
+#include <fcntl.h>
+
 #include "slash/include/xdebug.h"
 #include "pink/src/pink_epoll.h"
 #include "pink/src/server_socket.h"
-#include "pink/src/csapp.h"
 
 namespace pink {
 

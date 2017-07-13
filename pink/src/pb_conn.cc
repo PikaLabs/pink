@@ -5,11 +5,11 @@
 
 #include "pink/include/pb_conn.h"
 
+#include <arpa/inet.h>
 #include <string>
 
 #include "slash/include/xdebug.h"
 #include "pink/include/pink_define.h"
-#include "pink/src/csapp.h"
 
 namespace pink {
 

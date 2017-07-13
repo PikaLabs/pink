@@ -15,7 +15,6 @@
 
 #include "pink/include/pink_conn.h"
 #include "pink/include/pink_define.h"
-#include "pink/src/csapp.h"
 #include "pink/src/pink_util.h"
 
 namespace pink {

@@ -3,7 +3,6 @@
 #include "pink/include/pink_conn.h"
 #include "pink/src/pink_item.h"
 #include "pink/src/pink_epoll.h"
-#include "pink/src/csapp.h"
 
 namespace pink {
 

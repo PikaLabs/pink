@@ -40,6 +40,7 @@ OPT += -momit-leaf-frame-pointer
 endif
 else
 $(warning Warning: Compiling in debug mode. Don't use the resulting binary in production)
+OPT += -D__XDEBUG__ -D_GNU_SOURCE
 endif
 
 #-----------------------------------------------
@@ -145,9 +146,9 @@ LIBOUTPUT = ./lib
 dummy := $(shell mkdir -p $(LIBOUTPUT))
 LIBRARY = $(LIBOUTPUT)/${LIBNAME}.a
 
-PINK_MAJOR = $(shell egrep "PINK_MAJOR.[0-9]" src/build_version.h | cut -d ' ' -f 3)
-PINK_MINOR = $(shell egrep "PINK_MINOR.[0-9]" src/build_version.h | cut -d ' ' -f 3)
-PINK_PATCH = $(shell egrep "PINK_PATCH.[0-9]" src/build_version.h | cut -d ' ' -f 3)
+PINK_MAJOR = $(shell egrep "PINK_MAJOR.[0-9]" include/version.h | cut -d ' ' -f 3)
+PINK_MINOR = $(shell egrep "PINK_MINOR.[0-9]" include/version.h | cut -d ' ' -f 3)
+PINK_PATCH = $(shell egrep "PINK_PATCH.[0-9]" include/version.h | cut -d ' ' -f 3)
 
 #-----------------------------------------------
 # Create platform independent shared libraries.

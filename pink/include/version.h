@@ -9,8 +9,6 @@
 // of patent rights can be found in the PATENTS file in the same directory.
 #pragma once
 
-// this variable tells us about the git revision
-extern const char* pink_build_git_sha;
-
-// Date on which the code was compiled:
-extern const char* pink_build_compile_date;
+#define PINK_MAJOR 3
+#define PINK_MINOR 0
+#define PINK_PATCH 4

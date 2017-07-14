@@ -40,6 +40,9 @@ pink/example/performance/server
 pink/examples/myproto.pb.cc
 pink/examples/myproto.pb.h
 
+pink/make_config.mk
+pink/src/build_version.cc
+
 # Tests
 pink/test/pink_thread_test
 

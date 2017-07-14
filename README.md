@@ -72,6 +72,14 @@ Now we will use pink build our project [pika](https://github.com/Qihoo360/pika),
 
 In the future, I will add some thread manager in pink.
 
+### Dependencies
+
+- [slash](https://github.com/Qihoo360/slash)
+
+- [protobuf](https://github.com/google/protobuf)
+
+- OpenSSL if enable ssl
+
 ### Performance
 
 Test machines:

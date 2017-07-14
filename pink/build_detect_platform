@@ -1,0 +1,197 @@
+#!/bin/sh
+#
+# Detects OS we're compiling on and outputs a file specified by the first
+# argument, which in turn gets read while processing Makefile.
+#
+# The output will set the following variables:
+#   CC                          C Compiler path
+#   CXX                         C++ Compiler path
+#   PLATFORM_LDFLAGS            Linker flags
+#   PLATFORM_SHARED_EXT         Extension for shared libraries
+#   PLATFORM_SHARED_LDFLAGS     Flags for building shared library
+#   PLATFORM_SHARED_CFLAGS      Flags for compiling objects for shared library
+#   PLATFORM_CCFLAGS            C compiler flags
+#   PLATFORM_CXXFLAGS           C++ compiler flags.  Will contain:
+#   PLATFORM_SHARED_VERSIONED   Set to 'true' if platform supports versioned
+#                               shared libraries, empty otherwise.
+
+OUTPUT=$1
+if test -z "$OUTPUT"; then
+  echo "usage: $0 <output-filename>" >&2
+  exit 1
+fi
+
+# we depend on C++11
+PLATFORM_CXXFLAGS="-std=c++11"
+# we currently depend on POSIX platform
+COMMON_FLAGS=
+
+# Delete existing output, if it exists
+rm -f "$OUTPUT"
+touch "$OUTPUT"
+
+if test -z "$CC"; then
+   CC=cc
+fi
+
+if test -z "$CXX"; then
+    CXX=g++
+fi
+
+# Detect OS
+if test -z "$TARGET_OS"; then
+    TARGET_OS=`uname -s`
+fi
+
+if test -z "$TARGET_ARCHITECTURE"; then
+    TARGET_ARCHITECTURE=`uname -m`
+fi
+
+COMMON_FLAGS="$COMMON_FLAGS ${CFLAGS}"
+CROSS_COMPILE=
+PLATFORM_CCFLAGS=
+PLATFORM_LDFLAGS="$PLATFORM_LDFLAGS"
+PLATFORM_SHARED_EXT="so"
+PLATFORM_SHARED_LDFLAGS="-Wl,--no-as-needed -shared -Wl,-soname -Wl,"
+PLATFORM_SHARED_CFLAGS="-fPIC"
+PLATFORM_SHARED_VERSIONED=true
+
+# On GCC, we pick libc's memcmp over GCC's memcmp via -fno-builtin-memcmp
+case "$TARGET_OS" in
+    Darwin)
+        PLATFORM=OS_MACOSX
+        COMMON_FLAGS="$COMMON_FLAGS -DOS_MACOSX"
+        PLATFORM_SHARED_EXT=dylib
+        PLATFORM_SHARED_LDFLAGS="-dynamiclib -install_name "
+        # PORT_FILES=port/darwin/darwin_specific.cc
+        ;;
+    Linux)
+        PLATFORM=OS_LINUX
+        COMMON_FLAGS="$COMMON_FLAGS -DOS_LINUX"
+        if [ -z "$USE_CLANG" ]; then
+            COMMON_FLAGS="$COMMON_FLAGS -fno-builtin-memcmp"
+        fi
+        PLATFORM_LDFLAGS="$PLATFORM_LDFLAGS -lpthread -lrt -lprotobuf"
+        # PORT_FILES=port/linux/linux_specific.cc
+        ;;
+    FreeBSD)
+        PLATFORM=OS_FREEBSD
+        COMMON_FLAGS="$COMMON_FLAGS -fno-builtin-memcmp -D_REENTRANT -DOS_FREEBSD"
+        PLATFORM_LDFLAGS="$PLATFORM_LDFLAGS -lpthread -lprotobuf"
+        # PORT_FILES=port/freebsd/freebsd_specific.cc
+        ;;
+    Cygwin)
+        PLATFORM=CYGWIN
+        PLATFORM_SHARED_CFLAGS=""
+        PLATFORM_CXXFLAGS="-std=gnu++11"
+        COMMON_FLAGS="$COMMON_FLAGS -DCYGWIN"
+        if [ -z "$USE_CLANG" ]; then
+            COMMON_FLAGS="$COMMON_FLAGS -fno-builtin-memcmp"
+        fi
+        PLATFORM_LDFLAGS="$PLATFORM_LDFLAGS -lpthread -lrt -lprotobuf"
+        # PORT_FILES=port/linux/linux_specific.cc
+        ;;
+    OS_ANDROID_CROSSCOMPILE)
+        PLATFORM=OS_ANDROID
+	COMMON_FLAGS="$COMMON_FLAGS -fno-builtin-memcmp -D_REENTRANT -DOS_ANDROID "
+	PLATFORM_LDFLAGS="$PLATFORM_LDFLAGS "  # All pthread features are in the Android C library
+        # PORT_FILES=port/android/android.cc
+        CROSS_COMPILE=true
+        ;;
+    *)
+        echo "Unknown platform!" >&2
+        exit 1
+esac
+
+PLATFORM_CXXFLAGS="$PLATFORM_CXXFLAGS ${CXXFLAGS}"
+
+if [ "$CROSS_COMPILE" = "true" ]; then
+    # Cross-compiling; do not try any compilation tests.
+    # Also don't need any compilation tests if compiling on fbcode
+    true
+else
+    if ! test $PINK_DISABLE_FALLOCATE; then
+        # Test whether fallocate is available
+        $CXX $CFLAGS -x c++ - -o /dev/null 2>/dev/null  <<EOF
+          #include <fcntl.h>
+          #include <linux/falloc.h>
+          int main() {
+      int fd = open("/dev/null", 0);
+      fallocate(fd, FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE, 0, 1024);
+          }
+EOF
+        if [ "$?" = 0 ]; then
+            COMMON_FLAGS="$COMMON_FLAGS -DPINK_FALLOCATE_PRESENT"
+        fi
+    fi
+
+    # Test whether PTHREAD_MUTEX_ADAPTIVE_NP mutex type is available
+    $CXX $CFLAGS -x c++ - -o /dev/null 2>/dev/null  <<EOF
+      #include <pthread.h>
+      int main() {
+        int x = PTHREAD_MUTEX_ADAPTIVE_NP;
+        return 0;
+      }
+EOF
+    if [ "$?" = 0 ]; then
+        COMMON_FLAGS="$COMMON_FLAGS -DPINK_PTHREAD_ADAPTIVE_MUTEX"
+    fi
+
+    # Test if -pg is supported
+    $CXX $CFLAGS -pg -x c++ - -o /dev/null 2>/dev/null  <<EOF
+      int main() {
+        return 0;
+      }
+EOF
+    if [ "$?" = 0 ]; then
+        PROFILING_FLAGS=-pg
+    fi
+fi
+
+# TODO(tec): Fix -Wshorten-64-to-32 errors on FreeBSD and enable the warning.
+# -Wshorten-64-to-32 breaks compilation on FreeBSD i386
+if ! [ "$TARGET_OS" = FreeBSD -a "$TARGET_ARCHITECTURE" = i386 ]; then
+  # Test whether -Wshorten-64-to-32 is available
+  $CXX $CFLAGS -x c++ - -o /dev/null -Wshorten-64-to-32 2>/dev/null  <<EOF
+    int main() {}
+EOF
+  if [ "$?" = 0 ]; then
+    COMMON_FLAGS="$COMMON_FLAGS -Wshorten-64-to-32"
+  fi
+fi
+
+USE_SSE=1
+if [ "$TARGET_OS" = FreeBSD -a "$TARGET_ARCHITECTURE" = i386 ]; then
+  # Intel SSE instructions breaks compilation on FreeBSD i386
+  unset USE_SSE
+fi
+
+if test "$USE_SSE"; then
+  # if Intel SSE instruction set is supported, set USE_SSE=1
+  COMMON_FLAGS="$COMMON_FLAGS -msse -msse4.2 "
+elif test -z "$PORTABLE"; then
+  if test -n "`echo $TARGET_ARCHITECTURE | grep ^ppc64`"; then
+    # Tune for this POWER processor, treating '+' models as base models
+    POWER=`LD_SHOW_AUXV=1 /bin/true | grep AT_PLATFORM | grep -E -o power[0-9]+`
+    COMMON_FLAGS="$COMMON_FLAGS -mcpu=$POWER -mtune=$POWER "
+  elif test -n "`echo $TARGET_ARCHITECTURE | grep ^s390x`"; then
+    COMMON_FLAGS="$COMMON_FLAGS -march=z10 "
+  else
+    COMMON_FLAGS="$COMMON_FLAGS -march=native "
+  fi
+fi
+
+PLATFORM_CCFLAGS="$PLATFORM_CCFLAGS $COMMON_FLAGS"
+PLATFORM_CXXFLAGS="$PLATFORM_CXXFLAGS $COMMON_FLAGS"
+
+echo "CC=$CC" >> "$OUTPUT"
+echo "CXX=$CXX" >> "$OUTPUT"
+echo "PLATFORM=$PLATFORM" >> "$OUTPUT"
+echo "PLATFORM_LDFLAGS=$PLATFORM_LDFLAGS" >> "$OUTPUT"
+echo "PLATFORM_CCFLAGS=$PLATFORM_CCFLAGS" >> "$OUTPUT"
+echo "PLATFORM_CXXFLAGS=$PLATFORM_CXXFLAGS" >> "$OUTPUT"
+echo "PLATFORM_SHARED_CFLAGS=$PLATFORM_SHARED_CFLAGS" >> "$OUTPUT"
+echo "PLATFORM_SHARED_EXT=$PLATFORM_SHARED_EXT" >> "$OUTPUT"
+echo "PLATFORM_SHARED_LDFLAGS=$PLATFORM_SHARED_LDFLAGS" >> "$OUTPUT"
+echo "PLATFORM_SHARED_VERSIONED=$PLATFORM_SHARED_VERSIONED" >> "$OUTPUT"
+echo "PROFILING_FLAGS=$PROFILING_FLAGS" >> "$OUTPUT"

@@ -25,10 +25,10 @@ PINK_TESTS_SRC = $(PINK_DIR)/pink/src/test
 
 DEP_LIBS = \
 					 ../lib/libpink.a \
-					 ../third/slash/slash/lib/libslash.a \
+					 ../../../slash/slash/lib/libslash.a \
 
 PINK_INC = -I$(PINK_DIR) \
-					 -I$(PINK_DIR)/pink/third/slash \
+					 -I$(PINK_DIR)/../slash \
 
 # Flags passed to the preprocessor.
 # Set Google Test and Google Mock's header directories as system

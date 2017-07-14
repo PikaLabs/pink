@@ -37,6 +37,8 @@ pink/example/performance/client
 pink/example/performance/message.pb.cc
 pink/example/performance/message.pb.h
 pink/example/performance/server
+pink/examples/myproto.pb.cc
+pink/examples/myproto.pb.h
 
 # Tests
 pink/test/pink_thread_test

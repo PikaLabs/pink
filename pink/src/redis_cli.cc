@@ -433,8 +433,8 @@ int redisvFormatCommand(std::string *cmd, const char *format, va_list ap) {
         touched = 1;
       }
     } else {
-      char *arg;
-      size_t size;
+      char *arg = nullptr;
+      size_t size = 0;
 
       switch (c[1]) {
         case 's':

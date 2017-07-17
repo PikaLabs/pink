@@ -218,7 +218,7 @@ clean:
 	rm -f $(LIBRARY) $(SHARED)
 	rm -rf $(CLEAN_FILES)
 	rm -rf $(LIBOUTPUT)
-	find . -name "*.[oda]" -path "./third" -prune -exec rm -f {} \;
+	find . -name "*.[oda]" ! -path "./third/*" -exec rm -f {} \;
 	find . -type f -regex ".*\.\(\(gcda\)\|\(gcno\)\)" -exec rm {} \;
 
 .cc.o:

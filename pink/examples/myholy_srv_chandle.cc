@@ -70,16 +70,17 @@ public:
   virtual void CronHandle() const override {
     printf ("Cron operation\n");
   }
+  using ServerHandle::AccessHandle;
   virtual bool AccessHandle(std::string& ip) const override {
     printf ("Access operation, receive:%s\n", ip.c_str());
     return true;
   }
-  virtual int CreateWorkerSpecificData(void** data) {
+  virtual int CreateWorkerSpecificData(void** data) const {
     int *num = new int(1234);
     *data = static_cast<void*>(num);
     return 0;
   }
-  virtual int DeleteWorkerSpecificData(void* data) {
+  virtual int DeleteWorkerSpecificData(void* data) const {
     delete static_cast<int*>(data);
     return 0;
   }

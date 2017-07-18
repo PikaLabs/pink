@@ -3,6 +3,7 @@
 #include <atomic>
 #include <sys/time.h>
 #include <stdint.h>
+#include <signal.h>
 
 #include "pink/include/server_thread.h"
 #include "pink/include/pink_conn.h"
@@ -62,6 +63,19 @@ class PingConnFactory : public ConnFactory {
   }
 };
 
+std::atomic<bool> should_stop(false);
+
+static void IntSigHandle(const int sig) {
+  should_stop.store(true);
+}
+
+static void SignalSetup() {
+  signal(SIGHUP, SIG_IGN);
+  signal(SIGPIPE, SIG_IGN);
+  signal(SIGINT, &IntSigHandle);
+  signal(SIGQUIT, &IntSigHandle);
+  signal(SIGTERM, &IntSigHandle);
+}
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
@@ -74,11 +88,13 @@ int main(int argc, char* argv[]) {
 
   PingConnFactory conn_factory;
 
+  SignalSetup();
+
   ServerThread *st_thread = NewDispatchThread(ip, port, 24, &conn_factory, 1000);
   st_thread->StartThread();
   uint64_t st, ed;
 
-  while (1) {
+  while (!should_stop) {
     st = NowMicros();
     int prv = num.load();
     sleep(1);

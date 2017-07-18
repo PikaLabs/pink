@@ -100,4 +100,4 @@ Memory, 142 GB
 [test
 program](https://github.com/Qihoo360/pink/tree/master/pink/example/performance)
 
-![](https://ws2.sinaimg.cn/large/006tNc79ly1fhh2u0spwaj30fa0bjq3q.jpg)
+![](https://ws4.sinaimg.cn/large/006tKfTcly1fho384upsjj30f00a5gm8.jpg)

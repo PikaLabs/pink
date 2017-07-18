@@ -50,27 +50,11 @@ endif
 
 #-----------------------------------------------
 
-LIB_SOURCES = \
-	src/build_version.cc \
-	src/bg_thread.cc \
-	src/dispatch_thread.cc \
-	src/holy_thread.cc \
-	src/http_conn.cc \
-	src/pb_cli.cc \
-	src/pb_conn.cc \
-	src/period_thread.cc \
-	src/pink_cli.cc \
-	src/pink_conn.cc \
-	src/pink_epoll.cc \
-	src/pink_item.cc \
-	src/pink_thread.cc \
-	src/pink_util.cc \
-	src/redis_cli.cc \
-	src/redis_conn.cc \
-	src/server_socket.cc \
-	src/server_thread.cc \
-	src/simple_http_conn.cc \
-	src/worker_thread.cc \
+SRC_DIR=./src
+LIB_SOURCES := $(SRC_DIR)/build_version.cc \
+				$(wildcard $(SRC_DIR)/*.cc) \
+				$(wildcard $(SRC_DIR)/*.c) \
+				$(wildcard $(SRC_DIR)/*.cpp)
 
 ifndef SLASH_PATH
   $(warning Warning: missing slash path, using default)
@@ -130,15 +114,15 @@ LDFLAGS += $(PLATFORM_LDFLAGS)
 
 date := $(shell date +%F)
 git_sha := $(shell git rev-parse HEAD 2>/dev/null)
-gen_build_version = sed -e s/@@GIT_SHA@@/$(git_sha)/ -e s/@@GIT_DATE_TIME@@/$(date)/ src/build_version.cc.in
+gen_build_version = sed -e s/@@GIT_SHA@@/$(git_sha)/ -e s/@@GIT_DATE_TIME@@/$(date)/ $(SRC_DIR)/build_version.cc.in
 # Record the version of the source that we are compiling.
 # We keep a record of the git revision in this file.  It is then built
 # as a regular source file as part of the compilation process.
 # One can run "strings executable_filename | grep _build_" to find
 # the version of the source that we used to build the executable file.
-CLEAN_FILES += src/build_version.cc
+CLEAN_FILES += $(SRC_DIR)/build_version.cc
 
-src/build_version.cc: FORCE
+$(SRC_DIR)/build_version.cc: FORCE
 	$(AM_V_GEN)rm -f $@-t
 	$(AM_V_at)$(gen_build_version) > $@-t
 	$(AM_V_at)if test -f $@; then         \
@@ -189,7 +173,7 @@ $(SHARED4): $(LIBOBJECTS)
 	$(CXX) $(SHARED_LDFLAGS)$(SHARED3) $(CXXFLAGS) $(SHARED_CFLAGS) $(LIB_SOURCES) \
     $(LDFLAGS) -o $@
 
-EXAMPLES: bg_thread http_server mydispatch_srv myholy_srv myholy_srv_chandle myproto_cli \
+EXAMPLES = bg_thread http_server mydispatch_srv myholy_srv myholy_srv_chandle myproto_cli \
 				redis_cli_test simple_http_server
 
 .PHONY: clean dbg static_lib shared_lib all example
@@ -236,16 +220,16 @@ bg_thread: examples/bg_thread.o $(LIBOBJECTS)
 http_server: examples/http_server.o $(LIBOBJECTS)
 	$(AM_LINK)
 
-mydispatch_srv: examples/mydispatch_srv.o $(LIBOBJECTS)
+mydispatch_srv: examples/mydispatch_srv.o examples/myproto.pb.cc $(LIBOBJECTS)
 	$(AM_LINK)
 
-myholy_srv: examples/myholy_srv.o $(LIBOBJECTS)
+myholy_srv: examples/myholy_srv.o examples/myproto.pb.cc $(LIBOBJECTS)
 	$(AM_LINK)
 
-myholy_srv_chandle: examples/myholy_srv_chandle.o $(LIBOBJECTS)
+myholy_srv_chandle: examples/myholy_srv_chandle.o examples/myproto.pb.cc $(LIBOBJECTS)
 	$(AM_LINK)
 
-myproto_cli: examples/myproto_cli.o $(LIBOBJECTS)
+myproto_cli: examples/myproto_cli.o examples/myproto.pb.cc $(LIBOBJECTS)
 	$(AM_LINK)
 
 redis_cli_test: examples/redis_cli_test.o $(LIBOBJECTS)
@@ -253,3 +237,6 @@ redis_cli_test: examples/redis_cli_test.o $(LIBOBJECTS)
 
 simple_http_server: examples/simple_http_server.o $(LIBOBJECTS)
 	$(AM_LINK)
+
+examples/myproto.pb.cc: examples/myproto.proto
+	protoc -I=./examples --cpp_out=./examples ./examples/$^

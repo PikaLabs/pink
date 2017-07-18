@@ -39,6 +39,14 @@ pink/examples/performance/message.pb.h
 pink/examples/performance/server
 pink/examples/myproto.pb.cc
 pink/examples/myproto.pb.h
+*bg_thread
+*http_server
+*mydispatch_srv
+*myholy_srv
+*myholy_srv_chandle
+*myproto_cli
+*redis_cli_test
+*simple_http_server
 
 pink/src/build_version.cc
 

@@ -1,8 +1,6 @@
-CC=cc
 CXX=g++
-LDFLAGS= -lpthread -lrt -lprotobuf $(EXTRA_LDFLAGS)
-CFLAGS= -DOS_LINUX -fno-builtin-memcmp -msse -msse4.2 ${EXTRA_CFLAGS}
-CXXFLAGS=-O2 -std=c++11 -DOS_LINUX -fno-builtin-memcmp -msse -msse4.2 ${EXTRA_CXXFLAGS}
+LDFLAGS= -lpthread -lrt -lprotobuf
+CXXFLAGS=-O2 -std=c++11 -fno-builtin-memcmp -msse -msse4.2
 
 .PHONY: clean all
 
@@ -54,8 +52,8 @@ myproto.pb.cc: myproto.proto
 
 clean:
 	find . -name "*.[oda]" -exec rm -f {} \;
-	rm -rf ./bg_thread ./http_server ./https_server ./mydispatch_srv ./myholy_srv ./myholy_srv_chandle ./myproto_cli \
-				./redis_cli_test ./simple_http_server
+	rm -rf ./bg_thread ./http_server ./https_server ./mydispatch_srv ./myholy_srv \
+					./myholy_srv_chandle ./myproto_cli ./redis_cli_test ./simple_http_server
 
 $(LIBPINK):
 	cd .. && $(MAKE) static_lib

@@ -1,11 +1,7 @@
 CLEAN_FILES = # deliberately empty, so we can append below.
-CC=cc
 CXX=g++
-LDFLAGS= -lpthread -lrt -lprotobuf $(EXTRA_LDFLAGS)
-CFLAGS= -DOS_LINUX -fno-builtin-memcmp -msse -msse4.2 ${EXTRA_CFLAGS}
-CXXFLAGS=-std=c++11 -DOS_LINUX -fno-builtin-memcmp -msse -msse4.2 ${EXTRA_CXXFLAGS}
-SHARED_CFLAGS=-fPIC
-SHARED_LDFLAGS=-Wl,--no-as-needed -shared -Wl,-soname -Wl,
+LDFLAGS= -lpthread -lrt -lprotobuf
+CXXFLAGS=-std=c++11 -fno-builtin-memcmp -msse -msse4.2
 PROFILING_FLAGS=-pg
 ARFLAGS = rs
 OPT=
@@ -25,10 +21,6 @@ ifeq ($(MAKECMDGOALS),clean)
   DEBUG_LEVEL=0
 endif
 
-ifeq ($(MAKECMDGOALS),shared_lib)
-  DEBUG_LEVEL=0
-endif
-
 ifeq ($(MAKECMDGOALS),static_lib)
   DEBUG_LEVEL=0
 endif
@@ -39,10 +31,6 @@ endif
 ifeq ($(DEBUG_LEVEL),0)
 DISABLE_WARNING_AS_ERROR=1
 OPT += -O2 -fno-omit-frame-pointer -DNDEBUG
-# Skip for archs that don't support -momit-leaf-frame-pointer
-ifeq (,$(shell $(CXX) -fsyntax-only -momit-leaf-frame-pointer -xc /dev/null 2>&1))
-OPT += -momit-leaf-frame-pointer
-endif
 else
 $(warning Warning: Compiling in debug mode. Don't use the resulting binary in production)
 OPT += -O0 -D__XDEBUG__ -D_GNU_SOURCE $(PROFILING_FLAGS)
@@ -50,11 +38,10 @@ endif
 
 #-----------------------------------------------
 
-SRC_DIR=./src
-LIB_SOURCES := $(SRC_DIR)/build_version.cc \
-				$(wildcard $(SRC_DIR)/*.cc) \
-				$(wildcard $(SRC_DIR)/*.c) \
-				$(wildcard $(SRC_DIR)/*.cpp)
+SRC_DIR=src
+VERSION_CC=$(SRC_DIR)/build_version.cc
+LIB_SOURCES :=  $(VERSION_CC) \
+				$(filter-out $(VERSION_CC), $(wildcard $(SRC_DIR)/*.cc))
 
 ifndef SLASH_PATH
   $(warning Warning: missing slash path, using default)
@@ -75,24 +62,22 @@ am__v_at_ = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
 am__v_at_0 = @
 am__v_at_1 =
 
-AM_V_CC = $(am__v_CC_$(V))
-am__v_CC_ = $(am__v_CC_$(AM_DEFAULT_VERBOSITY))
-am__v_CC_0 = @echo "  CC      " $@;
-am__v_CC_1 =
-CCLD = $(CC)
-LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-AM_V_CCLD = $(am__v_CCLD_$(V))
-am__v_CCLD_ = $(am__v_CCLD_$(AM_DEFAULT_VERBOSITY))
-am__v_CCLD_0 = @echo "  CCLD    " $@;
-am__v_CCLD_1 =
+AM_V_CXX = $(am__v_CXX_$(V))
+am__v_CXX_ = $(am__v_CXX_$(AM_DEFAULT_VERBOSITY))
+am__v_CXX_0 = @echo "  CXX     " $@;
+am__v_CXX_1 =
+LD = $(CXX)
+AM_V_LD = $(am__v_LD_$(V))
+am__v_LD_ = $(am__v_LD_$(AM_DEFAULT_VERBOSITY))
+am__v_LD_0 = @echo "  LD      " $@;
+am__v_LD_1 =
 AM_V_AR = $(am__v_AR_$(V))
 am__v_AR_ = $(am__v_AR_$(AM_DEFAULT_VERBOSITY))
 am__v_AR_0 = @echo "  AR      " $@;
 am__v_AR_1 =
 
-AM_LINK = $(AM_V_CCLD)$(CXX) $^ $(EXEC_LDFLAGS) -o $@ $(LDFLAGS) $(COVERAGEFLAGS)
+AM_LINK = $(AM_V_LD)$(CXX) $^ $(EXEC_LDFLAGS) -o $@ $(LDFLAGS)
 
-CFLAGS += -g
 CXXFLAGS += -g
 
 # This (the first rule) must depend on "all".
@@ -100,17 +85,14 @@ default: all
 
 WARNING_FLAGS = -W -Wextra -Wall -Wsign-compare \
   -Wno-unused-parameter -Wno-redundant-decls -Wwrite-strings \
-	-Wpointer-arith -Wreorder -Wswitch -Wsign-promo
+	-Wpointer-arith -Wreorder -Wswitch -Wsign-promo \
+	-Woverloaded-virtual -Wnon-virtual-dtor -Wno-missing-field-initializers
 
 ifndef DISABLE_WARNING_AS_ERROR
   WARNING_FLAGS += -Werror
 endif
 
-CFLAGS += $(WARNING_FLAGS) -I.. -I$(SLASH_INCLUDE_DIR) $(OPT)
-CXXFLAGS += $(WARNING_FLAGS) -I.. -I$(SLASH_INCLUDE_DIR) $(OPT) \
-						-Woverloaded-virtual -Wnon-virtual-dtor -Wno-missing-field-initializers
-
-LDFLAGS += $(PLATFORM_LDFLAGS)
+CXXFLAGS += $(WARNING_FLAGS) -I.. -I$(SLASH_INCLUDE_DIR) $(OPT)
 
 date := $(shell date +%F)
 git_sha := $(shell git rev-parse HEAD 2>/dev/null)
@@ -145,50 +127,22 @@ LIBOUTPUT = ./lib
 dummy := $(shell mkdir -p $(LIBOUTPUT))
 LIBRARY = $(LIBOUTPUT)/${LIBNAME}.a
 
-PINK_MAJOR = $(shell egrep "PINK_MAJOR.[0-9]" include/version.h | cut -d ' ' -f 3)
-PINK_MINOR = $(shell egrep "PINK_MINOR.[0-9]" include/version.h | cut -d ' ' -f 3)
-PINK_PATCH = $(shell egrep "PINK_PATCH.[0-9]" include/version.h | cut -d ' ' -f 3)
-
-#-----------------------------------------------
-# Create platform independent shared libraries.
-#-----------------------------------------------
-PLATFORM_SHARED_EXT=so
-
-SHARED_MAJOR = $(PINK_MAJOR)
-SHARED_MINOR = $(PINK_MINOR)
-SHARED_PATCH = $(PINK_PATCH)
-SHARED1 = ${LIBNAME}.$(PLATFORM_SHARED_EXT)
-SHARED2 = $(SHARED1).$(SHARED_MAJOR)
-SHARED3 = $(SHARED1).$(SHARED_MAJOR).$(SHARED_MINOR)
-SHARED4 = $(SHARED1).$(SHARED_MAJOR).$(SHARED_MINOR).$(SHARED_PATCH)
-SHARED = $(SHARED1) $(SHARED2) $(SHARED3) $(SHARED4)
-$(SHARED1): $(SHARED4)
-	ln -fs $(SHARED4) $(SHARED1)
-$(SHARED2): $(SHARED4)
-	ln -fs $(SHARED4) $(SHARED2)
-$(SHARED3): $(SHARED4)
-	ln -fs $(SHARED4) $(SHARED3)
-
-$(SHARED4): $(LIBOBJECTS)
-	$(CXX) $(SHARED_LDFLAGS)$(SHARED3) $(CXXFLAGS) $(SHARED_CFLAGS) $(LIB_SOURCES) \
-    $(LDFLAGS) -o $@
-
 EXAMPLES = bg_thread http_server mydispatch_srv myholy_srv myholy_srv_chandle myproto_cli \
 				redis_cli_test simple_http_server
 
-.PHONY: clean dbg static_lib shared_lib all example
+TESTS = test/pink_thread_test
+
+.PHONY: clean dbg static_lib all example
 
 all: $(LIBRARY)
 
 static_lib: $(LIBRARY)
 
-shared_lib: $(SHARED)
-	for f in $(notdir $(SHARED)); do mv "$$f" $(LIBOUTPUT); done
-
 example: $(EXAMPLES)
 
-check: $(LIBRARY) $(TESTS)
-	for t in $(notdir $(TESTS)); do echo "***** Running $$t"; ./$$t || exit 1; done
+check: $(LIBRARY)
+	@make -C test
+	for t in $(notdir $(TESTS)); do echo "***** Running $$t"; ./test/$$t || exit 1; done
 
 dbg: $(LIBRARY) $(EXAMPLES)
 
@@ -202,14 +156,20 @@ clean:
 	rm -f $(LIBRARY) $(SHARED)
 	rm -rf $(CLEAN_FILES)
 	rm -rf $(LIBOUTPUT)
-	find . -name "*.[oda]" ! -path "./third/*" -exec rm -f {} \;
+	find . -name "*.[oda]*" ! -path "./third/*" -exec rm -f {} \;
 	find . -type f -regex ".*\.\(\(gcda\)\|\(gcno\)\)" -exec rm {} \;
 
-.cc.o:
-	$(AM_V_CC)$(CXX) $(CXXFLAGS) -c $< -o $@ $(COVERAGEFLAGS)
+%.o: %.cc
+	$(AM_V_CXX)$(CXX) $(CXXFLAGS) -c $< -o $@
 
-.c.o:
-	$(AM_V_CC)$(CC) $(CFLAGS) -c $< -o $@
+%.d: %.cc
+	@set -e; rm -f $@; $(CXX) -MM $(CXXFLAGS) $< > $@.$$$$; \
+	sed 's,\($(notdir $*)\)\.o[ :]*,$(SRC_DIR)/\1.o $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
+
+ifneq ($(MAKECMDGOALS),clean)
+  -include $(LIBOBJECTS:.o=.d)
+endif
 
 # examples
 EXEC_LDFLAGS+=$(SLASH_LIBRARY)

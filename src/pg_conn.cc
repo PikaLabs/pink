@@ -177,7 +177,9 @@ ReadStatus PGConn::HandleNormal() {
       std::string error_info;
 
       if (statement_.find("set names") != std::string::npos ||
-          statement_.find("DEALLOCATE") != std::string::npos) {
+          statement_.find("DEALLOCATE") != std::string::npos ||
+          statement_.find("select") != std::string::npos ||
+          statement_.find("set client_encoding") != std::string::npos) {
         // Deal with "DEALLOCATE" statement
         // and "set names" statement
         // for lavavel PDO's last phase.
@@ -225,7 +227,8 @@ ReadStatus PGConn::HandleNormal() {
       std::string error_info;
 
       // Deal with "set names" statement for some applications.
-      if (statement_.find("set names") != std::string::npos) {
+      if (statement_.find("set names") != std::string::npos ||
+          statement_.find("select") != std::string::npos) {
         AppendSingleResponse('1'); // ParseComplete
         skip_statement_ = true;
         return kReadHalf;

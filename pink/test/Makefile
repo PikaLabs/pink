@@ -20,15 +20,27 @@ GTEST_DIR = gtest
 GMOCK_DIR = gmock
 
 # Where to find user code.
+ifndef PINK_PATH
+  $(warning Warning: missing pink path, using default)
+  PINK_PATH=$(CURDIR)/../..
+endif
+
+PINK_INCLUDE_DIR=$(PINK_PATH)
+PINK_LIBRARY=$(PINK_PATH)/pink/lib/libpink.a
+
+ifndef SLASH_PATH
+  $(warning Warning: missing slash path, using default)
+  SLASH_PATH=$(CURDIR)/../third/slash
+endif
+
+SLASH_INCLUDE_DIR=$(SLASH_PATH)
+SLASH_LIBRARY=$(SLASH_PATH)/slash/lib/libslash.a
+
 PINK_DIR = ../..
 PINK_TESTS_SRC = $(PINK_DIR)/pink/src/test
 
-DEP_LIBS = \
-					 ../lib/libpink.a \
-					 ../../../slash/slash/lib/libslash.a \
-
-PINK_INC = -I$(PINK_DIR) \
-					 -I$(PINK_DIR)/../slash \
+LDFLAGS = $(PINK_LIBRARY) $(SLASH_LIBRARY) -lpthread
+EXTRA_CXXFLAGS = -I$(PINK_INCLUDE_DIR) -I$(SLASH_INCLUDE_DIR)
 
 # Flags passed to the preprocessor.
 # Set Google Test and Google Mock's header directories as system
@@ -102,5 +114,5 @@ gmock_main.a : gmock-all.o gtest-all.o gmock_main.o
 
 # Builds pink tests.
 
-pink_thread_test: $(PINK_TESTS_SRC)/pink_thread_test.cc gmock_main.a $(DEP_LIBS)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(PINK_INC) -lpthread $^ -o $@
+pink_thread_test: $(PINK_TESTS_SRC)/pink_thread_test.cc gmock_main.a
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(EXTRA_CXXFLAGS) $^ $(LDFLAGS) -o $@

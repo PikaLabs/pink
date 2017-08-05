@@ -1,7 +1,7 @@
 CLEAN_FILES = # deliberately empty, so we can append below.
 CXX=g++
 LDFLAGS= -lpthread -lrt -lprotobuf
-CXXFLAGS=-std=c++11 -fno-builtin-memcmp -msse -msse4.2
+CXXFLAGS= -g -std=c++11 -fno-builtin-memcmp -msse -msse4.2
 PROFILING_FLAGS=-pg
 ARFLAGS = rs
 OPT=
@@ -13,18 +13,6 @@ ifeq ($(MAKECMDGOALS),dbg)
   DEBUG_LEVEL=2 # compatible with rocksdb
 endif
 
-ifeq ($(MAKECMDGOALS),all)
-  DEBUG_LEVEL=0
-endif
-
-ifeq ($(MAKECMDGOALS),clean)
-  DEBUG_LEVEL=0
-endif
-
-ifeq ($(MAKECMDGOALS),static_lib)
-  DEBUG_LEVEL=0
-endif
-
 # compile with -O2 if for release
 # if we're compiling for release, compile without debug code (-DNDEBUG) and
 # don't treat warnings as errors
@@ -33,7 +21,7 @@ DISABLE_WARNING_AS_ERROR=1
 OPT += -O2 -fno-omit-frame-pointer -DNDEBUG
 else
 $(warning Warning: Compiling in debug mode. Don't use the resulting binary in production)
-OPT += -O0 -D__XDEBUG__ -D_GNU_SOURCE $(PROFILING_FLAGS)
+OPT += -O0 -D__XDEBUG__ $(PROFILING_FLAGS)
 endif
 
 #-----------------------------------------------
@@ -45,7 +33,7 @@ LIB_SOURCES :=  $(VERSION_CC) \
 
 ifndef SLASH_PATH
   $(warning Warning: missing slash path, using default)
-	SLASH_PATH=$(CURDIR)/third/slash
+  SLASH_PATH=$(CURDIR)/third/slash
 endif
 
 SLASH_INCLUDE_DIR=$(SLASH_PATH)
@@ -76,9 +64,7 @@ am__v_AR_ = $(am__v_AR_$(AM_DEFAULT_VERBOSITY))
 am__v_AR_0 = @echo "  AR      " $@;
 am__v_AR_1 =
 
-AM_LINK = $(AM_V_LD)$(CXX) $^ $(EXEC_LDFLAGS) -o $@ $(LDFLAGS)
-
-CXXFLAGS += -g
+AM_LINK = $(AM_V_LD)$(CXX) $^ -o $@ $(LDFLAGS)
 
 # This (the first rule) must depend on "all".
 default: all
@@ -127,9 +113,6 @@ LIBOUTPUT = ./lib
 dummy := $(shell mkdir -p $(LIBOUTPUT))
 LIBRARY = $(LIBOUTPUT)/${LIBNAME}.a
 
-EXAMPLES = bg_thread http_server mydispatch_srv myholy_srv myholy_srv_chandle myproto_cli \
-				redis_cli_test simple_http_server
-
 TESTS = test/pink_thread_test
 
 .PHONY: clean dbg static_lib all example
@@ -138,13 +121,14 @@ all: $(LIBRARY)
 
 static_lib: $(LIBRARY)
 
-example: $(EXAMPLES)
+example:
+	@make -C examples PINK_PATH=$(CURDIR)/.. SLASH_PATH=$(SLASH_PATH)
 
 check: $(LIBRARY)
-	@make -C test
+	@make -C test PINK_PATH=$(CURDIR)/.. SLASH_PATH=$(SLASH_PATH)
 	for t in $(notdir $(TESTS)); do echo "***** Running $$t"; ./test/$$t || exit 1; done
 
-dbg: $(LIBRARY) $(EXAMPLES)
+dbg: $(LIBRARY)
 
 $(LIBRARY): $(LIBOBJECTS)
 	$(AM_V_AR)rm -f $@
@@ -152,10 +136,10 @@ $(LIBRARY): $(LIBOBJECTS)
 
 clean:
 	make -C ./examples clean
-	rm -f $(EXAMPLES)
 	rm -f $(LIBRARY) $(SHARED)
 	rm -rf $(CLEAN_FILES)
 	rm -rf $(LIBOUTPUT)
+	rm -f $(TESTS)
 	find . -name "*.[oda]*" ! -path "./third/*" -exec rm -f {} \;
 	find . -type f -regex ".*\.\(\(gcda\)\|\(gcno\)\)" -exec rm {} \;
 
@@ -170,33 +154,3 @@ clean:
 ifneq ($(MAKECMDGOALS),clean)
   -include $(LIBOBJECTS:.o=.d)
 endif
-
-# examples
-EXEC_LDFLAGS+=$(SLASH_LIBRARY)
-
-bg_thread: examples/bg_thread.o $(LIBOBJECTS)
-	$(AM_LINK)
-
-http_server: examples/http_server.o $(LIBOBJECTS)
-	$(AM_LINK)
-
-mydispatch_srv: examples/mydispatch_srv.o examples/myproto.pb.cc $(LIBOBJECTS)
-	$(AM_LINK)
-
-myholy_srv: examples/myholy_srv.o examples/myproto.pb.cc $(LIBOBJECTS)
-	$(AM_LINK)
-
-myholy_srv_chandle: examples/myholy_srv_chandle.o examples/myproto.pb.cc $(LIBOBJECTS)
-	$(AM_LINK)
-
-myproto_cli: examples/myproto_cli.o examples/myproto.pb.cc $(LIBOBJECTS)
-	$(AM_LINK)
-
-redis_cli_test: examples/redis_cli_test.o $(LIBOBJECTS)
-	$(AM_LINK)
-
-simple_http_server: examples/simple_http_server.o $(LIBOBJECTS)
-	$(AM_LINK)
-
-examples/myproto.pb.cc: examples/myproto.proto
-	protoc -I=./examples --cpp_out=./examples ./examples/$^

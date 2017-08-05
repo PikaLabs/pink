@@ -1,9 +1,29 @@
+ifndef SLASH_PATH
 SLASH_PATH=../../third/slash
-PINK_PATH=../../../
+endif
 
-all:
+ifndef PINK_PATH
+PINK_PATH=../../../
+endif
+
+CXXFLAGS= -O2 -I$(PINK_PATH) -I$(SLASH_PATH) -std=c++11
+LDFLAGS= -L$(SLASH_PATH)/slash/lib -L$(PINK_PATH)/pink/lib -lprotobuf -lpink -lslash -lpthread
+
+.PHONY: all
+
+all: server client
+
+server: message.pb.o server.o
+	$(CXX) -o $@ $^ $(LDFLAGS)
+
+client: message.pb.o client.o
+	$(CXX) -o $@ $^ $(LDFLAGS)
+
+%.o: %.cc
+	$(CXX) -c $< $(CXXFLAGS)
+
+message.pb.cc:
 	protoc --proto_path=./ --cpp_out=./ ./message.proto
-	g++ -O2 -I$(PINK_PATH) -I$(SLASH_PATH) -L$(SLASH_PATH)/slash/lib -L$(PINK_PATH)/pink/lib message.pb.cc server.cc -std=c++11 -lprotobuf -pthread -lpink -lslash -o server
-	g++ -O2 -I$(PINK_PATH) -I$(SLASH_PATH) -L$(SLASH_PATH)/slash/lib -L$(PINK_PATH)/pink/lib message.pb.cc client.cc -std=c++11 -lprotobuf -pthread -lpink -lslash -o client
+
 clean:
-	rm -f server client message.pb.*
+	rm -f server client *.o message.pb.*

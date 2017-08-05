@@ -74,9 +74,9 @@ In the future, I will add some thread manager in pink.
 
 ### Dependencies
 
-- [slash](https://github.com/Qihoo360/slash)
+- [slash v1.0+](https://github.com/Qihoo360/slash)
 
-- [protobuf](https://github.com/google/protobuf)
+- [protobuf v2.5.0](https://github.com/google/protobuf/releases/tag/v2.5.0)
 
 - OpenSSL if enable ssl
 

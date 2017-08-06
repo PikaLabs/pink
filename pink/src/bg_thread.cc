@@ -77,7 +77,7 @@ void *BGThread::ThreadMain() {
 }
 
 /*
- * timeout is in millionsecond
+ * timeout is in millisecond
  */
 void BGThread::DelaySchedule(uint64_t timeout, void (*function)(void *), void* arg) {
   /*

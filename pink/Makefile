@@ -1,7 +1,7 @@
 CLEAN_FILES = # deliberately empty, so we can append below.
 CXX=g++
 LDFLAGS= -lpthread -lrt -lprotobuf
-CXXFLAGS= -g -std=c++11 -fno-builtin-memcmp -msse -msse4.2
+CXXFLAGS= -g -std=c++11 -fno-builtin-memcmp -msse -msse4.2 -pipe -fPIC
 PROFILING_FLAGS=-pg
 ARFLAGS = rs
 OPT=
@@ -35,7 +35,6 @@ ifndef SLASH_PATH
   $(warning Warning: missing slash path, using default)
   SLASH_PATH=$(CURDIR)/third/slash
 endif
-
 SLASH_INCLUDE_DIR=$(SLASH_PATH)
 SLASH_LIBRARY=$(SLASH_PATH)/slash/lib/libslash.a
 
@@ -122,7 +121,7 @@ all: $(LIBRARY)
 static_lib: $(LIBRARY)
 
 example:
-	@make -C examples PINK_PATH=$(CURDIR)/.. SLASH_PATH=$(SLASH_PATH)
+	@make -C examples PINK_PATH=$(CURDIR)/.. SLASH_PATH=$(SLASH_PATH) DEBUG_LEVEL=$(DEBUG_LEVEL)
 
 check: $(LIBRARY)
 	@make -C test PINK_PATH=$(CURDIR)/.. SLASH_PATH=$(SLASH_PATH)
@@ -136,7 +135,7 @@ $(LIBRARY): $(LIBOBJECTS)
 
 clean:
 	make -C ./examples clean
-	rm -f $(LIBRARY) $(SHARED)
+	rm -f $(LIBRARY)
 	rm -rf $(CLEAN_FILES)
 	rm -rf $(LIBOUTPUT)
 	rm -f $(TESTS)

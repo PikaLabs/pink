@@ -7,7 +7,6 @@
 # Precompiled Headers
 *.gch
 *.pch
-*.d
 
 # Compiled Dynamic libraries
 *.so
@@ -57,3 +56,4 @@ pink/test/pink_thread_test
 # Others
 pink/tags
 pink/third
+*.d

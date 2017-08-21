@@ -5,7 +5,7 @@ CXXFLAGS=-O2 -std=c++11 -fno-builtin-memcmp -msse -msse4.2
 .PHONY: clean all
 
 all: bg_thread http_server mydispatch_srv myholy_srv myholy_srv_chandle myproto_cli \
-	redis_cli_test simple_http_server
+	redis_cli_test simple_http_server myredis_srv
 
 ifndef PINK_PATH
   $(warning Warning: missing pink path, using default)
@@ -51,6 +51,9 @@ redis_cli_test: redis_cli_test.cc
 	$(CXX) $(CXXFLAGS) $^ -o$@ $(LDFLAGS)
 
 simple_http_server: simple_http_server.cc
+	$(CXX) $(CXXFLAGS) $^ -o$@ $(LDFLAGS)
+
+myredis_srv: myredis_srv.cc
 	$(CXX) $(CXXFLAGS) $^ -o$@ $(LDFLAGS)
 
 myproto.pb.cc: myproto.proto

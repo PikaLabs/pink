@@ -14,8 +14,6 @@
 #include <map>
 #include <atomic>
 
-#include <google/protobuf/message.h>
-
 #include "slash/include/xdebug.h"
 #include "slash/include/slash_mutex.h"
 

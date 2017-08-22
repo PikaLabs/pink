@@ -1,6 +1,6 @@
 CLEAN_FILES = # deliberately empty, so we can append below.
 CXX=g++
-LDFLAGS= -lpthread -lrt -lprotobuf
+LDFLAGS= -lpthread -lrt
 CXXFLAGS= -g -std=c++11 -fno-builtin-memcmp -msse -msse4.2 -pipe -fPIC
 PROFILING_FLAGS=-pg
 ARFLAGS = rs
@@ -8,6 +8,11 @@ OPT=
 
 # Set the default DEBUG_LEVEL to 0
 DEBUG_LEVEL?=0
+NO_PB?=0
+
+ifeq ($(NO_PB),0)
+  LDFLAGS+= -lprotobuf
+endif
 
 ifeq ($(MAKECMDGOALS),dbg)
   DEBUG_LEVEL=2 # compatible with rocksdb
@@ -30,6 +35,12 @@ SRC_DIR=src
 VERSION_CC=$(SRC_DIR)/build_version.cc
 LIB_SOURCES :=  $(VERSION_CC) \
 				$(filter-out $(VERSION_CC), $(wildcard $(SRC_DIR)/*.cc))
+
+ifeq ($(NO_PB),1)
+  LIB_SOURCES =  $(VERSION_CC) \
+  				$(filter-out $(VERSION_CC) $(wildcard $(SRC_DIR)/pb_*), $(wildcard $(SRC_DIR)/*.cc))
+endif
+
 
 ifndef SLASH_PATH
   $(warning Warning: missing slash path, using default)

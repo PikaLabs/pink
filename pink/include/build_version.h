@@ -8,10 +8,13 @@
 //  LICENSE file in the root directory of this source tree. An additional grant
 //  of patent rights can be found in the PATENTS file in the same directory.
 //
-#pragma once
+#ifndef PINK_INCLUDE_BUILD_VERSION_H_
+#define PINK_INCLUDE_BUILD_VERSION_H_
 
 // this variable tells us about the git revision
 extern const char* pink_build_git_sha;
 
 // Date on which the code was compiled:
 extern const char* pink_build_compile_date;
+
+#endif  // PINK_INCLUDE_BUILD_VERSION_H_

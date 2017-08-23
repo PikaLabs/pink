@@ -3,13 +3,14 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef INCLUDE_HOLY_THREAD_H_
-#define INCLUDE_HOLY_THREAD_H_
+#ifndef PINK_SRC_HOLY_THREAD_H_
+#define PINK_SRC_HOLY_THREAD_H_
 
 #include <map>
 #include <set>
 #include <string>
 #include <atomic>
+#include <vector>
 
 #include "slash/include/xdebug.h"
 #include "slash/include/slash_mutex.h"
@@ -27,7 +28,7 @@ class HolyThread: public ServerThread {
   HolyThread(const std::string& bind_ip, int port,
              ConnFactory* conn_factory,
              int cron_interval = 0, const ServerHandle* handle = nullptr);
-  HolyThread(const std::set<std::string>& bind_ips, int port, 
+  HolyThread(const std::set<std::string>& bind_ips, int port,
              ConnFactory* conn_factory,
              int cron_interval = 0, const ServerHandle* handle = nullptr);
   virtual ~HolyThread();
@@ -57,7 +58,7 @@ class HolyThread: public ServerThread {
   ConnFactory *conn_factory_;
   void* private_data_;
 
-  std::atomic<int> keepalive_timeout_; // keepalive second
+  std::atomic<int> keepalive_timeout_;  // keepalive second
 
   void DoCronTask() override;
 
@@ -73,5 +74,4 @@ class HolyThread: public ServerThread {
 
 
 }  // namespace pink
-
-#endif  // INCLUDE_HOLY_THREAD_H_
+#endif  // PINK_SRC_HOLY_THREAD_H_

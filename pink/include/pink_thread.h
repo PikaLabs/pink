@@ -3,12 +3,13 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef INCLUDE_PINK_THREAD_H_
-#define INCLUDE_PINK_THREAD_H_
+#ifndef PINK_INCLUDE_PINK_THREAD_H_
+#define PINK_INCLUDE_PINK_THREAD_H_
 
+#include <pthread.h>
 #include <string>
 #include <atomic>
-#include <pthread.h>
+
 #include "slash/include/slash_mutex.h"
 
 namespace pink {
@@ -45,13 +46,13 @@ class Thread {
   void set_thread_name(const std::string& name) {
     thread_name_ = name;
   }
-  
+
  protected:
   std::atomic<bool> should_stop_;
 
  private:
   static void* RunThread(void* arg);
-  virtual void *ThreadMain() = 0; 
+  virtual void *ThreadMain() = 0;
 
   slash::Mutex running_mu_;
   bool running_;
@@ -66,5 +67,4 @@ class Thread {
 };
 
 }  // namespace pink
-
-#endif  // INCLUDE_PINK_THREAD_H_
+#endif  // PINK_INCLUDE_PINK_THREAD_H_

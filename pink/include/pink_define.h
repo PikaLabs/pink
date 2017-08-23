@@ -3,8 +3,8 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef PINK_DEFINE_H__
-#define PINK_DEFINE_H__
+#ifndef PINK_INCLUDE_PINK_DEFINE_H_
+#define PINK_INCLUDE_PINK_DEFINE_H_
 
 #include <functional>
 #include <iostream>
@@ -16,7 +16,8 @@ namespace pink {
 #define PINK_MAX_MESSAGE 1024
 #define PINK_NAME_LEN 1024
 
-const int kProtoMaxMessage = 64 * 1024 * 1024; // 64MB
+const int kProtoMaxMessage = 64 * 1024 * 1024;  // 64MB
+
 /*
  * The pb head and code length
  */
@@ -74,7 +75,7 @@ enum RetCode {
 /*
  * define the redis protocol
  */
-#define REDIS_MAX_MESSAGE 67108864 // 64MB
+#define REDIS_MAX_MESSAGE 67108864  // 64MB
 #define REDIS_IOBUF_LEN 16384
 #define REDIS_REQ_INLINE 1
 #define REDIS_REQ_MULTIBULK 2
@@ -100,6 +101,5 @@ enum RetCode {
 #define COLON ':'
 #define SHARP '#'
 
-}
-
-#endif
+}  // namespace pink
+#endif  // PINK_INCLUDE_PINK_DEFINE_H_

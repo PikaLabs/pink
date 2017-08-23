@@ -1,3 +1,10 @@
+// Copyright (c) 2015-present, Qihoo, Inc.  All rights reserved.
+// This source code is licensed under the BSD-style license found in the
+// LICENSE file in the root directory of this source tree. An additional grant
+// of patent rights can be found in the PATENTS file in the same directory.
+
+#include <vector>
+
 #include "pink/src/holy_thread.h"
 
 #include "pink/src/pink_epoll.h"
@@ -80,7 +87,8 @@ int HolyThread::StopThread() {
 }
 
 void HolyThread::HandleNewConn(const int connfd, const std::string &ip_port) {
-  PinkConn *tc = conn_factory_->NewPinkConn(connfd, ip_port, this, private_data_);
+  PinkConn *tc = conn_factory_->NewPinkConn(
+      connfd, ip_port, this, private_data_);
   tc->SetNonblock();
   {
     slash::WriteLock l(&rwlock_);
@@ -171,7 +179,8 @@ void HolyThread::DoCronTask() {
 
     // Check keepalive timeout connection
     if (keepalive_timeout_ > 0 &&
-        now.tv_sec - iter->second->last_interaction().tv_sec > keepalive_timeout_) {
+        (now.tv_sec - iter->second->last_interaction().tv_sec >
+         keepalive_timeout_)) {
       CloseFd(iter->second);
       handle_->FdTimeoutHandle(iter->first, iter->second->ip_port());
       delete iter->second;

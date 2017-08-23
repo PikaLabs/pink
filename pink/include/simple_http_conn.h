@@ -3,8 +3,9 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef PINK_INCLUDE_HTTP_CONN_H_
-#define PINK_INCLUDE_HTTP_CONN_H_
+#ifndef PINK_INCLUDE_SIMPLE_HTTP_CONN_H_
+#define PINK_INCLUDE_SIMPLE_HTTP_CONN_H_
+
 #include <map>
 #include <vector>
 #include <string>
@@ -31,7 +32,7 @@ class Request {
 
   // POST: content-type: application/x-www-form-urlencoded
   std::map<std::string, std::string> post_params;
-  
+
   // attach in content
   std::string content;
 
@@ -51,9 +52,13 @@ class Request {
   };
 
   bool ParseGetUrl();
-  bool ParseHeadLine(const char* data, int line_start,
-    int line_end, ParseStatus* parseStatus);
-  bool ParseParameters(const std::string data, size_t line_start = 0, bool from_url = true);
+  bool ParseHeadLine(
+      const char* data, int line_start,
+      int line_end, ParseStatus* parseStatus);
+  bool ParseParameters(
+      const std::string data,
+      size_t line_start = 0,
+      bool from_url = true);
 };
 
 class Response {
@@ -91,7 +96,10 @@ class Response {
 
 class SimpleHTTPConn: public PinkConn {
  public:
-  SimpleHTTPConn(const int fd, const std::string &ip_port, ServerThread *thread);
+  SimpleHTTPConn(
+      const int fd,
+      const std::string &ip_port,
+      ServerThread *thread);
   virtual ~SimpleHTTPConn();
 
   virtual ReadStatus GetRequest() override;
@@ -120,5 +128,4 @@ class SimpleHTTPConn: public PinkConn {
 };
 
 }  // namespace pink
-
-#endif  // INCLUDE_HTTP_CONN_H_
+#endif  // PINK_INCLUDE_SIMPLE_HTTP_CONN_H_

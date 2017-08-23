@@ -2,8 +2,9 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
-#ifndef INCLUDE_PINK_CONN_H_
-#define INCLUDE_PINK_CONN_H_
+
+#ifndef PINK_INCLUDE_PINK_CONN_H_
+#define PINK_INCLUDE_PINK_CONN_H_
 
 #include <sys/time.h>
 #include <string>
@@ -24,7 +25,7 @@ class PinkConn {
  public:
   PinkConn(const int fd, const std::string &ip_port, ServerThread *thread);
   virtual ~PinkConn();
-  
+
   /*
    * Set the fd to nonblock && set the flag_ the the fd flag
    */
@@ -37,12 +38,14 @@ class PinkConn {
   virtual ReadStatus GetRequest() = 0;
   virtual WriteStatus SendReply() = 0;
 
-  int flags() const { 
-    return flags_; 
-  };
-  void set_fd(const int fd) { 
-    fd_ = fd; 
+  int flags() const {
+    return flags_;
   }
+
+  void set_fd(const int fd) {
+    fd_ = fd;
+  }
+
   int fd() const {
     return fd_;
   }
@@ -65,7 +68,7 @@ class PinkConn {
 
   struct timeval last_interaction() const {
     return last_interaction_;
-  };
+  }
 
   ServerThread *server_thread() const {
     return server_thread_;
@@ -108,7 +111,7 @@ class PinkConn {
  */
 class ConnFactory {
  public:
-  virtual ~ConnFactory() {};
+  virtual ~ConnFactory() {}
   virtual PinkConn* NewPinkConn(
     int connfd,
     const std::string &ip_port,
@@ -116,6 +119,6 @@ class ConnFactory {
     void* worker_private_data /* Has set in ThreadEnvHandle */) const = 0;
 };
 
-}
+}  // namespace pink
 
-#endif   // INCLUDE_PINK_CONN_H_
+#endif  // PINK_INCLUDE_PINK_CONN_H_

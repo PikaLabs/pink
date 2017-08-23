@@ -18,13 +18,15 @@ namespace pink {
 using slash::Status;
 
 class DefaultServerHandle : public ServerHandle {
-public:
+ public:
   virtual void CronHandle() const override {}
-  virtual void FdTimeoutHandle(int fd, const std::string& ip_port) const override {
+  virtual void FdTimeoutHandle(
+      int fd, const std::string& ip_port) const override {
     UNUSED(fd);
     UNUSED(ip_port);
   }
-  virtual void FdClosedHandle(int fd, const std::string& ip_port) const override {
+  virtual void FdClosedHandle(
+      int fd, const std::string& ip_port) const override {
     UNUSED(fd);
     UNUSED(ip_port);
   }
@@ -135,7 +137,8 @@ int ServerThread::InitHandle() {
     }
 
     // init pool
-    pink_epoll_->PinkAddEvent(socket_p->sockfd(), EPOLLIN | EPOLLERR | EPOLLHUP);
+    pink_epoll_->PinkAddEvent(
+        socket_p->sockfd(), EPOLLIN | EPOLLERR | EPOLLHUP);
     server_sockets_.push_back(socket_p);
     server_fds_.insert(socket_p->sockfd());
   }
@@ -171,8 +174,10 @@ void *ServerThread::ThreadMain() {
   while (!should_stop()) {
     if (cron_interval_ > 0) {
       gettimeofday(&now, nullptr);
-      if (when.tv_sec > now.tv_sec || (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
-        timeout = (when.tv_sec - now.tv_sec) * 1000 + (when.tv_usec - now.tv_usec) / 1000;
+      if (when.tv_sec > now.tv_sec ||
+          (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
+        timeout = (when.tv_sec - now.tv_sec) * 1000 +
+          (when.tv_usec - now.tv_usec) / 1000;
       } else {
         // Do own cron task as well as user's
         DoCronTask();
@@ -195,13 +200,15 @@ void *ServerThread::ThreadMain() {
         if (pfe->mask & EPOLLIN) {
           connfd = accept(fd, (struct sockaddr *) &cliaddr, &clilen);
           if (connfd == -1) {
-            log_warn("accept error, errno numberis %d, error reason %s", errno, strerror(errno));
+            log_warn("accept error, errno numberis %d, error reason %s",
+                     errno, strerror(errno));
             continue;
           }
           fcntl(connfd, F_SETFD, fcntl(connfd, F_GETFD) | FD_CLOEXEC);
 
           // Just ip
-          ip_port = inet_ntop(AF_INET, &cliaddr.sin_addr, ip_addr, sizeof(ip_addr));
+          ip_port =
+            inet_ntop(AF_INET, &cliaddr.sin_addr, ip_addr, sizeof(ip_addr));
 
           if (!handle_->AccessHandle(ip_port) ||
               !handle_->AccessHandle(connfd, ip_port)) {
@@ -266,7 +273,7 @@ int ServerThread::EnableSecurity(const std::string& cert_file,
   }
   CRYPTO_set_locking_callback(SSLLockingCallback);
   CRYPTO_set_id_callback(SSLIdCallback);
-    
+
   // 2. Use default configuration
   OPENSSL_config(NULL);
 
@@ -283,17 +290,19 @@ int ServerThread::EnableSecurity(const std::string& cert_file,
   }
 
   // 5. Set cert file and key file, then check key file
-  if (SSL_CTX_use_certificate_file(ssl_ctx_, cert_file.c_str(), SSL_FILETYPE_PEM) != 1) {
+  if (SSL_CTX_use_certificate_file(
+          ssl_ctx_, cert_file.c_str(), SSL_FILETYPE_PEM) != 1) {
     log_warn("SSL_CTX_use_certificate_file(%s) failed", cert_file.c_str());
     return -1;
   }
 
-  if (SSL_CTX_use_PrivateKey_file(ssl_ctx_, key_file.c_str(), SSL_FILETYPE_PEM) != 1) {
+  if (SSL_CTX_use_PrivateKey_file(
+          ssl_ctx_, key_file.c_str(), SSL_FILETYPE_PEM) != 1) {
     log_warn("SSL_CTX_use_PrivateKey_file(%s)", key_file.c_str());
     return -1;
   }
 
-  if(SSL_CTX_check_private_key(ssl_ctx_) != 1) {
+  if (SSL_CTX_check_private_key(ssl_ctx_) != 1) {
     log_warn("SSL_CTX_check_private_key(%s)", key_file.c_str());
     return -1;
   }

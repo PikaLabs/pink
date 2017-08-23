@@ -56,13 +56,15 @@ class ServerSocket {
   void set_recv_timeout(int recv_timeout) {
     recv_timeout_ = recv_timeout;
   }
+
   int recv_timeout() const {
     return recv_timeout_;
   }
 
-  int sockfd() const{
+  int sockfd() const {
     return sockfd_;
   }
+
   void set_sockfd(int sockfd) {
     sockfd_ = sockfd;
   }

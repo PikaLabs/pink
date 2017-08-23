@@ -40,7 +40,7 @@ class HTTPRequest {
 
  private:
   friend class HTTPConn;
-  HTTPRequest(HTTPConn* conn);
+  explicit HTTPRequest(HTTPConn* conn);
   ~HTTPRequest();
 
   HTTPConn* conn_;
@@ -103,7 +103,7 @@ class HTTPResponse {
   friend class HTTPConn;
   HTTPConn* conn_;
 
-  HTTPResponse(HTTPConn* conn);
+  explicit HTTPResponse(HTTPConn* conn);
   ~HTTPResponse();
 
   enum ResponseStatus {
@@ -186,7 +186,6 @@ class HTTPHandles {
 
 class HTTPConn: public PinkConn {
  public:
-
   HTTPConn(const int fd, const std::string &ip_port,
            ServerThread *sthread, std::shared_ptr<HTTPHandles> handles_,
            void* worker_specific_data);
@@ -211,4 +210,4 @@ class HTTPConn: public PinkConn {
 
 }  // namespace pink
 
-#endif  // INCLUDE_HTTP_CONN_H_
+#endif  // PINK_INCLUDE_HTTP_CONN_H_

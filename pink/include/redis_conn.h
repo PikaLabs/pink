@@ -3,15 +3,15 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef PINK_REDIS_CONN_H_
-#define PINK_REDIS_CONN_H_
+#ifndef PINK_INCLUDE_REDIS_CONN_H_
+#define PINK_INCLUDE_REDIS_CONN_H_
 
 #include <map>
 #include <vector>
+#include <string>
 
 #include "slash/include/slash_status.h"
 #include "slash/include/xdebug.h"
-
 #include "pink/include/pink_define.h"
 #include "pink/include/pink_conn.h"
 
@@ -60,9 +60,7 @@ class RedisConn: public PinkConn {
    */
   char* rbuf_;
   uint32_t wbuf_pos_;
-
-
 };
-}  // namespace pink
 
-#endif  // INCLUDE_REDIS_CONN_H_
+}  // namespace pink
+#endif  // PINK_INCLUDE_REDIS_CONN_H_

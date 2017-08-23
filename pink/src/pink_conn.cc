@@ -13,7 +13,9 @@
 
 namespace pink {
 
-PinkConn::PinkConn(const int fd, const std::string &ip_port, ServerThread *thread)
+PinkConn::PinkConn(const int fd,
+                   const std::string &ip_port,
+                   ServerThread *thread)
     : fd_(fd),
       ip_port_(ip_port),
       is_reply_(false),

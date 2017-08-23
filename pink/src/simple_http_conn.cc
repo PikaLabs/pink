@@ -2,6 +2,7 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
+
 #include "pink/include/simple_http_conn.h"
 #include <stdlib.h>
 #include <limits.h>
@@ -134,7 +135,7 @@ bool Request::ParseGetUrl() {
   }
   size_t n = path.find('?');
   if (n == std::string::npos) {
-    return true; // no parameter
+    return true;  // no parameter
   }
   if (!ParseParameters(path, n + 1)) {
     return false;
@@ -202,7 +203,7 @@ bool Request::ParseHeadFromArray(const char* data, const int size) {
     remain_size -= (line_end - line_start + 1);
     line_start = ++line_end;
   }
-  
+
   // Parse query parameter from url
   if (!ParseGetUrl()) {
     return false;
@@ -302,8 +303,8 @@ SimpleHTTPConn::SimpleHTTPConn(const int fd, const std::string &ip_port,
       header_len_(0),
       remain_packet_len_(0),
       response_pos_(-1) {
-  rbuf_ = (char *)malloc(sizeof(char) * kHTTPMaxMessage);
-  wbuf_ = (char *)malloc(sizeof(char) * kHTTPMaxMessage);
+  rbuf_ = reinterpret_cast<char*>(malloc(sizeof(char) * kHTTPMaxMessage));
+  wbuf_ = reinterpret_cast<char*>(malloc(sizeof(char) * kHTTPMaxMessage));
   request_ = new Request();
   response_ = new Response();
 }
@@ -321,7 +322,7 @@ SimpleHTTPConn::~SimpleHTTPConn() {
 bool SimpleHTTPConn::BuildRequestHeader() {
   request_->Clear();
   if (!request_->ParseHeadFromArray(rbuf_, header_len_)) {
-    return false;  
+    return false;
   }
   auto iter = request_->headers.find("content-length");
   if (iter == request_->headers.end()) {
@@ -364,7 +365,8 @@ ReadStatus SimpleHTTPConn::GetRequest() {
           return kReadClose;
         } else {
           rbuf_pos_ += nread;
-          rbuf_[rbuf_pos_] = '\0'; // So that strstr will not parse the expire char
+          // So that strstr will not parse the expire char
+          rbuf_[rbuf_pos_] = '\0';
           char *sep_pos = strstr(rbuf_, "\r\n\r\n");
           if (!sep_pos) {
             break;
@@ -403,13 +405,13 @@ ReadStatus SimpleHTTPConn::GetRequest() {
             remain_packet_len_ -= nread;
           }
         }
-        if (remain_packet_len_ == 0 || // no more content
-            rbuf_pos_ == kHTTPMaxMessage) { // buffer full
+        if (remain_packet_len_ == 0 ||  // no more content
+            rbuf_pos_ == kHTTPMaxMessage) {  // buffer full
           AppendRequestBody();
           if (remain_packet_len_ == 0) {
             conn_status_ = kComplete;
           } else {
-            rbuf_pos_ = header_len_ = 0; // read more packet content from begin
+            rbuf_pos_ = header_len_ = 0;  // read more packet content from begin
           }
         }
         break;
@@ -437,7 +439,7 @@ bool SimpleHTTPConn::FillResponseBuf() {
       return false;
     }
     wbuf_len_ += actual;
-    response_pos_ = 0; // Serialize body next time
+    response_pos_ = 0;  // Serialize body next time
   }
   while (response_->HasMoreBody(response_pos_)
       && wbuf_len_ < kHTTPMaxMessage) {
@@ -453,7 +455,7 @@ WriteStatus SimpleHTTPConn::SendReply() {
   if (!FillResponseBuf()) {
     return kWriteError;
   }
-  
+
   ssize_t nwritten = 0;
   while (wbuf_len_ > 0) {
     nwritten = write(fd(), wbuf_ + wbuf_pos_, wbuf_len_ - wbuf_pos_);
@@ -472,8 +474,8 @@ WriteStatus SimpleHTTPConn::SendReply() {
       }
     }
   }
-  response_pos_ = -1; // fill header first next time
-  
+  response_pos_ = -1;  // fill header first next time
+
   return kWriteAll;
 }
 

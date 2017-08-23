@@ -3,14 +3,15 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef INCLUDE_SERVER_THREAD_H_
-#define INCLUDE_SERVER_THREAD_H_
+#ifndef PINK_INCLUDE_SERVER_THREAD_H_
+#define PINK_INCLUDE_SERVER_THREAD_H_
 
 #include <sys/epoll.h>
 
 #include <set>
 #include <vector>
 #include <memory>
+#include <string>
 
 #ifdef __ENABLE_SSL
 #include <openssl/ssl.h>
@@ -102,9 +103,9 @@ class ServerHandle {
   }
 };
 
-const std::string kKillAllConnsTask = "kill_all_conns";
+const char kKillAllConnsTask[] = "kill_all_conns";
 
-const int kDefaultKeepAliveTime = 60; // (s)
+const int kDefaultKeepAliveTime = 60;  // (s)
 
 class ServerThread : public Thread {
  public:
@@ -233,6 +234,5 @@ extern ServerThread *NewDispatchThread(
     int cron_interval = 0, int queue_limit = 1000,
     const ServerHandle* handle = nullptr);
 
-} // namespace pink
-
-#endif
+}  // namespace pink
+#endif  // PINK_INCLUDE_SERVER_THREAD_H_

@@ -3,8 +3,8 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef PINK_INCLUDE_WORKER_THREAD_H_
-#define PINK_INCLUDE_WORKER_THREAD_H_
+#ifndef PINK_SRC_WORKER_THREAD_H_
+#define PINK_SRC_WORKER_THREAD_H_
 
 #include <sys/epoll.h>
 
@@ -13,6 +13,8 @@
 #include <queue>
 #include <map>
 #include <atomic>
+#include <vector>
+#include <set>
 
 #include "slash/include/xdebug.h"
 #include "slash/include/slash_mutex.h"
@@ -86,7 +88,7 @@ class WorkerThread : public Thread {
    */
   PinkEpoll *pink_epoll_;
 
-  std::atomic<int> keepalive_timeout_; // keepalive second
+  std::atomic<int> keepalive_timeout_;  // keepalive second
 
   virtual void *ThreadMain() override;
   void DoCronTask();
@@ -100,5 +102,4 @@ class WorkerThread : public Thread {
 };  // class WorkerThread
 
 }  // namespace pink
-
-#endif  // PINK_INCLUDE_WORKER_THREAD_H_
+#endif  // PINK_SRC_WORKER_THREAD_H_

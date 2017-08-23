@@ -3,14 +3,13 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef INCLUDE_PB_CONN_H_
-#define INCLUDE_PB_CONN_H_
+#ifndef PINK_INCLUDE_PB_CONN_H_
+#define PINK_INCLUDE_PB_CONN_H_
 
 #include <string>
 #include <map>
 
-#include <google/protobuf/message.h>
-
+#include "google/protobuf/message.h"
 #include "slash/include/slash_status.h"
 #include "pink/include/pink_conn.h"
 #include "pink/include/pink_define.h"
@@ -27,7 +26,6 @@ class PbConn: public PinkConn {
   ReadStatus GetRequest() override;
   WriteStatus SendReply() override;
 
-
   /*
    * The Variable need by read the buf,
    * We allocate the memory when we start the server
@@ -43,12 +41,9 @@ class PbConn: public PinkConn {
   google::protobuf::Message *res_;
 
  protected:
-
   virtual int DealMessage() = 0;
 
  private:
-
-
   char* wbuf_;
   uint32_t wbuf_len_;
   uint32_t wbuf_pos_;
@@ -56,5 +51,4 @@ class PbConn: public PinkConn {
 };
 
 }  // namespace pink
-
-#endif  // INCLUDE_PB_CONN_H_
+#endif  // PINK_INCLUDE_PB_CONN_H_

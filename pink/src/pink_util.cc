@@ -12,8 +12,7 @@
 
 namespace pink {
 
-int Setnonblocking(int sockfd)
-{
+int Setnonblocking(int sockfd) {
   int flags;
   if ((flags = fcntl(sockfd, F_GETFL, 0)) < 0) {
     close(sockfd);
@@ -27,4 +26,4 @@ int Setnonblocking(int sockfd)
   return flags;
 }
 
-}
+}  // namespace pink

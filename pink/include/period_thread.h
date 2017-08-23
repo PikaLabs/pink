@@ -3,8 +3,8 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef INCLUDE_PERIOD_THREAD_H_
-#define INCLUDE_PERIOD_THREAD_H_
+#ifndef PINK_INCLUDE_PERIOD_THREAD_H_
+#define PINK_INCLUDE_PERIOD_THREAD_H_
 
 #include <sys/time.h>
 
@@ -23,5 +23,4 @@ class PeriodThread : public Thread {
 };
 
 }  // namespace pink
-
-#endif  // INCLUDE_PERIOD_THREAD_H_
+#endif  // PINK_INCLUDE_PERIOD_THREAD_H_

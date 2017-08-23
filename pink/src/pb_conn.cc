@@ -35,11 +35,11 @@ PbConn::~PbConn() {
 //   step 1. kHeader, we read COMMAND_HEADER_LENGTH bytes;
 //   step 2. kPacket, we read header_len bytes;
 ReadStatus PbConn::GetRequest() {
-  // TODO  cur_pos_ can be omitted
   while (true) {
     switch (connStatus_) {
       case kHeader: {
-        ssize_t nread = read(fd(), rbuf_ + rbuf_len_, COMMAND_HEADER_LENGTH - rbuf_len_);
+        ssize_t nread = read(
+            fd(), rbuf_ + rbuf_len_, COMMAND_HEADER_LENGTH - rbuf_len_);
         if (nread == -1) {
           if (errno == EAGAIN) {
             return kReadHalf;
@@ -52,7 +52,8 @@ ReadStatus PbConn::GetRequest() {
           rbuf_len_ += nread;
           if (rbuf_len_ - cur_pos_ == COMMAND_HEADER_LENGTH) {
             uint32_t integer = 0;
-            memcpy((char *)(&integer), rbuf_ + cur_pos_, sizeof(uint32_t));
+            memcpy(reinterpret_cast<char*>(&integer),
+                   rbuf_ + cur_pos_, sizeof(uint32_t));
             header_len_ = ntohl(integer);
             remain_packet_len_ = header_len_;
             cur_pos_ += COMMAND_HEADER_LENGTH;
@@ -154,4 +155,4 @@ Status PbConn::BuildObuf() {
   return Status::OK();
 }
 
-} // namespace pink
+}  // namespace pink

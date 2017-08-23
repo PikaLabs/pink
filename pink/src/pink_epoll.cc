@@ -28,9 +28,11 @@ PinkEpoll::PinkEpoll() : timeout_(1000) {
     log_err("epoll create fail");
     exit(1);
   }
-  events_ = (struct epoll_event *)malloc(sizeof(struct epoll_event) * kPinkMaxClients);
+  events_ = (struct epoll_event *)malloc(
+      sizeof(struct epoll_event) * kPinkMaxClients);
 
-  firedevent_ = (PinkFiredEvent *)malloc(sizeof(PinkFiredEvent) * kPinkMaxClients);
+  firedevent_ = reinterpret_cast<PinkFiredEvent*>(malloc(
+      sizeof(PinkFiredEvent) * kPinkMaxClients));
 }
 
 PinkEpoll::~PinkEpoll() {

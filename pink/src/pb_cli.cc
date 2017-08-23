@@ -48,7 +48,8 @@ PbCli::~PbCli() {
 }
 
 Status PbCli::Send(void *msg) {
-  google::protobuf::Message *req = reinterpret_cast<google::protobuf::Message *>(msg);
+  google::protobuf::Message *req =
+    reinterpret_cast<google::protobuf::Message *>(msg);
 
   int wbuf_len = req->ByteSize();
   req->SerializeToArray(wbuf_ + kCommandHeaderLength, wbuf_len);
@@ -60,21 +61,22 @@ Status PbCli::Send(void *msg) {
 }
 
 Status PbCli::Recv(void *msg_res) {
-  google::protobuf::Message *res = reinterpret_cast<google::protobuf::Message *>(msg_res);
+  google::protobuf::Message *res =
+    reinterpret_cast<google::protobuf::Message *>(msg_res);
 
   // Read Header
   size_t read_len = kCommandHeaderLength;
-  Status s = RecvRaw((void *)rbuf_, &read_len);
+  Status s = RecvRaw(reinterpret_cast<void *>(rbuf_), &read_len);
   if (!s.ok()) {
     return s;
   }
 
   uint32_t integer;
-  memcpy((char *)(&integer), rbuf_, sizeof(uint32_t));
+  memcpy(reinterpret_cast<char*>(&integer), rbuf_, sizeof(uint32_t));
   size_t packet_len = ntohl(integer);
 
   // Read Packet
-  s = RecvRaw((void *)rbuf_, &packet_len);
+  s = RecvRaw(reinterpret_cast<void*>(rbuf_), &packet_len);
   if (!s.ok()) {
     return s;
   }
@@ -87,4 +89,4 @@ PinkCli *NewPbCli(const std::string& peer_ip, const int peer_port) {
   return new PbCli(peer_ip, peer_port);
 }
 
-};
+}  // namespace pink

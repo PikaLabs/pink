@@ -3,12 +3,14 @@
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
 
-#ifndef INCLUDE_DISPATCH_THREAD_H_
-#define INCLUDE_DISPATCH_THREAD_H_
+#ifndef PINK_SRC_DISPATCH_THREAD_H_
+#define PINK_SRC_DISPATCH_THREAD_H_
 
 #include <set>
+#include <map>
 #include <queue>
 #include <string>
+#include <vector>
 
 #include "slash/include/xdebug.h"
 #include "pink/include/server_thread.h"
@@ -21,7 +23,7 @@ class WorkerThread;
 
 class DispatchThread : public ServerThread {
  public:
-   DispatchThread(int port,
+  DispatchThread(int port,
                  int work_num, ConnFactory* conn_factory,
                  int cron_interval,
                  int queue_limit,
@@ -42,7 +44,7 @@ class DispatchThread : public ServerThread {
   virtual int StartThread() override;
 
   virtual int StopThread() override;
-  
+
   virtual void set_keepalive_timeout(int timeout) override;
 
   virtual int conn_num() const override;
@@ -51,9 +53,9 @@ class DispatchThread : public ServerThread {
 
   virtual PinkConn* MoveConnOut(int fd) override;
 
-	virtual void KillAllConns() override;
+  virtual void KillAllConns() override;
 
-	virtual bool KillConn(const std::string& ip_port) override;
+  virtual bool KillConn(const std::string& ip_port) override;
 
  private:
   /*
@@ -79,7 +81,5 @@ class DispatchThread : public ServerThread {
   void operator=(const DispatchThread&);
 };  // class DispatchThread
 
-
 }  // namespace pink
-
-#endif  // INCLUDE_DISPATCH_THREAD_H_
+#endif  // PINK_SRC_DISPATCH_THREAD_H_

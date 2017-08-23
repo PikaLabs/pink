@@ -2,6 +2,7 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
+
 #include "pink/include/redis_cli.h"
 
 #include <netinet/in.h>
@@ -30,8 +31,7 @@ class RedisCli : public PinkCli {
   virtual Status Recv(void *result = NULL);
 
  private:
-
-  RedisCmdArgsType argv_;   // The parsed result 
+  RedisCmdArgsType argv_;   // The parsed result
 
   char *rbuf_;
   int32_t rbuf_size_;
@@ -73,11 +73,11 @@ enum REDIS_STATUS {
 };
 
 RedisCli::RedisCli()
-  : rbuf_size_(REDIS_MAX_MESSAGE),
-    rbuf_pos_(0),
-    rbuf_offset_(0),
-    err_(REDIS_OK) {
-      rbuf_ = (char *)malloc(sizeof(char) * rbuf_size_);
+    : rbuf_size_(REDIS_MAX_MESSAGE),
+      rbuf_pos_(0),
+      rbuf_offset_(0),
+      err_(REDIS_OK) {
+  rbuf_ = reinterpret_cast<char*>(malloc(sizeof(char) * rbuf_size_));
 }
 
 RedisCli::~RedisCli() {
@@ -88,7 +88,7 @@ RedisCli::~RedisCli() {
 Status RedisCli::Send(void *msg) {
   Status s;
 
-  // TODO anan use socket_->SendRaw instead
+  // TODO(anan) use socket_->SendRaw instead
   std::string* storage = reinterpret_cast<std::string *>(msg);
   const char *wbuf = storage->data();
   size_t nleft = storage->size();
@@ -121,11 +121,10 @@ Status RedisCli::Send(void *msg) {
 
 // The result is useless
 Status RedisCli::Recv(void *trival) {
-
   argv_.clear();
   int result = GetReply();
   switch (result) {
-    case REDIS_OK: 
+    case REDIS_OK:
       if (trival != nullptr) {
         *static_cast<RedisCmdArgsType*>(trival) = argv_;
       }
@@ -138,8 +137,9 @@ Status RedisCli::Recv(void *trival) {
       return Status::IOError("read failed caz " + std::string(strerror(errno)));
     case REDIS_EPARSE_TYPE:
       return Status::IOError("invalid type");
-    default: // other error
-      return Status::IOError("other error, maybe " + std::string(strerror(errno)));
+    default:  // other error
+      return Status::IOError(
+          "other error, maybe " + std::string(strerror(errno)));
   }
 }
 
@@ -167,7 +167,7 @@ ssize_t RedisCli::BufferRead() {
       } else {
         return REDIS_EREAD;
       }
-    } else if (nread == 0) {    // we consider read null an error 
+    } else if (nread == 0) {    // we consider read null an error
       return REDIS_EREAD_NULL;
     }
 
@@ -296,7 +296,7 @@ int RedisCli::GetReply() {
       }
     }
 
-    // stop if error occured. 
+    // stop if error occured.
     if ((result = GetReplyFromReader()) < REDIS_OK) {
       break;
     }
@@ -322,7 +322,7 @@ char *RedisCli::ReadLine(int *_len) {
   p = rbuf_ + rbuf_pos_;
   s = seekNewline(p, rbuf_offset_);
   if (s != NULL) {
-    len = s - (rbuf_ + rbuf_pos_); 
+    len = s - (rbuf_ + rbuf_pos_);
     rbuf_pos_ += len + 2; /* skip \r\n */
     rbuf_offset_ -= len + 2;
     if (_len) *_len = len;
@@ -346,7 +346,7 @@ int RedisCli::GetReplyFromReader() {
   }
 
   int type;
-  // Check reply type 
+  // Check reply type
   switch (*p) {
     case '-':
       type = REDIS_REPLY_ERROR;
@@ -371,17 +371,17 @@ int RedisCli::GetReplyFromReader() {
     case REDIS_REPLY_ERROR:
     case REDIS_REPLY_STATUS:
     case REDIS_REPLY_INTEGER:
-      //elements_ = 1;
+      // elements_ = 1;
       return ProcessLineItem();
     case REDIS_REPLY_STRING:
       // need processBulkItem();
-      //elements_ = 1;
+      // elements_ = 1;
       return ProcessBulkItem();
     case REDIS_REPLY_ARRAY:
       // need processMultiBulkItem();
       return ProcessMultiBulkItem();
     default:
-      return REDIS_EPARSE_TYPE; // Avoid warning.
+      return REDIS_EPARSE_TYPE;  // Avoid warning.
   }
 }
 
@@ -402,7 +402,7 @@ static int intlen(int i) {
   do {
     len++;
     i /= 10;
-  } while(i);
+  } while (i);
   return len;
 }
 
@@ -483,34 +483,36 @@ int redisvFormatCommand(std::string *cmd, const char *format, va_list ap) {
             /* Copy va_list before consuming with va_arg */
             va_copy(_cpy, ap);
 
-            if (strchr(intfmts, *_p) != NULL) {       /* Integer conversion (without modifiers) */
-              va_arg(ap,int);
+            if (strchr(intfmts, *_p) != NULL) {
+              /* Integer conversion (without modifiers) */
+              va_arg(ap, int);
               fmt_valid = true;
-            } else if (strchr("eEfFgGaA",*_p) != NULL) { /* Double conversion (without modifiers) */
+            } else if (strchr("eEfFgGaA", *_p) != NULL) {
+              /* Double conversion (without modifiers) */
               va_arg(ap, double);
               fmt_valid = true;
-            } else if (_p[0] == 'h' && _p[1] == 'h') {    /* Size: char */
+            } else if (_p[0] == 'h' && _p[1] == 'h') {  /* Size: char */
               _p += 2;
-              if (*_p != '\0' && strchr(intfmts,*_p) != NULL) {
-                va_arg(ap,int); /* char gets promoted to int */
+              if (*_p != '\0' && strchr(intfmts, *_p) != NULL) {
+                va_arg(ap, int);  /* char gets promoted to int */
                 fmt_valid = true;
               }
-            } else if (_p[0] == 'h') {                /* Size: short */
+            } else if (_p[0] == 'h') {  /* Size: short */
               _p += 1;
-              if (*_p != '\0' && strchr(intfmts,*_p) != NULL) {
-                va_arg(ap,int); /* short gets promoted to int */
+              if (*_p != '\0' && strchr(intfmts, *_p) != NULL) {
+                va_arg(ap, int); /* short gets promoted to int */
                 fmt_valid = true;
               }
             } else if (_p[0] == 'l' && _p[1] == 'l') { /* Size: long long */
               _p += 2;
-              if (*_p != '\0' && strchr(intfmts,*_p) != NULL) {
+              if (*_p != '\0' && strchr(intfmts, *_p) != NULL) {
                 va_arg(ap, long long);
                 fmt_valid = true;
               }
             } else if (_p[0] == 'l') {           /* Size: long */
               _p += 1;
-              if (*_p != '\0' && strchr(intfmts,*_p) != NULL) {
-                va_arg(ap,long);
+              if (*_p != '\0' && strchr(intfmts, *_p) != NULL) {
+                va_arg(ap, long);
                 fmt_valid = true;
               }
             }
@@ -525,7 +527,7 @@ int redisvFormatCommand(std::string *cmd, const char *format, va_list ap) {
               memcpy(_format, c, _l);
               _format[_l] = '\0';
 
-              int n = vsnprintf (buf, REDIS_MAX_MESSAGE, _format, _cpy);
+              int n = vsnprintf(buf, REDIS_MAX_MESSAGE, _format, _cpy);
               curarg.append(buf, n);
 
               /* Update current position (note: outer blocks

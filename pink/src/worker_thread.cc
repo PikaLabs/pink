@@ -1,3 +1,10 @@
+// Copyright (c) 2015-present, Qihoo, Inc.  All rights reserved.
+// This source code is licensed under the BSD-style license found in the
+// LICENSE file in the root directory of this source tree. An additional grant
+// of patent rights can be found in the PATENTS file in the same directory.
+
+#include <vector>
+
 #include "pink/src/worker_thread.h"
 
 #include "pink/include/pink_conn.h"
@@ -7,8 +14,9 @@
 namespace pink {
 
 
-WorkerThread::WorkerThread(ConnFactory *conn_factory, ServerThread* server_thread,
-                           int cron_interval) 
+WorkerThread::WorkerThread(ConnFactory *conn_factory,
+                           ServerThread* server_thread,
+                           int cron_interval)
       : server_thread_(server_thread),
         conn_factory_(conn_factory),
         cron_interval_(cron_interval),
@@ -73,22 +81,23 @@ void *WorkerThread::ThreadMain() {
   struct timeval now = when;
 
   when.tv_sec += (cron_interval_ / 1000);
-  when.tv_usec += ((cron_interval_ % 1000 ) * 1000);
+  when.tv_usec += ((cron_interval_ % 1000) * 1000);
   int timeout = cron_interval_;
   if (timeout <= 0) {
     timeout = PINK_CRON_INTERVAL;
   }
 
   while (!should_stop()) {
-
     if (cron_interval_ > 0) {
       gettimeofday(&now, NULL);
-      if (when.tv_sec > now.tv_sec || (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
-        timeout = (when.tv_sec - now.tv_sec) * 1000 + (when.tv_usec - now.tv_usec) / 1000;
+      if (when.tv_sec > now.tv_sec ||
+          (when.tv_sec == now.tv_sec && when.tv_usec > now.tv_usec)) {
+        timeout = (when.tv_sec - now.tv_sec) * 1000 +
+          (when.tv_usec - now.tv_usec) / 1000;
       } else {
         DoCronTask();
         when.tv_sec = now.tv_sec + (cron_interval_ / 1000);
-        when.tv_usec = now.tv_usec + ((cron_interval_ % 1000 ) * 1000);
+        when.tv_usec = now.tv_usec + ((cron_interval_ % 1000) * 1000);
         timeout = cron_interval_;
       }
     }
@@ -105,8 +114,9 @@ void *WorkerThread::ThreadMain() {
             ti = conn_queue_.front();
             conn_queue_.pop();
           }
-          PinkConn *tc = conn_factory_->NewPinkConn(ti.fd(), ti.ip_port(),
-                                                    server_thread_, private_data_);
+          PinkConn *tc = conn_factory_->NewPinkConn(
+              ti.fd(), ti.ip_port(),
+              server_thread_, private_data_);
           if (!tc || !tc->SetNonblock()) {
             delete tc;
             continue;
@@ -177,9 +187,9 @@ void *WorkerThread::ThreadMain() {
             conns_.erase(pfe->fd);
           }
         }
-      } // connection event
-    } // for (int i = 0; i < nfds; i++)
-  } // while (!should_stop())
+      }  // connection event
+    }  // for (int i = 0; i < nfds; i++)
+  }  // while (!should_stop())
 
   Cleanup();
   return NULL;
@@ -215,9 +225,11 @@ void WorkerThread::DoCronTask() {
 
     // Check keepalive timeout connection
     if (keepalive_timeout_ > 0 &&
-        now.tv_sec - iter->second->last_interaction().tv_sec > keepalive_timeout_) {
+        (now.tv_sec - iter->second->last_interaction().tv_sec >
+         keepalive_timeout_)) {
       CloseFd(iter->second);
-      server_thread_->handle_->FdTimeoutHandle(iter->first, iter->second->ip_port());
+      server_thread_->handle_->FdTimeoutHandle(
+          iter->first, iter->second->ip_port());
       delete iter->second;
       iter = conns_.erase(iter);
       continue;

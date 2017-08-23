@@ -70,7 +70,8 @@ inline int find_lf(const char* data, int size) {
   return count;
 }
 
-bool HTTPRequest::ParseHeadLine(const char* data, int line_start, int line_end) {
+bool HTTPRequest::ParseHeadLine(
+    const char* data, int line_start, int line_end) {
   std::string param_key;
   std::string param_value;
   for (int i = line_start; i <= line_end; i++) {
@@ -130,7 +131,7 @@ bool HTTPRequest::ParseGetUrl() {
   }
   size_t n = path_.find('?');
   if (n == std::string::npos) {
-    return true; // no parameter
+    return true;  // no parameter
   }
   if (!ParseParameters(path_, n + 1)) {
     return false;
@@ -157,7 +158,8 @@ bool HTTPRequest::ParseParameters(const std::string data, size_t line_start) {
       query_params_[data.substr(pre, end - pre)] = std::string();
       pre = end + 1;
     } else {
-      query_params_[data.substr(pre, mid - pre)] = data.substr(mid + 1, end - mid - 1);
+      query_params_[data.substr(pre, mid - pre)] =
+        data.substr(mid + 1, end - mid - 1);
       pre = end + 1;
     }
   }
@@ -165,7 +167,7 @@ bool HTTPRequest::ParseParameters(const std::string data, size_t line_start) {
 }
 
 int HTTPRequest::ParseHeader() {
-  rbuf_[rbuf_pos_] = '\0'; // Avoid strstr() parsing expire char
+  rbuf_[rbuf_pos_] = '\0';  // Avoid strstr() parsing expire char
   char *sep_pos = strstr(rbuf_, "\r\n\r\n");
   if (!sep_pos) {
     // Haven't find header
@@ -192,7 +194,7 @@ int HTTPRequest::ParseHeader() {
     remain_size -= (line_end - line_start + 1);
     line_start = ++line_end;
   }
-  
+
   // Parse query parameter from url
   if (!ParseGetUrl()) {
     return -1;
@@ -221,7 +223,8 @@ void HTTPRequest::Dump() const {
   std::cout << "Version: " << version_ << std::endl;
   std::cout << "Headers: " << std::endl;
   for (auto& header : headers_) {
-    std::cout << "  ----- " << header.first << ": " << header.second << std::endl;
+    std::cout << "  ----- "
+      << header.first << ": " << header.second << std::endl;
   }
   std::cout << "Query params: " << std::endl;
   for (auto& item : query_params_) {
@@ -245,7 +248,8 @@ bool HTTPResponse::SerializeHeader() {
   }
 
   for (auto &line : headers_) {
-    ret = snprintf(wbuf_ + serial_size, kHTTPMaxHeader - serial_size, "%s: %s\r\n",
+    ret = snprintf(wbuf_ + serial_size, kHTTPMaxHeader - serial_size,
+                   "%s: %s\r\n",
                    line.first.c_str(), line.second.c_str());
     serial_size += ret;
     if (ret < 0 || serial_size == static_cast<int>(kHTTPMaxHeader)) {
@@ -524,7 +528,8 @@ void HTTPResponse::SetStatusCode(int code) {
   status_code_ = code;
 }
 
-void HTTPResponse::SetHeaders(const std::string& key, const std::string& value) {
+void HTTPResponse::SetHeaders(
+    const std::string& key, const std::string& value) {
   headers_[key] = value;
 }
 
@@ -606,7 +611,8 @@ bool HTTPResponse::Flush() {
     if (buf_len_ == 0) {
       size_t remain_buf = static_cast<uint64_t>(kHTTPMaxMessage) - wbuf_pos_;
       size_t needed_size = std::min(remain_buf, remain_send_len_);
-      buf_len_ = conn_->handles_->WriteResponseBody(wbuf_ + wbuf_pos_, needed_size);
+      buf_len_ = conn_->handles_->WriteResponseBody(
+          wbuf_ + wbuf_pos_, needed_size);
     }
     ssize_t nwritten;
 #ifdef __ENABLE_SSL

@@ -59,7 +59,8 @@ void *BGThread::ThreadMain() {
         (*function)(arg);
         continue;
       } else if (queue_.empty() && !should_stop()) {
-        rsignal_.TimedWait(static_cast<uint32_t>((timer_item.exec_time - unow) / 1000));
+        rsignal_.TimedWait(
+            static_cast<uint32_t>((timer_item.exec_time - unow) / 1000));
         mu_.Unlock();
         continue;
       }
@@ -79,7 +80,8 @@ void *BGThread::ThreadMain() {
 /*
  * timeout is in millisecond
  */
-void BGThread::DelaySchedule(uint64_t timeout, void (*function)(void *), void* arg) {
+void BGThread::DelaySchedule(
+    uint64_t timeout, void (*function)(void *), void* arg) {
   /*
    * pthread_cond_timedwait api use absolute API
    * so we need gettimeofday + timeout
@@ -95,4 +97,4 @@ void BGThread::DelaySchedule(uint64_t timeout, void (*function)(void *), void* a
   mu_.Unlock();
 }
 
-}
+}  // namespace pink

@@ -1,3 +1,8 @@
+// Copyright (c) 2015-present, Qihoo, Inc.  All rights reserved.
+// This source code is licensed under the BSD-style license found in the
+// LICENSE file in the root directory of this source tree. An additional grant
+// of patent rights can be found in the PATENTS file in the same directory.
+
 #include <stdlib.h>
 #include <limits.h>
 
@@ -24,18 +29,19 @@ static int HexDigitToInt32(char ch) {
     return 0;
   }
 }
+
 static int split2args(const std::string& req_buf, RedisCmdArgsType& argv) {
   const char *p = req_buf.data();
   std::string arg;
 
   while (1) {
     // skip blanks
-    while(*p && isspace(*p)) p++;
+    while (*p && isspace(*p)) p++;
     if (*p) {
       // get a token
-      int inq=0;  // set to 1 if we are in "quotes"
-      int insq=0; // set to 1 if we are in 'single quotes'
-      int done=0;
+      int inq = 0;  // set to 1 if we are in "quotes"
+      int insq = 0;  // set to 1 if we are in 'single quotes'
+      int done = 0;
 
       arg.clear();
       while (!done) {
@@ -46,7 +52,7 @@ static int split2args(const std::string& req_buf, RedisCmdArgsType& argv) {
             unsigned char byte = HexDigitToInt32(*(p+2))*16 + HexDigitToInt32(*(p+3));
             arg.append(1, byte);
             p += 3;
-          } else if (*p == '\\' && *(p+1)) {
+          } else if (*p == '\\' && *(p + 1)) {
             char c;
 
             p++;
@@ -65,8 +71,8 @@ static int split2args(const std::string& req_buf, RedisCmdArgsType& argv) {
             if (*(p+1) && !isspace(*(p+1))) {
               argv.clear();
               return -1;
-            };
-            done=1;
+            }
+            done = 1;
           } else if (!*p) {
             // unterminated quotes
             argv.clear();
@@ -85,7 +91,7 @@ static int split2args(const std::string& req_buf, RedisCmdArgsType& argv) {
               argv.clear();
               return -1;
             }
-            done=1;
+            done = 1;
           } else if (!*p) {
             // unterminated quotes
             argv.clear();
@@ -100,13 +106,13 @@ static int split2args(const std::string& req_buf, RedisCmdArgsType& argv) {
             case '\r':
             case '\t':
             case '\0':
-              done=1;
+              done = 1;
             break;
             case '"':
-              inq=1;
+              inq = 1;
             break;
             case '\'':
-              insq=1;
+              insq = 1;
             break;
             default:
               // current = sdscatlen(current,p,1);
@@ -123,20 +129,22 @@ static int split2args(const std::string& req_buf, RedisCmdArgsType& argv) {
   }
 }
 
-RedisConn::RedisConn(const int fd, const std::string &ip_port, ServerThread *thread) :
-  PinkConn(fd, ip_port, thread),
-  wbuf_size_(REDIS_MAX_MESSAGE),
-  wbuf_len_(0),
-  last_read_pos_(-1),
-  next_parse_pos_(0),
-  req_type_(0),
-  multibulk_len_(0),
-  bulk_len_(-1),
-  is_find_sep_(true),
-  is_overtake_(false),
-  wbuf_pos_(0) {
-  rbuf_ = (char *)malloc(sizeof(char) * REDIS_MAX_MESSAGE);
-  wbuf_ = (char *)malloc(sizeof(char) * REDIS_MAX_MESSAGE);
+RedisConn::RedisConn(const int fd,
+                     const std::string &ip_port,
+                     ServerThread *thread)
+    : PinkConn(fd, ip_port, thread),
+      wbuf_size_(REDIS_MAX_MESSAGE),
+      wbuf_len_(0),
+      last_read_pos_(-1),
+      next_parse_pos_(0),
+      req_type_(0),
+      multibulk_len_(0),
+      bulk_len_(-1),
+      is_find_sep_(true),
+      is_overtake_(false),
+      wbuf_pos_(0) {
+  rbuf_ = reinterpret_cast<char*>(malloc(sizeof(char) * REDIS_MAX_MESSAGE));
+  wbuf_ = reinterpret_cast<char*>(malloc(sizeof(char) * REDIS_MAX_MESSAGE));
 }
 
 RedisConn::~RedisConn() {
@@ -177,14 +185,13 @@ ReadStatus RedisConn::ProcessInlineBuffer() {
 ReadStatus RedisConn::ProcessMultibulkBuffer() {
   int32_t pos;
   if (multibulk_len_ == 0) {
-    /* The client should have been reset */;
-
+    /* The client should have been reset */
     pos = FindNextSeparators();
     if (pos != -1) {
-        if (GetNextNum(pos, &multibulk_len_) != 0) {
-            // Protocol error: invalid multibulk length
-            return kParseError;
-        }
+      if (GetNextNum(pos, &multibulk_len_) != 0) {
+        // Protocol error: invalid multibulk length
+        return kParseError;
+      }
       next_parse_pos_ = (pos + 1) % REDIS_MAX_MESSAGE;
       argv_.clear();
       if ((last_read_pos_ + 1) % REDIS_MAX_MESSAGE == next_parse_pos_) {
@@ -192,9 +199,9 @@ ReadStatus RedisConn::ProcessMultibulkBuffer() {
       }
     } else {
       if ((last_read_pos_ + 1) % REDIS_MAX_MESSAGE == next_parse_pos_) {
-        return kFullError; // FULL_ERROR
+        return kFullError;  // FULL_ERROR
       } else {
-        return kReadHalf; // HALF
+        return kReadHalf;  // HALF
       }
     }
   }
@@ -204,7 +211,7 @@ ReadStatus RedisConn::ProcessMultibulkBuffer() {
       pos = FindNextSeparators();
       if (pos != -1) {
         if (rbuf_[next_parse_pos_] != '$') {
-           return kParseError;// PARSE_ERROR
+           return kParseError;  // PARSE_ERROR
         }
 
         if (GetNextNum(pos, &bulk_len_) != 0) {
@@ -217,9 +224,9 @@ ReadStatus RedisConn::ProcessMultibulkBuffer() {
         }
       } else {
         if ((last_read_pos_ + 1) % REDIS_MAX_MESSAGE == next_parse_pos_) {
-          return kFullError; // FULL_ERROR
+          return kFullError;   // FULL_ERROR
         } else {
-          return kReadHalf; // HALF
+          return kReadHalf;   // HALF
         }
       }
     }
@@ -245,7 +252,10 @@ ReadStatus RedisConn::ProcessMultibulkBuffer() {
         if (REDIS_MAX_MESSAGE - next_parse_pos_ >= bulk_len_) {
           argv_.push_back(std::string(rbuf_ + next_parse_pos_, bulk_len_));
         } else {
-          tmp = std::string(rbuf_ + next_parse_pos_, REDIS_MAX_MESSAGE - next_parse_pos_) + std::string(rbuf_, bulk_len_ - (REDIS_MAX_MESSAGE - next_parse_pos_));
+          tmp = std::string(rbuf_ + next_parse_pos_,
+                            REDIS_MAX_MESSAGE - next_parse_pos_) +
+            std::string(rbuf_,
+                        bulk_len_ - (REDIS_MAX_MESSAGE - next_parse_pos_));
           argv_.push_back(tmp);
         }
         next_parse_pos_ = bulk_len_ - (REDIS_MAX_MESSAGE - next_parse_pos_) + 2;
@@ -259,9 +269,9 @@ ReadStatus RedisConn::ProcessMultibulkBuffer() {
   }
 
   if (multibulk_len_ == 0) {
-    return kReadAll; // OK
+    return kReadAll;  // OK
   } else {
-    return kReadHalf; // HALF
+    return kReadHalf;  // HALF
   }
 }
 
@@ -278,7 +288,7 @@ bool RedisConn::ExpandWbuf() {
     return false;
   }
   wbuf_size_ *= 2;
-  wbuf_ = (char*)realloc(wbuf_, wbuf_size_);
+  wbuf_ = reinterpret_cast<char*>(realloc(wbuf_, wbuf_size_));
   return true;
 }
 
@@ -312,7 +322,6 @@ ReadStatus RedisConn::ProcessInputBuffer() {
       DealMessage();
     }
     ResetClient();
-
   }
   req_type_ = 0;
   next_parse_pos_ = 0;
@@ -359,8 +368,7 @@ ReadStatus RedisConn::GetRequest() {
   return ret; // OK || HALF || FULL_ERROR || PARSE_ERROR
 }
 
-WriteStatus RedisConn::SendReply()
-{
+WriteStatus RedisConn::SendReply() {
   ssize_t nwritten = 0;
   while (wbuf_len_ > 0) {
     nwritten = write(fd(), wbuf_ + wbuf_pos_, wbuf_len_ - wbuf_pos_);

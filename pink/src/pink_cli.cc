@@ -64,14 +64,14 @@ Status PinkCli::Connect(const std::string &bind_ip) {
   return Connect(rep_->peer_ip, rep_->peer_port, bind_ip);
 }
 
-Status PinkCli::Connect(const std::string &ip, const int port, 
+Status PinkCli::Connect(const std::string &ip, const int port,
     const std::string &bind_ip) {
   Rep* r = rep_;
   Status s;
   int rv;
   char cport[6];
   struct addrinfo hints, *servinfo, *p;
-  snprintf(cport, 6, "%d", port);
+  snprintf(cport, sizeof(cport), "%d", port);
   memset(&hints, 0, sizeof(hints));
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
@@ -81,7 +81,8 @@ Status PinkCli::Connect(const std::string &ip, const int port,
     return Status::IOError("connect getaddrinfo error for ", ip);
   }
   for (p = servinfo; p != NULL; p = p->ai_next) {
-    if ((r->sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+    if ((r->sockfd = socket(
+            p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
       continue;
     }
 
@@ -102,9 +103,11 @@ Status PinkCli::Connect(const std::string &ip, const int port,
       if (errno == EHOSTUNREACH) {
         close(r->sockfd);
         continue;
-      } else if (errno == EINPROGRESS || errno == EAGAIN || errno == EWOULDBLOCK) {
+      } else if (errno == EINPROGRESS ||
+                 errno == EAGAIN ||
+                 errno == EWOULDBLOCK) {
         struct pollfd wfd[1];
-        
+
         wfd[0].fd = r->sockfd;
         wfd[0].events = POLLOUT;
 
@@ -124,7 +127,8 @@ Status PinkCli::Connect(const std::string &ip, const int port,
         if (getsockopt(r->sockfd, SOL_SOCKET, SO_ERROR, &val, &lon) == -1) {
           close(r->sockfd);
           freeaddrinfo(servinfo);
-          return Status::IOError("EHOSTUNREACH", "connect host getsockopt error");
+          return Status::IOError("EHOSTUNREACH",
+                                 "connect host getsockopt error");
         }
 
         if (val) {
@@ -135,7 +139,8 @@ Status PinkCli::Connect(const std::string &ip, const int port,
       } else {
         close(r->sockfd);
         freeaddrinfo(servinfo);
-        return Status::IOError("EHOSTUNREACH", "The target host cannot be reached");
+        return Status::IOError("EHOSTUNREACH",
+                               "The target host cannot be reached");
       }
     }
 
@@ -144,8 +149,7 @@ Status PinkCli::Connect(const std::string &ip, const int port,
     getsockname(r->sockfd, (struct sockaddr*) &laddr, &llen);
     std::string lip(inet_ntoa(laddr.sin_addr));
     int lport = ntohs(laddr.sin_port);
-    if (ip == lip && port == lport) 
-    {
+    if (ip == lip && port == lport) {
       return Status::IOError("EHOSTUNREACH", "same ip port");
     }
 
@@ -168,7 +172,7 @@ Status PinkCli::Connect(const std::string &ip, const int port,
 }
 
 Status PinkCli::SendRaw(void *buf, size_t count) {
-  char* wbuf = (char *)buf;
+  char* wbuf = reinterpret_cast<char*>(buf);
   size_t nleft = count;
   int pos = 0;
   ssize_t nwritten;
@@ -195,7 +199,7 @@ Status PinkCli::SendRaw(void *buf, size_t count) {
 
 Status PinkCli::RecvRaw(void *buf, size_t *count) {
   Rep* r = rep_;
-  char* rbuf = (char *)buf;
+  char* rbuf = reinterpret_cast<char*>(buf);
   size_t nleft = *count;
   size_t pos = 0;
   ssize_t nread;
@@ -218,7 +222,7 @@ Status PinkCli::RecvRaw(void *buf, size_t *count) {
 
   *count = pos;
   return Status::OK();
-};
+}
 
 int PinkCli::fd() const {
   return rep_->sockfd;
@@ -240,8 +244,10 @@ int PinkCli::set_send_timeout(int send_timeout) {
   int ret = 0;
   if (send_timeout > 0) {
     r->send_timeout = send_timeout;
-    struct timeval timeout = {r->send_timeout / 1000, (r->send_timeout % 1000) * 1000};
-    ret = setsockopt(r->sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+    struct timeval timeout =
+        {r->send_timeout / 1000, (r->send_timeout % 1000) * 1000};
+    ret = setsockopt(
+        r->sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
   }
   return ret;
 }
@@ -251,18 +257,20 @@ int PinkCli::set_recv_timeout(int recv_timeout) {
   int ret = 0;
   if (recv_timeout > 0) {
     r->recv_timeout = recv_timeout;
-    struct timeval timeout = {r->recv_timeout / 1000, (r->recv_timeout % 1000) * 1000};
-    ret = setsockopt(r->sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+    struct timeval timeout =
+        {r->recv_timeout / 1000, (r->recv_timeout % 1000) * 1000};
+    ret = setsockopt(
+        r->sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
   }
   return ret;
 }
 
 int PinkCli::set_tcp_nodelay() {
-  Rep* r= rep_;
+  Rep* r = rep_;
   int val = 1;
   int ret = 0;
   ret = setsockopt(r->sockfd, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val));
   return ret;
 }
 
-};
+}  // namespace pink

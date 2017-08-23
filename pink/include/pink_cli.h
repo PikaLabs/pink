@@ -1,5 +1,12 @@
+// Copyright (c) 2015-present, Qihoo, Inc.  All rights reserved.
+// This source code is licensed under the BSD-style license found in the
+// LICENSE file in the root directory of this source tree. An additional grant
+// of patent rights can be found in the PATENTS file in the same directory.
+
 #ifndef PINK_INCLUDE_PINK_CLI_H_
 #define PINK_INCLUDE_PINK_CLI_H_
+
+#include <string>
 
 #include "slash/include/slash_status.h"
 
@@ -9,11 +16,11 @@ namespace pink {
 
 class PinkCli {
  public:
-  PinkCli(const std::string& ip = "", const int port = 0);
+  explicit PinkCli(const std::string& ip = "", const int port = 0);
   virtual ~PinkCli();
 
   Status Connect(const std::string& bind_ip = "");
-  Status Connect(const std::string &peer_ip, const int peer_port, 
+  Status Connect(const std::string &peer_ip, const int peer_port,
       const std::string& bind_ip = "");
   // Compress and write the message
   virtual Status Send(void *msg) = 0;
@@ -46,10 +53,11 @@ class PinkCli {
   void operator=(const PinkCli&);
 };
 
-extern PinkCli *NewPbCli(const std::string& peer_ip = "", const int peer_port = 0);
+extern PinkCli *NewPbCli(
+    const std::string& peer_ip = "",
+    const int peer_port = 0);
 
 extern PinkCli *NewRedisCli();
 
 }  // namespace pink
-
 #endif  // PINK_INCLUDE_PINK_CLI_H_

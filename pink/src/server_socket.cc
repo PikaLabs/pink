@@ -19,18 +19,18 @@
 
 namespace pink {
 
-ServerSocket::ServerSocket(int port, bool is_block) :
-  port_(port),
-  send_timeout_(0),
-  recv_timeout_(0),
-  accept_timeout_(0),
-  accept_backlog_(1024),
-  tcp_send_buffer_(0),
-  tcp_recv_buffer_(0),
-  keep_alive_(false),
-  listening_(false),
+ServerSocket::ServerSocket(int port, bool is_block)
+    : port_(port),
+      send_timeout_(0),
+      recv_timeout_(0),
+      accept_timeout_(0),
+      accept_backlog_(1024),
+      tcp_send_buffer_(0),
+      tcp_recv_buffer_(0),
+      keep_alive_(false),
+      listening_(false),
   is_block_(is_block) {
-  }
+}
 
 ServerSocket::~ServerSocket() {
   Close();
@@ -88,4 +88,5 @@ int ServerSocket::SetNonBlock() {
 void ServerSocket::Close() {
   close(sockfd_);
 }
+
 }  // namespace pink

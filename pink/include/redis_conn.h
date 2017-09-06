@@ -25,7 +25,7 @@ class RedisConn: public PinkConn {
   virtual ~RedisConn();
   void ResetClient();
 
-  bool ExpandWbuf();
+  bool ExpandWbufTo(uint32_t new_size);
   uint32_t wbuf_size_;
 
   virtual ReadStatus GetRequest();

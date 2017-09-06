@@ -133,7 +133,7 @@ RedisConn::RedisConn(const int fd,
                      const std::string &ip_port,
                      ServerThread *thread)
     : PinkConn(fd, ip_port, thread),
-      wbuf_size_(REDIS_MAX_MESSAGE),
+      wbuf_size_(DEFAULT_WBUF_SIZE),
       wbuf_len_(0),
       last_read_pos_(-1),
       next_parse_pos_(0),
@@ -144,7 +144,7 @@ RedisConn::RedisConn(const int fd,
       is_overtake_(false),
       wbuf_pos_(0) {
   rbuf_ = reinterpret_cast<char*>(malloc(sizeof(char) * REDIS_MAX_MESSAGE));
-  wbuf_ = reinterpret_cast<char*>(malloc(sizeof(char) * REDIS_MAX_MESSAGE));
+  wbuf_ = reinterpret_cast<char*>(malloc(sizeof(char) * DEFAULT_WBUF_SIZE));
 }
 
 RedisConn::~RedisConn() {
@@ -282,14 +282,19 @@ void RedisConn::ResetClient() {
     bulk_len_ = -1;
 }
 
-bool RedisConn::ExpandWbuf() {
-  if (wbuf_size_ >= (uint32_t)(REDIS_MAX_MESSAGE * (uint32_t)32)) {
+bool RedisConn::ExpandWbufTo(uint32_t new_size) {
+  if (new_size <= wbuf_size_) {
+    return true;
+  }
+  void* new_wbuf = realloc(wbuf_, new_size);
+  if (new_wbuf != nullptr) {
+    wbuf_ = reinterpret_cast<char*>(new_wbuf);
+    wbuf_size_ = new_size;
+    return true;
+  } else {
     wbuf_pos_ = 0;
     return false;
   }
-  wbuf_size_ *= 2;
-  wbuf_ = reinterpret_cast<char*>(realloc(wbuf_, wbuf_size_));
-  return true;
 }
 
 ReadStatus RedisConn::ProcessInputBuffer() {
@@ -379,6 +384,12 @@ WriteStatus RedisConn::SendReply() {
     if (wbuf_pos_ == wbuf_len_) {
       wbuf_len_ = 0;
       wbuf_pos_ = 0;
+      if (wbuf_size_ > DEFAULT_WBUF_SIZE) {
+        free(wbuf_);
+        wbuf_ = reinterpret_cast<char*>(malloc(sizeof(char) *
+              DEFAULT_WBUF_SIZE));
+        wbuf_size_ = DEFAULT_WBUF_SIZE;
+      }
     }
   }
   if (nwritten == -1) {

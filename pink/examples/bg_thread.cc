@@ -56,6 +56,7 @@ int main() {
     sleep(1);
   }
 
+
   qsize = pqsize = 0;
   std::cout << "Limit queue BGTask... " << std::endl;
   for (int i = 0; i < 10; i++) {
@@ -86,6 +87,9 @@ int main() {
   }
   std::cout << std::endl << std::endl;
 
+  std::cout << "Restart BGThread" << std::endl;
+  t.StopThread();
+  t.StartThread();
   std::cout << "Time BGTask... " << std::endl;
   for (int i = 0; i < 10; i++) {
     int *pi = new int(i);

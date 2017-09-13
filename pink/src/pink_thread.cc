@@ -30,6 +30,7 @@ void* Thread::RunThread(void *arg) {
 
 int Thread::StartThread() {
   slash::MutexLock l(&running_mu_);
+  should_stop_ = false;
   if (!running_) {
     running_ = true;
     return pthread_create(&thread_id_, nullptr, RunThread, (void *)this);
@@ -38,8 +39,8 @@ int Thread::StartThread() {
 }
 
 int Thread::StopThread() {
-  should_stop_ = true;
   slash::MutexLock l(&running_mu_);
+  should_stop_ = true;
   if (running_) {
     running_ = false;
     return pthread_join(thread_id_, nullptr);

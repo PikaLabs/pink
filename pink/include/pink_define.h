@@ -55,7 +55,8 @@ enum ReadStatus {
   kReadClose = 3,
   kFullError = 4,
   kParseError = 5,
-  kOk = 6,
+  kDealError = 6,
+  kOk = 7,
 };
 
 enum WriteStatus {

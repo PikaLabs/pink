@@ -153,27 +153,39 @@ void *WorkerThread::ThreadMain() {
         }
 
         in_conn = iter->second;
-        if (pfe->mask & EPOLLIN) {
+
+        if (pfe->mask & EPOLLOUT && in_conn->is_reply()) {
+          pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLIN);  // Remove EPOLLOUT
+          WriteStatus write_status = in_conn->SendReply();
+          if (write_status == kWriteAll) {
+            in_conn->set_is_reply(false);
+          } else if (write_status == kWriteHalf) {
+            pink_epoll_->PinkModEvent(pfe->fd, EPOLLIN, EPOLLOUT);
+            continue; //  send all write buffer,
+                      //  in case of next GetRequest()
+                      //  pollute the write buffer
+          } else if (write_status == kWriteError) {
+            should_close = 1;
+          }
+        }
+
+        if (!should_close && pfe->mask & EPOLLIN) {
           ReadStatus getRes = in_conn->GetRequest();
           in_conn->set_last_interaction(now);
           if (getRes != kReadAll && getRes != kReadHalf) {
             // kReadError kReadClose kFullError kParseError
             should_close = 1;
           } else if (in_conn->is_reply()) {
-            pink_epoll_->PinkModEvent(pfe->fd, EPOLLIN, EPOLLOUT);
+            WriteStatus write_status = in_conn->SendReply();
+            if (write_status == kWriteAll) {
+              in_conn->set_is_reply(false);
+            } else if (write_status == kWriteHalf) {
+              pink_epoll_->PinkModEvent(pfe->fd, EPOLLIN, EPOLLOUT);
+            } else if (write_status == kWriteError) {
+              should_close = 1;
+            }
           } else {
             continue;
-          }
-        }
-        if (pfe->mask & EPOLLOUT) {
-          WriteStatus write_status = in_conn->SendReply();
-          if (write_status == kWriteAll) {
-            in_conn->set_is_reply(false);
-            pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLIN);
-          } else if (write_status == kWriteHalf) {
-            continue;
-          } else if (write_status == kWriteError) {
-            should_close = 1;
           }
         }
         if ((pfe->mask & EPOLLERR) || (pfe->mask & EPOLLHUP) || should_close) {

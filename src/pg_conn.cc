@@ -185,15 +185,21 @@ ReadStatus PGConn::HandleNormal() {
         // for lavavel PDO's last phase.
         AppendCommandComplete();
         return kReadAll;
-      } else if (parser_.Parse(error_info)) {
+      } else if (statement_.find("stall_status") != std::string::npos) {
+          AppendStatus();
+          return kReadAll;
+        }else if (parser_.Parse(error_info)) {
         DealMessage();
         AppendCommandComplete();
         return kReadAll;
       } else {
-        Glog("syntax error for Query statement\"" + statement_ + "\"");
+        Glog("syntax error for Simple Query statement\"" + statement_ + "\"");
         Glog("syntax error for Parse statement error_info: " + error_info);
-        //AppendErrorResponse();
-        return kParseError;
+        std::string msg = "syntax error for Query statement\"" + statement_ + "\""; 
+        //AppendErrorResponse(msg.c_str());
+        AppendCommandComplete();
+        return kReadAll;
+        //return kParseError;
       }
     }
 
@@ -235,10 +241,13 @@ ReadStatus PGConn::HandleNormal() {
       } else if (parser_.Parse(error_info)) {
         AppendSingleResponse('1'); // ParseComplete
       } else {
-        Glog("syntax error for Parse statement\"" + statement_ + "\"");
-        Glog("syntax error for Parse statement error_info: " + error_info);
-        parse_error_ = true;
-        AppendErrorResponse(ERROR_MSG_PARSE);
+        Glog("syntax error for extend Query statements\"" + statement_ + "\"");
+        Glog("syntax error for Parse statements error_info: " + error_info);
+        //parse_error_ = true;
+        AppendSingleResponse('1'); // ParseComplete, ignore the error when paser error happens;
+        skip_statement_ = true;
+        return kReadHalf;
+        //AppendErrorResponse(ERROR_MSG_PARSE);
       }
       return kReadHalf;
     }
@@ -308,6 +317,10 @@ bool PGConn::Glog(const std::string &msg) {
   return true;
 }
 
+void PGConn::StallStatus(std::string &ss) const {
+
+}
+
 Status PGConn::AppendCommandComplete() {
   char buf[128];
   snprintf (buf, 128, "INSERT 0 %lu", parser_.rows_.size());
@@ -315,6 +328,21 @@ Status PGConn::AppendCommandComplete() {
   PacketBuf *packet = new PacketBuf;
   packet->WriteCommandComplete(buf);
   //packet->WriteGeneric('Z', "c", 'I');
+  AppendObuf(packet->buf, packet->write_pos);
+
+  delete packet;
+
+  return Status::OK();
+}
+
+Status PGConn::AppendStatus() {
+  char buf[10240];
+  std::string ss;
+  StallStatus(ss);
+  snprintf(buf, 10240, "\n%s", ss.data());
+  
+  PacketBuf *packet = new PacketBuf;
+  packet->WriteNotice(buf);
   AppendObuf(packet->buf, packet->write_pos);
 
   delete packet;
@@ -534,6 +562,7 @@ WriteStatus PGConn::SendReply() {
     if (nwritten <= 0) {
       break;
     }
+
     write_offset_ += nwritten;
     if (write_offset_ == wbuf_offset_) {
       wbuf_offset_ = 0;

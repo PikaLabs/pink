@@ -529,7 +529,7 @@ void InsertParser::EscapeAttribute(const std::string& str) {
 //      (attr1, att...);
 bool InsertParser::Parse(std::string &error_info) {
   std::string token;
-  bool need_parse_header = false;
+  bool need_parse_header = true;
 
   // Insert
   if (NextToken(token)) {

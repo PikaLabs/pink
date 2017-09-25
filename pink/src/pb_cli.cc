@@ -81,7 +81,9 @@ Status PbCli::Recv(void *msg_res) {
     return s;
   }
 
-  res->ParseFromArray(rbuf_, packet_len);
+  if (!res->ParseFromArray(rbuf_ , packet_len)) {
+    return Status::Corruption("PbCli::Recv Protobuf ParseFromArray error");
+  }
   return Status::OK();
 }
 

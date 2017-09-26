@@ -79,6 +79,7 @@ class PGConn: public PinkConn {
   virtual bool CheckPasswd(const std::string &passwd);
   virtual Status AppendWelcome();
   virtual bool Glog(const std::string &msg);
+  virtual void StallStatus(std::string  &ss) const;
 
   Status AppendSingleResponse(char type);
   Status AppendSpecialParameter();
@@ -87,6 +88,7 @@ class PGConn: public PinkConn {
   Status AppendErrorResponse(const char* msg);
   Status AppendAuthRequest(int type);
   Status AppendFatalResponse(const char* msg);
+  Status AppendStatus();
 
  protected:
   Status AppendObuf(const char* data, int size);

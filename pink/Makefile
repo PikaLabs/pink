@@ -18,6 +18,10 @@ ifeq ($(MAKECMDGOALS),dbg)
   DEBUG_LEVEL=2 # compatible with rocksdb
 endif
 
+ifeq ($(ENABLE_SSL),1)
+  OPT += -D__ENABLE_SSL
+endif
+
 # compile with -O2 if for release
 # if we're compiling for release, compile without debug code (-DNDEBUG) and
 # don't treat warnings as errors

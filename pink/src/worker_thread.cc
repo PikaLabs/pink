@@ -157,6 +157,7 @@ void *WorkerThread::ThreadMain() {
         if (pfe->mask & EPOLLOUT && in_conn->is_reply()) {
           pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLIN);  // Remove EPOLLOUT
           WriteStatus write_status = in_conn->SendReply();
+          in_conn->set_last_interaction(now);
           if (write_status == kWriteAll) {
             in_conn->set_is_reply(false);
           } else if (write_status == kWriteHalf) {

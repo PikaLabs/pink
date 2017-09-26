@@ -91,7 +91,7 @@ ReadStatus PbConn::GetRequest() {
       }
       case kComplete: {
         if (DealMessage() != 0) {
-          return kReadError;
+          return kDealError;
         }
         connStatus_ = kHeader;
         cur_pos_ = 0;

@@ -174,7 +174,7 @@ void *WorkerThread::ThreadMain() {
           ReadStatus getRes = in_conn->GetRequest();
           in_conn->set_last_interaction(now);
           if (getRes != kReadAll && getRes != kReadHalf) {
-            // kReadError kReadClose kFullError kParseError
+            // kReadError kReadClose kFullError kParseError kDealError
             should_close = 1;
           } else if (in_conn->is_reply()) {
             WriteStatus write_status = in_conn->SendReply();

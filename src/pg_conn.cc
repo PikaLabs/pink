@@ -188,7 +188,7 @@ ReadStatus PGConn::HandleNormal() {
       } else if (statement_.find("stall_status") != std::string::npos) {
           AppendStatus();
           return kReadAll;
-        }else if (parser_.Parse(error_info)) {
+        } else if (parser_.Parse(error_info)) {
         DealMessage();
         AppendCommandComplete();
         return kReadAll;

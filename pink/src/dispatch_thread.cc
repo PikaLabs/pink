@@ -75,7 +75,10 @@ int DispatchThread::StartThread() {
 
 int DispatchThread::StopThread() {
   for (int i = 0; i < work_num_; i++) {
-    int ret = worker_thread_[i]->StopThread();
+    worker_thread_[i]->set_should_stop(true);
+  }
+  for (int i = 0; i < work_num_; i++) {
+    int ret = worker_thread_[i]->JoinThread();
     if (ret != 0) {
       return ret;
     }

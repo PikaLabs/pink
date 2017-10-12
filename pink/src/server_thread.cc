@@ -333,5 +333,6 @@ int ServerThread::EnableSecurity(const std::string& cert_file,
   security_ = true;
   return 0;
 }
+#endif
 
 }  // namespace pink

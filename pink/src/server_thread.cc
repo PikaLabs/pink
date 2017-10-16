@@ -131,6 +131,7 @@ int ServerThread::InitHandle() {
        iter != ips_.end();
        ++iter) {
     socket_p = new ServerSocket(port_);
+    server_sockets_.push_back(socket_p);
     ret = socket_p->Listen(*iter);
     if (ret != kSuccess) {
       return ret;
@@ -139,7 +140,6 @@ int ServerThread::InitHandle() {
     // init pool
     pink_epoll_->PinkAddEvent(
         socket_p->sockfd(), EPOLLIN | EPOLLERR | EPOLLHUP);
-    server_sockets_.push_back(socket_p);
     server_fds_.insert(socket_p->sockfd());
   }
   return kSuccess;

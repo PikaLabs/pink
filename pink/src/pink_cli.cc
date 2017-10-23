@@ -32,6 +32,7 @@ struct PinkCli::Rep {
       connect_timeout(1000),
       keep_alive(0),
       is_block(true),
+      sockfd(-1),
       available(false) {
       }
 
@@ -43,6 +44,7 @@ struct PinkCli::Rep {
       connect_timeout(1000),
       keep_alive(0),
       is_block(true),
+      sockfd(-1),
       available(false) {
       }
 };
@@ -228,6 +230,7 @@ void PinkCli::Close() {
   if (rep_->available) {
     close(rep_->sockfd);
     rep_->available = false;
+    rep_->sockfd = -1;
   }
 }
 

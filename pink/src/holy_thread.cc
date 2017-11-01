@@ -18,6 +18,7 @@ HolyThread::HolyThread(int port,
                        int cron_interval, const ServerHandle* handle)
     : ServerThread::ServerThread(port, cron_interval, handle),
       conn_factory_(conn_factory),
+      private_data_(nullptr),
       keepalive_timeout_(kDefaultKeepAliveTime) {
 }
 
@@ -79,9 +80,12 @@ int HolyThread::StartThread() {
 }
 
 int HolyThread::StopThread() {
-  int ret = handle_->DeleteWorkerSpecificData(private_data_);
-  if (ret != 0) {
-    return ret;
+  if (private_data_) {
+    int ret = handle_->DeleteWorkerSpecificData(private_data_);
+    if (ret != 0) {
+      return ret;
+    }
+    private_data_ = nullptr;
   }
   return ServerThread::StopThread();
 }

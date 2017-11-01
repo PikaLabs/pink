@@ -17,7 +17,8 @@ namespace pink {
 WorkerThread::WorkerThread(ConnFactory *conn_factory,
                            ServerThread* server_thread,
                            int cron_interval)
-      : server_thread_(server_thread),
+      : private_data_(nullptr),
+        server_thread_(server_thread),
         conn_factory_(conn_factory),
         cron_interval_(cron_interval),
         keepalive_timeout_(kDefaultKeepAliveTime) {

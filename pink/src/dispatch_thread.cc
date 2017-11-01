@@ -86,13 +86,16 @@ int DispatchThread::StopThread() {
     worker_thread_[i]->set_should_stop();
   }
   for (int i = 0; i < work_num_; i++) {
-    int ret = worker_thread_[i]->JoinThread();
+    int ret = worker_thread_[i]->StopThread();
     if (ret != 0) {
       return ret;
     }
-    ret = handle_->DeleteWorkerSpecificData(worker_thread_[i]->private_data_);
-    if (ret != 0) {
-      return ret;
+    if (worker_thread_[i]->private_data_ != nullptr) {
+      ret = handle_->DeleteWorkerSpecificData(worker_thread_[i]->private_data_);
+      if (ret != 0) {
+        return ret;
+      }
+      worker_thread_[i]->private_data_ = nullptr;
     }
   }
   return ServerThread::StopThread();

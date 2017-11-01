@@ -407,6 +407,18 @@ WriteStatus RedisConn::SendReply() {
   }
 }
 
+bool RedisConn::BufferWriter(const std::string &msg) {
+  if ((wbuf_size_ - wbuf_len_ < msg.size())) {
+    if (!ExpandWbufTo(wbuf_len_ + msg.size())) {
+      return false;
+    } 
+  }
+  memcpy(wbuf_ + wbuf_len_, msg.data(), msg.size());
+  wbuf_len_ += msg.size();
+  set_is_reply(true);
+  return true;
+}
+
 int32_t RedisConn::FindNextSeparators() {
   int pos;
   if (next_parse_pos_ <= last_read_pos_) {

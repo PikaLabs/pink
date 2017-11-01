@@ -15,9 +15,11 @@
 #include <atomic>
 #include <vector>
 #include <set>
+#include <fcntl.h>
 
 #include "slash/include/xdebug.h"
 #include "slash/include/slash_mutex.h"
+#include "slash/include/slash_string.h"
 
 #include "pink/include/server_thread.h"
 #include "pink/src/pink_epoll.h"
@@ -32,10 +34,9 @@ class PinkFiredEvent;
 class PinkConn;
 class ConnFactory;
 
-class PubSubThread : public ServerThread {
+class PubSubThread : public Thread {
  public:
-  explicit PubSubThread(ConnFactory *conn_factory,
-                        int cron_interval = 0);
+  explicit PubSubThread();
 
   virtual ~PubSubThread();
 
@@ -70,15 +71,33 @@ class PubSubThread : public ServerThread {
   void* private_data_;
 
   // PubSub
-  int Publish(PinkConn* conn, const std::string& channel, const std::string& msg);
+  int MessageNum() {
+    slash::MutexLock l(&msg_mutex_);
+    return msgs_.size(); 
+  }
+
+  void RemoveConn(int fd);
+
+  int Publish(int fd, const std::string& channel, const std::string& msg);
 
   void Subscribe(PinkConn* conn, const std::vector<std::string> channels, bool pattern, const std::string& resp);
 
   void UnSubscribe(PinkConn* conn, const std::vector<std::string> channels, bool pattern, const std::string& resp);
-      
+  
+  pink::WriteStatus SendResponse(int32_t fd, const std::string& resp);
+    
  private:
   ConnFactory *conn_factory_;
   int cron_interval_;
+  
+  int msg_pfd_[2];
+  bool should_exit_;
+  slash::CondVar msg_rsignal_;
+  slash::CondVar receiver_rsignal_;
+  slash::Mutex msg_mutex_;
+  slash::Mutex channel_mutex_;
+  slash::Mutex pattern_mutex_;
+  slash::Mutex receiver_mutex_;
 
   /*
    * These two fd receive the notify from dispatch thread
@@ -104,11 +123,11 @@ class PubSubThread : public ServerThread {
   void Cleanup();
   
   // PubSub
-  std::map<std::string, std::vector<int>> pubsub_channel_;    // channel <---> fds
-  std::map<std::string, std::vector<int>> pubsub_pattern_;    // channel <---> fds
+  std::map<std::string, std::vector<PinkConn* >> pubsub_channel_;    // channel <---> fds
+  std::map<std::string, std::vector<PinkConn* >> pubsub_pattern_;    // channel <---> fds
   std::map<int, std::map<std::string, std::string>> msgs_;    // fd      <---> (channel, msg)
   std::map<int, int> receivers_;                              // fd      <---> receivers
-  std::map<fd, PinkConn*> conns_;                             // fd      <---> PinkConn
+  std::map<int, PinkConn*> conns_;                             // fd      <---> PinkConn
   // No copying allowed
   PubSubThread(const PubSubThread&);
   void operator=(const PubSubThread&);

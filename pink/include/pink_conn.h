@@ -37,6 +37,7 @@ class PinkConn {
 
   virtual ReadStatus GetRequest() = 0;
   virtual WriteStatus SendReply() = 0;
+  virtual bool BufferWriter(const std::string &msg) = 0;
 
   int flags() const {
     return flags_;

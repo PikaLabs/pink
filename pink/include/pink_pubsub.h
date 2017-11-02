@@ -80,9 +80,9 @@ class PubSubThread : public Thread {
 
   int Publish(int fd, const std::string& channel, const std::string& msg);
 
-  void Subscribe(PinkConn* conn, const std::vector<std::string> channels, bool pattern, const std::string& resp);
+  void Subscribe(PinkConn* conn, const std::vector<std::string> channels, bool pattern, std::map<std::string, int>& result);
 
-  void UnSubscribe(PinkConn* conn, const std::vector<std::string> channels, bool pattern, const std::string& resp);
+  void UnSubscribe(PinkConn* conn, const std::vector<std::string> channels, bool pattern, std::map<std::string, int>& result);
   
   pink::WriteStatus SendResponse(int32_t fd, const std::string& resp);
     
@@ -125,9 +125,11 @@ class PubSubThread : public Thread {
   // PubSub
   std::map<std::string, std::vector<PinkConn* >> pubsub_channel_;    // channel <---> fds
   std::map<std::string, std::vector<PinkConn* >> pubsub_pattern_;    // channel <---> fds
-  std::map<int, std::map<std::string, std::string>> msgs_;    // fd      <---> (channel, msg)
-  std::map<int, int> receivers_;                              // fd      <---> receivers
-  std::map<int, PinkConn*> conns_;                             // fd      <---> PinkConn
+  std::map<PinkConn*, std::vector<std::string>> client_channel_;     // client  <---> channels
+  std::map<PinkConn*, std::vector<std::string>> client_pattern_;     // client  <---> patterns;
+  std::map<int, std::map<std::string, std::string>> msgs_;           // fd      <---> (channel, msg)
+  std::map<int, int> receivers_;                                     // fd      <---> receivers
+  std::map<int, PinkConn*> conns_;                                   // fd      <---> PinkConn
   // No copying allowed
   PubSubThread(const PubSubThread&);
   void operator=(const PubSubThread&);

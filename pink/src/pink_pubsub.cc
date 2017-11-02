@@ -90,11 +90,10 @@ void PubSubThread::RemoveConn(int fd) {
   }
   //CloseFd(conn_ptr); 
   delete conn_ptr;
-}
-
-void PubSubThread::Subscribe(PinkConn *conn, const std::vector<std::string> channels, bool pattern, const std::string& resp) {
-  for(size_t i = 0; i < channels.size(); i++) {
-    if (pattern) {
+} 
+  
+void PubSubThread::Subscribe(PinkConn *conn, const std::vector<std::string> channels, bool pattern, std::map<std::string, int>& result) { 
+  for(size_t i = 0; i < channels.size(); i++) { if (pattern) {
       slash::MutexLock l(&pattern_mutex_);
       if (pubsub_pattern_.find(channels[i]) != pubsub_pattern_.end()) {
         pubsub_pattern_[channels[i]].push_back(conn); 
@@ -113,11 +112,27 @@ void PubSubThread::Subscribe(PinkConn *conn, const std::vector<std::string> chan
     }
   }
   conns_[conn->fd()] = conn;
-  SendResponse(conn->fd(), resp);  
   pink_epoll_->PinkAddEvent(conn->fd(), EPOLLIN | EPOLLHUP);
+  // The number of channels this client this currently subscribed to
+  for (size_t i = 0; i < channels.size(); i++) {
+    if (pattern) {
+      // TODO
+    } else {
+      auto conn_ptr = client_channel_.find(conn);
+      if (conn_ptr != client_channel_.end()) {
+        conn_ptr->second.push_back(channels[i]);
+        result[channels[i]] = conn_ptr->second.size();
+      } else {
+        std::vector<std::string> client_channels = {channels[i]};
+        client_channel_[conn] = client_channels;
+        result[channels[i]] = 1; 
+      }
+    }
+  }
 }
 
-void PubSubThread::UnSubscribe(PinkConn *conn_ptr, const std::vector<std::string> channels, bool pattern, const std::string& resp) {
+void PubSubThread::UnSubscribe(PinkConn *conn_ptr, const std::vector<std::string> channels, bool pattern, std::map<std::string, int>& result) {
+  // Unsubscibre channels
   for(size_t i = 0; i < channels.size(); i++) {
     if (pattern) {
       slash::MutexLock l(&pattern_mutex_);
@@ -142,7 +157,28 @@ void PubSubThread::UnSubscribe(PinkConn *conn_ptr, const std::vector<std::string
     }
     pink_epoll_->PinkDelEvent(conn_ptr->fd());
   }
-  SendResponse(conn_ptr->fd(), resp);  
+
+  // The number of channels this client this currently subscribed to
+  int subscribed = 0; 
+  for (size_t i = 0; i < channels.size(); i++) {
+    if (pattern) {
+      // TODO
+    } else {
+      auto conn = client_channel_.find(conn_ptr);
+      if (conn != client_channel_.end()) {
+        subscribed = conn->second.size();
+        result[channels[i]] = subscribed;
+        for(auto ch = conn->second.begin(); ch != conn->second.end(); ++conn) {
+          if (*ch == channels[i]) {
+            result[channels[i]] = subscribed - 1;
+            conn->second.erase(ch);
+          }
+        }    
+      } else {
+        result[channels[i]] = 0; 
+      }
+    }
+  }
 }
 
 void *PubSubThread::ThreadMain() {

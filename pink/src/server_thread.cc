@@ -242,6 +242,16 @@ void *ServerThread::ThreadMain() {
       }
     }
   }
+
+  for (auto iter = server_sockets_.begin(); iter != server_sockets_.end();
+      iter++) {
+    delete *iter;
+  }
+  server_sockets_.clear();
+  server_fds_.clear();
+  delete pink_epoll_;
+  pink_epoll_ = nullptr;
+
   return nullptr;
 }
 

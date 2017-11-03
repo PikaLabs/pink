@@ -7,6 +7,7 @@
 #include <limits.h>
 
 #include <string>
+#include <sstream>
 
 #include "slash/include/xdebug.h"
 #include "pink/include/pink_define.h"
@@ -407,16 +408,29 @@ WriteStatus RedisConn::SendReply() {
   }
 }
 
-bool RedisConn::BufferWriter(const std::string &msg) {
-  if ((wbuf_size_ - wbuf_len_ < msg.size())) {
-    if (!ExpandWbufTo(wbuf_len_ + msg.size())) {
-      return false;
+int RedisConn::ConstructPublishResp(std::string subscribe_channel, std::string publish_channel, std::string msg, bool pattern) {
+  std::stringstream resp;
+  std::string common_msg = "message";
+  std::string pattern_msg = "pmessage";
+  if (pattern) {
+    resp << "*4\r\n" << "$" << pattern_msg.length() << "\r\n" << pattern_msg << "\r\n" << "$" << subscribe_channel.length() << "\r\n" << subscribe_channel << "\r\n" << "$" << publish_channel.length() << "\r\n" << publish_channel << "\r\n" << "$" << msg.length() << "\r\n" << msg << "\r\n";
+  } else {
+    resp << "*3\r\n" << "$" << common_msg.length() << "\r\n" << common_msg << "\r\n" << "$" << publish_channel.length() << "\r\n" << publish_channel << "\r\n" << "$" << msg.length() << "\r\n" << msg << "\r\n";
+  }
+  std::string str_resp = resp.str();
+
+  if ((wbuf_size_ - wbuf_len_ < str_resp.size())) {
+    if (!ExpandWbufTo(wbuf_len_ + str_resp.size())) {
+      memcpy(wbuf_, "-ERR expand writer buffer failed\r\n", 34);
+      wbuf_len_ = 34;
+      set_is_reply(true);
+      return 0;
     } 
   }
-  memcpy(wbuf_ + wbuf_len_, msg.data(), msg.size());
-  wbuf_len_ += msg.size();
+  memcpy(wbuf_ + wbuf_len_, str_resp.data(), str_resp.size());
+  wbuf_len_ += str_resp.size();
   set_is_reply(true);
-  return true;
+  return 0;
 }
 
 int32_t RedisConn::FindNextSeparators() {

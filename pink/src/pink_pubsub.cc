@@ -94,7 +94,8 @@ void PubSubThread::RemoveConn(int fd) {
 } 
   
 void PubSubThread::Subscribe(PinkConn *conn, const std::vector<std::string> channels, bool pattern, std::vector<std::pair<std::string, int>>& result) { 
-  for(size_t i = 0; i < channels.size(); i++) { if (pattern) {
+  for(size_t i = 0; i < channels.size(); i++) { 
+    if (pattern) {
       slash::MutexLock l(&pattern_mutex_);
       if (pubsub_pattern_.find(channels[i]) != pubsub_pattern_.end()) {
         pubsub_pattern_[channels[i]].push_back(conn); 
@@ -114,18 +115,32 @@ void PubSubThread::Subscribe(PinkConn *conn, const std::vector<std::string> chan
   }
   conns_[conn->fd()] = conn;
   pink_epoll_->PinkAddEvent(conn->fd(), EPOLLIN | EPOLLHUP);
+
   // The number of channels this client this currently subscribed to
   for (size_t i = 0; i < channels.size(); i++) {
     if (pattern) {
-      // TODO
+      int subscribed = client_channel_[conn].size();
+      auto conn_ptr = client_pattern_.find(conn);
+      if (conn_ptr != client_pattern_.end()) {
+        auto it = std::find(conn_ptr->second.begin(), conn_ptr->second.end(), channels[i]);
+        if (it == conn_ptr->second.end()) {
+          conn_ptr->second.push_back(channels[i]);
+        }
+        result.push_back(std::make_pair(channels[i], conn_ptr->second.size() + subscribed));
+      } else {
+        std::vector<std::string> client_channels = {channels[i]};
+        client_pattern_[conn] = client_channels;
+        result.push_back(std::make_pair(channels[i], 1));
+      }
     } else {
+      int subscribed = client_pattern_[conn].size();
       auto conn_ptr = client_channel_.find(conn);
       if (conn_ptr != client_channel_.end()) {
         auto it = std::find(conn_ptr->second.begin(), conn_ptr->second.end(), channels[i]);
         if (it == conn_ptr->second.end()) {
           conn_ptr->second.push_back(channels[i]);
         }
-        result.push_back(std::make_pair(channels[i], conn_ptr->second.size()));
+        result.push_back(std::make_pair(channels[i], conn_ptr->second.size() + subscribed));
       } else {
         std::vector<std::string> client_channels = {channels[i]};
         client_channel_[conn] = client_channels;
@@ -150,12 +165,11 @@ int PubSubThread::UnSubscribe(PinkConn *conn_ptr, const std::vector<std::string>
       } 
     } else {
       slash::MutexLock l(&channel_mutex_);
-      auto find_ptr = pubsub_pattern_.find(channels[i]);
-      if (find_ptr != pubsub_pattern_.end()) {
-        for (auto conn = find_ptr->second.begin(); conn != find_ptr->second.end(); ++conn) {
-          if ((*conn) == conn_ptr) {
-            (*find_ptr).second.erase(conn); 
-          }
+      auto find_ptr = pubsub_channel_.find(channels[i]);
+      if (find_ptr != pubsub_channel_.end()) {
+        auto it = std::find(find_ptr->second.begin(), find_ptr->second.end(), conn_ptr);
+        if (it != find_ptr->second.end()) {
+          find_ptr->second.erase(std::remove(find_ptr->second.begin(), find_ptr->second.end(), conn_ptr), find_ptr->second.end());
         }
       } 
     }
@@ -165,7 +179,19 @@ int PubSubThread::UnSubscribe(PinkConn *conn_ptr, const std::vector<std::string>
   int subscribed = 0; 
   for (size_t i = 0; i < channels.size(); i++) {
     if (pattern) {
-      // TODO
+      auto conn = client_pattern_.find(conn_ptr);
+      if (conn != client_pattern_.end()) {
+        subscribed = conn->second.size();
+        auto it = std::find(conn->second.begin(), conn->second.end(), channels[i]);
+        if (it != conn->second.end()) {
+          result.push_back(std::make_pair(channels[i], subscribed - 1));
+          conn->second.erase(std::remove(conn->second.begin(), conn->second.end(), channels[i]), conn->second.end());
+        } else {
+          result.push_back(std::make_pair(channels[i], subscribed));
+        }
+      } else {
+        result.push_back(std::make_pair(channels[i], 0));
+      }
     } else {
       auto conn = client_channel_.find(conn_ptr);
       if (conn != client_channel_.end()) {
@@ -183,7 +209,7 @@ int PubSubThread::UnSubscribe(PinkConn *conn_ptr, const std::vector<std::string>
     }
   }
   // TODO
-  return client_channel_[conn_ptr].size();
+  return client_channel_[conn_ptr].size() + client_pattern_[conn_ptr].size();
 }
 
 void *PubSubThread::ThreadMain() {
@@ -232,7 +258,7 @@ void *PubSubThread::ThreadMain() {
             for(auto it = pubsub_channel_.begin(); it != pubsub_channel_.end(); it++) {
               if (channel == it->first) {
                 for(size_t i = 0; i < it->second.size(); i++) {
-                  it->second[i]->BufferWriter(msg);
+                  it->second[i]->ConstructPublishResp(it->first, channel, msg, false);
                   WriteStatus write_status = it->second[i]->SendReply();
                   if (write_status == kWriteHalf) {
                     pink_epoll_->PinkModEvent(it->second[i]->fd(), 0, EPOLLOUT); 
@@ -251,7 +277,7 @@ void *PubSubThread::ThreadMain() {
             for(auto it = pubsub_pattern_.begin(); it != pubsub_pattern_.end(); it++) {
               if (slash::stringmatchlen(it->first.c_str(), it->first.size(), channel.c_str(), channel.size(), 0)) {
                 for(size_t i = 0; i < it->second.size(); i++) {
-                  (*it).second[i]->BufferWriter(msg);
+                  it->second[i]->ConstructPublishResp(it->first, channel, msg, true);
                   WriteStatus write_status = it->second[i]->SendReply();
                   if (write_status == kWriteHalf) {
                     pink_epoll_->PinkModEvent(it->second[i]->fd(), 0, EPOLLOUT); 

@@ -70,6 +70,12 @@ PinkConn* HolyThread::MoveConnOut(int fd) {
   return conn;
 }
 
+void HolyThread::MoveConnIn(PinkConn* conn) {
+  slash::WriteLock l(&rwlock_);
+  conns_[conn->fd()] = conn;
+  pink_epoll_->PinkAddEvent(conn->fd(), EPOLLIN);
+}
+
 int HolyThread::StartThread() {
   int ret = handle_->CreateWorkerSpecificData(&private_data_);
   if (ret != 0) {

@@ -52,6 +52,8 @@ class DispatchThread : public ServerThread {
   virtual std::vector<ServerThread::ConnInfo> conns_info() const override;
 
   virtual PinkConn* MoveConnOut(int fd) override;
+  
+  virtual void MoveConnIn(PinkConn* conn) override;
 
   virtual void KillAllConns() override;
 

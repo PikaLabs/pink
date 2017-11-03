@@ -69,6 +69,12 @@ PinkConn* WorkerThread::MoveConnOut(int fd) {
   return conn;
 }
 
+void WorkerThread::MoveConnIn(PinkConn* conn) {
+  slash::WriteLock l(&rwlock_);
+  conns_[conn->fd()] = conn;
+  pink_epoll_->PinkAddEvent(conn->fd(), EPOLLIN);
+}
+
 void *WorkerThread::ThreadMain() {
   int nfds;
   PinkFiredEvent *pfe = NULL;

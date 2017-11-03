@@ -4,6 +4,7 @@
 // of patent rights can be found in the PATENTS file in the same directory.
 
 #include <vector>
+#include <algorithm>
 
 #include "pink/src/worker_thread.h"
 
@@ -92,7 +93,7 @@ void PubSubThread::RemoveConn(int fd) {
   delete conn_ptr;
 } 
   
-void PubSubThread::Subscribe(PinkConn *conn, const std::vector<std::string> channels, bool pattern, std::map<std::string, int>& result) { 
+void PubSubThread::Subscribe(PinkConn *conn, const std::vector<std::string> channels, bool pattern, std::vector<std::pair<std::string, int>>& result) { 
   for(size_t i = 0; i < channels.size(); i++) { if (pattern) {
       slash::MutexLock l(&pattern_mutex_);
       if (pubsub_pattern_.find(channels[i]) != pubsub_pattern_.end()) {
@@ -120,18 +121,21 @@ void PubSubThread::Subscribe(PinkConn *conn, const std::vector<std::string> chan
     } else {
       auto conn_ptr = client_channel_.find(conn);
       if (conn_ptr != client_channel_.end()) {
-        conn_ptr->second.push_back(channels[i]);
-        result[channels[i]] = conn_ptr->second.size();
+        auto it = std::find(conn_ptr->second.begin(), conn_ptr->second.end(), channels[i]);
+        if (it == conn_ptr->second.end()) {
+          conn_ptr->second.push_back(channels[i]);
+        }
+        result.push_back(std::make_pair(channels[i], conn_ptr->second.size()));
       } else {
         std::vector<std::string> client_channels = {channels[i]};
         client_channel_[conn] = client_channels;
-        result[channels[i]] = 1; 
+        result.push_back(std::make_pair(channels[i], 1));
       }
     }
   }
 }
 
-void PubSubThread::UnSubscribe(PinkConn *conn_ptr, const std::vector<std::string> channels, bool pattern, std::map<std::string, int>& result) {
+int PubSubThread::UnSubscribe(PinkConn *conn_ptr, const std::vector<std::string> channels, bool pattern, std::vector<std::pair<std::string, int>>& result) {
   // Unsubscibre channels
   for(size_t i = 0; i < channels.size(); i++) {
     if (pattern) {
@@ -155,7 +159,6 @@ void PubSubThread::UnSubscribe(PinkConn *conn_ptr, const std::vector<std::string
         }
       } 
     }
-    pink_epoll_->PinkDelEvent(conn_ptr->fd());
   }
 
   // The number of channels this client this currently subscribed to
@@ -167,18 +170,20 @@ void PubSubThread::UnSubscribe(PinkConn *conn_ptr, const std::vector<std::string
       auto conn = client_channel_.find(conn_ptr);
       if (conn != client_channel_.end()) {
         subscribed = conn->second.size();
-        result[channels[i]] = subscribed;
-        for(auto ch = conn->second.begin(); ch != conn->second.end(); ++conn) {
-          if (*ch == channels[i]) {
-            result[channels[i]] = subscribed - 1;
-            conn->second.erase(ch);
-          }
-        }    
+        auto it = std::find(conn->second.begin(), conn->second.end(), channels[i]);
+        if (it != conn->second.end()) {
+          result.push_back(std::make_pair(channels[i], subscribed - 1));
+          conn->second.erase(std::remove(conn->second.begin(), conn->second.end(), channels[i]), conn->second.end());
+        } else {
+          result.push_back(std::make_pair(channels[i], subscribed));
+        }
       } else {
-        result[channels[i]] = 0; 
+        result.push_back(std::make_pair(channels[i], 0));
       }
     }
   }
+  // TODO
+  return client_channel_[conn_ptr].size();
 }
 
 void *PubSubThread::ThreadMain() {

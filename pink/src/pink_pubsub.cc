@@ -77,7 +77,6 @@ int PubSubThread::Publish(int fd, const std::string& channel, const std::string 
 }
 
 void PubSubThread::RemoveConn(PinkConn* conn) {
-  PinkConn * conn_ptr = nullptr;
   for (auto it = pubsub_pattern_.begin(); it != pubsub_pattern_.end(); ++it) {
     for (auto conn_ptr = it->second.begin(); conn_ptr != it->second.end(); ) {
       if ((*conn_ptr) == conn) {
@@ -304,7 +303,7 @@ void *PubSubThread::ThreadMain() {
       if (pfe->fd == msg_pfd_[0]) { 
         if (pfe->mask & EPOLLIN) {
           char* triger = new char;
-          int nread = read(pfe->fd, triger, 1);
+          read(pfe->fd, triger, 1);
           if (*triger != 't') {
             continue;
           }

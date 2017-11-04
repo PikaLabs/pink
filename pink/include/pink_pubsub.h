@@ -76,13 +76,15 @@ class PubSubThread : public Thread {
     return msgs_.size(); 
   }
 
-  void RemoveConn(int fd);
+  void RemoveConn(PinkConn* conn);
 
   int Publish(int fd, const std::string& channel, const std::string& msg);
 
   void Subscribe(PinkConn* conn, const std::vector<std::string> channels, bool pattern, std::vector<std::pair<std::string, int>>& result);
 
   int UnSubscribe(PinkConn* conn, const std::vector<std::string> channels, bool pattern, std::vector<std::pair<std::string, int>>& result);
+
+  void PubSub(std::map<std::string, std::vector<PinkConn* >>& pubsub_channel, std::map<std::string, std::vector<PinkConn* >>& pubsub_pattern);
   
   pink::WriteStatus SendResponse(int32_t fd, const std::string& resp);
     

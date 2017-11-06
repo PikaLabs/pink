@@ -92,24 +92,32 @@ int PubSubThread::Publish(int fd, const std::string& channel, const std::string 
 
 void PubSubThread::RemoveConn(PinkConn* conn) {
   for (auto it = pubsub_pattern_.begin(); it != pubsub_pattern_.end(); ++it) {
-    for (auto conn_ptr = it->second.begin(); conn_ptr != it->second.end(); ) {
+    for (auto conn_ptr = it->second.begin(); conn_ptr != it->second.end(); ++conn_ptr) {
       if ((*conn_ptr) == conn) {
         conn_ptr = it->second.erase(conn_ptr);
-      } else {
-        conn_ptr++; 
+        break;
       }
     }
   }
   for (auto it = pubsub_channel_.begin(); it != pubsub_channel_.end(); ++it) {
-    for (auto conn_ptr = it->second.begin(); conn_ptr != it->second.end(); ) {
+    for (auto conn_ptr = it->second.begin(); conn_ptr != it->second.end(); ++conn_ptr) {
       if ((*conn_ptr) == conn) {
         conn_ptr = it->second.erase(conn_ptr); 
-      } else {
-        conn_ptr++;
+        break;
       }
     }
   }
+
+  auto conn_ptr = client_channel_.find(conn);
+  if (conn_ptr != client_channel_.end()) {
+    client_channel_.erase(conn_ptr); 
+  }
   
+  conn_ptr = client_pattern_.find(conn);
+  if (conn_ptr != client_pattern_.end()) {
+    client_pattern_.erase(conn_ptr); 
+  }
+
   slash::WriteLock l(&rwlock_);
   pink_epoll_->PinkDelEvent(conn->fd());
   conns_.erase(conn->fd());
@@ -420,13 +428,10 @@ void *PubSubThread::ThreadMain() {
         // Error
         if ((pfe->mask & EPOLLERR) || (pfe->mask & EPOLLHUP) || should_close) {
           {
-            slash::WriteLock l(&rwlock_);
             RemoveConn(in_conn);
-            pink_epoll_->PinkDelEvent(pfe->fd);
             CloseFd(in_conn);
             delete(in_conn);
             in_conn = NULL;
-            conns_.erase(pfe->fd);
           }
         }
       }

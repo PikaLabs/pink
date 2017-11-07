@@ -38,10 +38,6 @@ class PubSubThread : public Thread {
 
   virtual ~PubSubThread();
 
-  PinkEpoll* pink_epoll() {
-    return pink_epoll_;
-  }
-
   // PubSub
 
   int Publish(int fd, const std::string& channel, const std::string& msg);
@@ -69,9 +65,10 @@ class PubSubThread : public Thread {
   bool should_exit_;
   
   mutable slash::RWMutex rwlock_; /* For external statistics */
+  std::map<int, PinkConn*> conns_;
+
 
   slash::Mutex pub_mutex_;
-
   slash::CondVar receiver_rsignal_;
   slash::Mutex receiver_mutex_;
 
@@ -100,7 +97,6 @@ class PubSubThread : public Thread {
   std::map<std::string, std::vector<PinkConn* >> pubsub_pattern_;    // channel <---> fds
   std::map<PinkConn*, std::vector<std::string>> client_channel_;     // client  <---> channels
   std::map<PinkConn*, std::vector<std::string>> client_pattern_;     // client  <---> patterns;
-  std::map<int, PinkConn*> conns_;                                   // fd      <---> PinkConn
   
   // No copying allowed
   PubSubThread(const PubSubThread&);

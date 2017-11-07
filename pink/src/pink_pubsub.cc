@@ -48,21 +48,6 @@ PubSubThread::~PubSubThread() {
   delete(pink_epoll_);
 }
 
-pink::WriteStatus PubSubThread::SendResponse(int32_t fd, const std::string& message) {
-  ssize_t nwritten = 0, message_len_sended = 0, message_len_left = message.size();
-  while (message_len_left > 0) {
-    nwritten = write(fd, message.data() + message_len_sended, message_len_left);
-    if (nwritten == -1 && errno == EAGAIN) {
-      continue;
-    } else if (nwritten == -1) {
-      return pink::kWriteError;
-    }
-    message_len_sended += nwritten;
-    message_len_left -= nwritten;
-  }
-  return pink::kWriteAll;
-}
-
 void PubSubThread::PubSub(std::map<std::string, std::vector<PinkConn* >>& pubsub_channel, std::map<std::string, std::vector<PinkConn* >>& pubsub_pattern) {
   pubsub_channel = pubsub_channel_;
   pubsub_pattern = pubsub_pattern_; 
@@ -79,7 +64,7 @@ int PubSubThread::Publish(int fd, const std::string& channel, const std::string 
   msg_mutex_.Unlock();
 
   // Send signal to ThreadMain()
-  SendResponse(msg_pfd_[1], triger);
+  write(msg_pfd_[1], "", 1);
   receiver_mutex_.Lock();
   while(receivers_.find(fd) == receivers_.end()) {
     receiver_rsignal_.Wait();
@@ -300,6 +285,7 @@ void *PubSubThread::ThreadMain() {
   PinkFiredEvent *pfe;
   slash::Status s;
   PinkConn *in_conn = NULL;
+  char triger[1];
 
   while (!should_stop()) {
     nfds = pink_epoll_->PinkPoll(-1);
@@ -308,11 +294,7 @@ void *PubSubThread::ThreadMain() {
       // Pubilsh
       if (pfe->fd == msg_pfd_[0]) { 
         if (pfe->mask & EPOLLIN) {
-          char* triger = new char;
           read(pfe->fd, triger, 1);
-          if (*triger != 't') {
-            continue;
-          }
           while (MessageNum() != 0) {
             int32_t receivers = 0;
             std::string channel, msg;

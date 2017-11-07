@@ -58,8 +58,6 @@ class PubSubThread : public Thread {
 
   void PubSub(std::map<std::string, std::vector<PinkConn* >>& pubsub_channel, std::map<std::string, std::vector<PinkConn* >>& pubsub_pattern);
   
-  pink::WriteStatus SendResponse(int32_t fd, const std::string& resp);
-    
  private:
   int msg_pfd_[2];
   bool should_exit_;
@@ -75,7 +73,6 @@ class PubSubThread : public Thread {
    * The epoll handler
    */
   PinkEpoll *pink_epoll_;
-
 
   virtual void *ThreadMain() override;
 

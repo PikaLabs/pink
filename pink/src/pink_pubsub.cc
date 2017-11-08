@@ -59,7 +59,7 @@ void PubSubThread::PubSub(std::map<std::string, std::vector<PinkConn* >>& pubsub
   return;
 }
 
-int PubSubThread::Publish(int fd, const std::string& channel, const std::string &msg) {
+int PubSubThread::Publish(const std::string& channel, const std::string &msg) {
   int receivers;
   pub_mutex_.Lock();
 

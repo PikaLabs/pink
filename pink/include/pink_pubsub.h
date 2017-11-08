@@ -40,7 +40,7 @@ class PubSubThread : public Thread {
 
   // PubSub
 
-  int Publish(int fd, const std::string& channel, const std::string& msg);
+  int Publish(const std::string& channel, const std::string& msg);
 
   void Subscribe(PinkConn* conn, const std::vector<std::string> channels, bool pattern, std::vector<std::pair<std::string, int>>& result);
 

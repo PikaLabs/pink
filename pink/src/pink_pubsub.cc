@@ -103,22 +103,6 @@ void PubSubThread::RemoveConn(PinkConn* conn) {
     }
   }
 
-  {
-    slash::MutexLock l(&cli_channel_mutex_);
-    auto conn_ptr = client_channel_.find(conn);
-    if (conn_ptr != client_channel_.end()) {
-      client_channel_.erase(conn_ptr);
-    }
-  }
-
-  {
-    slash::MutexLock l(&cli_pattern_mutex_);
-    auto conn_ptr = client_pattern_.find(conn);
-    if (conn_ptr != client_pattern_.end()) {
-      client_pattern_.erase(conn_ptr);
-    }
-  }
-
   slash::WriteLock l(&rwlock_);
   pink_epoll_->PinkDelEvent(conn->fd());
   conns_.erase(conn->fd());
@@ -126,77 +110,45 @@ void PubSubThread::RemoveConn(PinkConn* conn) {
 
 void PubSubThread::Subscribe(PinkConn *conn, const std::vector<std::string> channels,
                              bool pattern, std::vector<std::pair<std::string, int>>& result) {
+  int subscribed = ClientChannelSize(conn);
+
   for (size_t i = 0; i < channels.size(); i++) {
     if (pattern) {  // if pattern mode, register channel to data structure
       {
-        slash::MutexLock l(&pattern_mutex_);
+        slash::MutexLock channel_lock(&pattern_mutex_);
         if (pubsub_pattern_.find(channels[i]) != pubsub_pattern_.end()) {
           auto conn_ptr = std::find(pubsub_pattern_[channels[i]].begin(),
                                     pubsub_pattern_[channels[i]].end(),
                                     conn);
           if (conn_ptr == pubsub_pattern_[channels[i]].end()) {
             pubsub_pattern_[channels[i]].push_back(conn);
+            ++subscribed;
           }
         } else {    // at first
           std::vector<PinkConn *> conns = {conn};
           pubsub_pattern_[channels[i]] = conns;
+          ++subscribed;
         }
+        result.push_back(std::make_pair(channels[i], subscribed));
       }
-      // The number of channels this client currently subscribed to
-      int channel_subscribed = ClientChannelSize(conn);
+    } else {  // if general mode, reigster channel to data structure
       {
-        slash::MutexLock l(&cli_pattern_mutex_);
-        auto conn_ptr = client_pattern_.find(conn);
-        if (conn_ptr != client_pattern_.end()) {
-          auto it = std::find(conn_ptr->second.begin(),
-                              conn_ptr->second.end(),
-                              channels[i]);
-          if (it == conn_ptr->second.end()) {
-            conn_ptr->second.push_back(channels[i]);
-          }
-          result.push_back(std::make_pair(channels[i],
-                                          conn_ptr->second.size() + channel_subscribed));
-        } else {
-          std::vector<std::string> client_channels = {channels[i]};
-          client_pattern_[conn] = client_channels;
-          result.push_back(std::make_pair(channels[i], 1));
-        }
-      }
-    } else {    // if general mode, reigster channel to data structure
-      {
-        slash::MutexLock l(&channel_mutex_);
+        slash::MutexLock channel_lock(&pattern_mutex_);
         if (pubsub_channel_.find(channels[i]) != pubsub_channel_.end()) {
           auto conn_ptr = std::find(pubsub_channel_[channels[i]].begin(),
                                     pubsub_channel_[channels[i]].end(),
                                     conn);
           if (conn_ptr == pubsub_channel_[channels[i]].end()) {
             pubsub_channel_[channels[i]].push_back(conn);
+            ++subscribed;
           }
         } else {  // at first
           std::vector<PinkConn *> conns = {conn};
           pubsub_channel_[channels[i]] = conns;
+          ++subscribed;
         }
       }
-      // The number of channels this client currently subscribed to
-      int pattern_subscribed = ClientPatternSize(conn);
-      {
-        slash::MutexLock l(&cli_channel_mutex_);
-        auto conn_ptr = client_channel_.find(conn);
-        if (conn_ptr != client_channel_.end()) {
-          auto it = std::find(conn_ptr->second.begin(),
-                              conn_ptr->second.end(),
-                              channels[i]);
-          if (it == conn_ptr->second.end()) {
-            conn_ptr->second.push_back(channels[i]);
-          }
-          result.push_back(std::make_pair(channels[i],
-                                          conn_ptr->second.size() + pattern_subscribed));
-        } else {
-          std::vector<std::string> client_channels = {channels[i]};
-          client_channel_[conn] = client_channels;
-          result.push_back(std::make_pair(channels[i], 1));
-        }
-      }
+      result.push_back(std::make_pair(channels[i], subscribed));
     }
   }
   slash::WriteLock l(&rwlock_);
@@ -206,68 +158,41 @@ void PubSubThread::Subscribe(PinkConn *conn, const std::vector<std::string> chan
 
 int PubSubThread::UnSubscribe(PinkConn *conn_ptr, const std::vector<std::string> channels,
                               bool pattern, std::vector<std::pair<std::string, int>>& result) {
-  // Unsubscibre channels
+  int subscribed = ClientChannelSize(conn_ptr);
+
   if (channels.size() == 0) {       // if client want to unsubscribe all of channels
     if (pattern) {                  // if pattern mode
       {
-        slash::MutexLock l(&cli_pattern_mutex_);
-        for (auto it = client_pattern_.begin(); it != client_pattern_.end(); ++it) {
-          if (it->first == conn_ptr) {
-            int subscribed = it->second.size();
-            for (auto channels = it->second.begin();
-                 channels != it->second.end();
-                 channels++) {
-              result.push_back(std::make_pair(*channels, --subscribed));
-            }
-            client_pattern_.erase(it);
-            break;
-          }
-        }
-      }
-      {
         slash::MutexLock l(&pattern_mutex_);
-        for (auto it = pubsub_pattern_.begin(); it != pubsub_pattern_.end(); it++) {
-          for (auto conn = it->second.begin(); conn != it->second.end(); ++conn) {
-            if ((*conn) == conn_ptr) {
-              it->second.erase(conn);
-              break;
+        for (auto channel_ptr = pubsub_pattern_.begin(); 
+                  channel_ptr != pubsub_pattern_.end(); 
+                  ++channel_ptr) {
+          auto conn = std::find(channel_ptr->second.begin(),
+                                channel_ptr->second.end(),
+                                conn_ptr);
+            if (conn != channel_ptr->second.end()) {
+              result.push_back(std::make_pair(channel_ptr->first, --subscribed));
             }
-          }
-        }
-      }
-    } else {                        // if general mode
-      {
-        slash::MutexLock l(&cli_channel_mutex_);
-        for (auto it = client_channel_.begin(); it != client_channel_.end(); it++) {
-          if (it->first == conn_ptr) {
-            int subscribed = it->second.size();
-            for (auto channels = it->second.begin();
-                 channels != it->second.end();
-                 channels++) {
-              result.push_back(std::make_pair(*channels, --subscribed));
-            }
-            client_channel_.erase(it);
-            break;
           }
         }
       }
       {
         slash::MutexLock l(&channel_mutex_);
-        for (auto it = pubsub_channel_.begin(); it != pubsub_channel_.end(); it++) {
-          for (auto conn = it->second.begin(); conn != it->second.end(); ++conn) {
-            if ((*conn) == conn_ptr) {
-              it->second.erase(conn);
-              break;
-            }
+        for (auto channel_ptr = pubsub_channel_.begin(); 
+                  channel_ptr != pubsub_channel_.end(); 
+                  ++channel_ptr) {
+          auto conn = std::find(channel_ptr->second.begin(),
+                                channel_ptr->second.end(),
+                                conn_ptr);
+          if (conn != channel_ptr->second.end()) {
+            result.push_back(std::make_pair(channel_ptr->first, --subscribed));
           }
         }
       }
-    }
     RemoveConn(conn_ptr);
     return 0;
   }
 
-  int subscribed = 0;
   for (size_t i = 0; i < channels.size(); i++) {
     if (pattern) {      // if pattern mode, unsubscribe the channels of specified
       {
@@ -283,22 +208,7 @@ int PubSubThread::UnSubscribe(PinkConn *conn_ptr, const std::vector<std::string>
                                                   channel_ptr->second.end(),
                                                   conn_ptr),
                                       channel_ptr->second.end());
-          }
-        }
-      }
-      {
-        slash::MutexLock l(&cli_pattern_mutex_);
-        auto conn = client_pattern_.find(conn_ptr);
-        if (conn != client_pattern_.end()) {
-          subscribed = conn->second.size();
-          auto it = std::find(conn->second.begin(),
-                              conn->second.end(),
-                              channels[i]);
-          if (it != conn->second.end()) {
-            result.push_back(std::make_pair(channels[i], subscribed - 1));
-            conn->second.erase(std::remove(
-                                conn->second.begin(), conn->second.end(), channels[i]),
-                                conn->second.end());
+            result.push_back(std::make_pair(channels[i], --subscribed));
           } else {
             result.push_back(std::make_pair(channels[i], subscribed));
           }
@@ -320,21 +230,7 @@ int PubSubThread::UnSubscribe(PinkConn *conn_ptr, const std::vector<std::string>
                                   channel_ptr->second.end(),
                                   conn_ptr),
                                 channel_ptr->second.end());
-          }
-        }
-      }
-      {
-        slash::MutexLock l(&cli_channel_mutex_);
-        auto conn = client_channel_.find(conn_ptr);
-        if (conn != client_channel_.end()) {
-          subscribed = conn->second.size();
-          auto it = std::find(conn->second.begin(),
-                              conn->second.end(),
-                              channels[i]);
-          if (it != conn->second.end()) {
-            result.push_back(std::make_pair(channels[i], subscribed - 1));
-            conn->second.erase(std::remove(conn->second.begin(), conn->second.end(),
-                                           channels[i]), conn->second.end());
+            result.push_back(std::make_pair(channels[i], --subscribed));
           } else {
             result.push_back(std::make_pair(channels[i], subscribed));
           }
@@ -344,10 +240,9 @@ int PubSubThread::UnSubscribe(PinkConn *conn_ptr, const std::vector<std::string>
       }
     }
   }
-
   // The number of channels this client currently subscibred
   // include general mode and pattern mode
-  subscribed = ClientChannelSize(conn_ptr) + ClientPatternSize(conn_ptr);
+  subscribed = ClientChannelSize(conn_ptr);
   if (subscribed == 0) {
     RemoveConn(conn_ptr);
   }

@@ -52,13 +52,34 @@ class PubSubThread : public Thread {
   void RemoveConn(PinkConn* conn);
 
   int ClientChannelSize(PinkConn* conn) {
-    slash::MutexLock l(&cli_channel_mutex_);
-    return client_channel_[conn].size();
-  }
-
-  int ClientPatternSize(PinkConn* conn) {
-    slash::MutexLock l(&cli_pattern_mutex_);
-    return client_pattern_[conn].size();
+    int subscribed = 0;
+    {
+      slash::MutexLock l(&channel_mutex_);
+      for (auto channel_ptr = pubsub_channel_.begin();
+                channel_ptr != pubsub_channel_.end();
+                ++channel_ptr) {
+        auto conn_ptr = std::find(channel_ptr->second.begin(),
+                                  channel_ptr->second.end(),
+                                  conn);
+        if (conn_ptr != channel_ptr->second.end()) {
+          subscribed++; 
+        } 
+      }
+    }
+    { 
+      slash::MutexLock l(&pattern_mutex_);
+      for (auto channel_ptr = pubsub_pattern_.begin();
+                channel_ptr != pubsub_pattern_.end();
+                ++channel_ptr) {
+        auto conn_ptr = std::find(channel_ptr->second.begin(),
+                                  channel_ptr->second.end(),
+                                  conn);
+        if (conn_ptr != channel_ptr->second.end()) {
+          subscribed++; 
+        } 
+      }
+    }
+    return subscribed;
   }
 
   int msg_pfd_[2];
@@ -89,13 +110,9 @@ class PubSubThread : public Thread {
   // PubSub
   slash::Mutex channel_mutex_;
   slash::Mutex pattern_mutex_;
-  slash::Mutex cli_channel_mutex_;
-  slash::Mutex cli_pattern_mutex_;
 
   std::map<std::string, std::vector<PinkConn* >> pubsub_channel_;    // channel <---> fds
   std::map<std::string, std::vector<PinkConn* >> pubsub_pattern_;    // channel <---> fds
-  std::map<PinkConn*, std::vector<std::string>> client_channel_;     // client  <---> channels
-  std::map<PinkConn*, std::vector<std::string>> client_pattern_;     // client  <---> patterns;
 
   // No copying allowed
   PubSubThread(const PubSubThread&);

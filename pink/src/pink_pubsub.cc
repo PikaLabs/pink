@@ -354,7 +354,7 @@ void *PubSubThread::ThreadMain() {
                 it->second[i]->ConstructPublishResp(it->first, channel, msg, false);
                 WriteStatus write_status = it->second[i]->SendReply();
                 if (write_status == kWriteHalf) {
-                  pink_epoll_->PinkModEvent(it->second[i]->fd(), 0, EPOLLOUT); 
+                  pink_epoll_->PinkModEvent(it->second[i]->fd(), EPOLLIN, EPOLLOUT); 
                 } else if (write_status == kWriteError) {
                   pink_epoll_->PinkDelEvent(it->second[i]->fd());
                   CloseFd(it->second[i]);
@@ -376,7 +376,7 @@ void *PubSubThread::ThreadMain() {
                 it->second[i]->ConstructPublishResp(it->first, channel, msg, true);
                 WriteStatus write_status = it->second[i]->SendReply();
                 if (write_status == kWriteHalf) {
-                  pink_epoll_->PinkModEvent(it->second[i]->fd(), 0, EPOLLOUT); 
+                  pink_epoll_->PinkModEvent(it->second[i]->fd(), EPOLLIN, EPOLLOUT); 
                 } else if (write_status == kWriteError) {
                   pink_epoll_->PinkDelEvent(it->second[i]->fd());
                   CloseFd(it->second[i]);

@@ -62,11 +62,11 @@ class PubSubThread : public Thread {
                                   channel_ptr->second.end(),
                                   conn);
         if (conn_ptr != channel_ptr->second.end()) {
-          subscribed++; 
-        } 
+          subscribed++;
+        }
       }
     }
-    { 
+    {
       slash::MutexLock l(&pattern_mutex_);
       for (auto channel_ptr = pubsub_pattern_.begin();
                 channel_ptr != pubsub_pattern_.end();
@@ -75,8 +75,8 @@ class PubSubThread : public Thread {
                                   channel_ptr->second.end(),
                                   conn);
         if (conn_ptr != channel_ptr->second.end()) {
-          subscribed++; 
-        } 
+          subscribed++;
+        }
       }
     }
     return subscribed;

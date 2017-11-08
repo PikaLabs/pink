@@ -164,8 +164,8 @@ int PubSubThread::UnSubscribe(PinkConn *conn_ptr, const std::vector<std::string>
     if (pattern) {                  // if pattern mode
       {
         slash::MutexLock l(&pattern_mutex_);
-        for (auto channel_ptr = pubsub_pattern_.begin(); 
-                  channel_ptr != pubsub_pattern_.end(); 
+        for (auto channel_ptr = pubsub_pattern_.begin();
+                  channel_ptr != pubsub_pattern_.end();
                   ++channel_ptr) {
           auto conn = std::find(channel_ptr->second.begin(),
                                 channel_ptr->second.end(),
@@ -178,8 +178,8 @@ int PubSubThread::UnSubscribe(PinkConn *conn_ptr, const std::vector<std::string>
       }
       {
         slash::MutexLock l(&channel_mutex_);
-        for (auto channel_ptr = pubsub_channel_.begin(); 
-                  channel_ptr != pubsub_channel_.end(); 
+        for (auto channel_ptr = pubsub_channel_.begin();
+                  channel_ptr != pubsub_channel_.end();
                   ++channel_ptr) {
           auto conn = std::find(channel_ptr->second.begin(),
                                 channel_ptr->second.end(),

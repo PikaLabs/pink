@@ -47,23 +47,23 @@ class PubSubThread : public Thread {
   int UnSubscribe(PinkConn* conn, const std::vector<std::string> channels, bool pattern, std::vector<std::pair<std::string, int>>& result);
 
   void PubSub(std::map<std::string, std::vector<PinkConn* >>& pubsub_channel, std::map<std::string, std::vector<PinkConn* >>& pubsub_pattern);
-  
+
  private:
   void RemoveConn(PinkConn* conn);
 
   int ClientChannelSize(PinkConn* conn) {
-    slash::MutexLock l(&cli_channel_mutex_); 
+    slash::MutexLock l(&cli_channel_mutex_);
     return client_channel_[conn].size();
   }
 
   int ClientPatternSize(PinkConn* conn) {
-    slash::MutexLock l(&cli_pattern_mutex_); 
+    slash::MutexLock l(&cli_pattern_mutex_);
     return client_pattern_[conn].size();
   }
 
   int msg_pfd_[2];
   bool should_exit_;
-  
+
   mutable slash::RWMutex rwlock_; /* For external statistics */
   std::map<int, PinkConn*> conns_;
 
@@ -82,11 +82,10 @@ class PubSubThread : public Thread {
   PinkEpoll *pink_epoll_;
 
   virtual void *ThreadMain() override;
-
   // clean conns
   void CloseFd(PinkConn* conn);
   void Cleanup();
-  
+
   // PubSub
   slash::Mutex channel_mutex_;
   slash::Mutex pattern_mutex_;
@@ -97,12 +96,11 @@ class PubSubThread : public Thread {
   std::map<std::string, std::vector<PinkConn* >> pubsub_pattern_;    // channel <---> fds
   std::map<PinkConn*, std::vector<std::string>> client_channel_;     // client  <---> channels
   std::map<PinkConn*, std::vector<std::string>> client_pattern_;     // client  <---> patterns;
-  
+
   // No copying allowed
   PubSubThread(const PubSubThread&);
   void operator=(const PubSubThread&);
-
 };  // class PubSubThread
 
 }  // namespace pink
-#endif  // PINK_INCLUDE_PUBSUB_H_
+#endif    // PINK_INCLUDE_PUBSUB_H_

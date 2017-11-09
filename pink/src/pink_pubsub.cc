@@ -108,6 +108,37 @@ void PubSubThread::RemoveConn(PinkConn* conn) {
   conns_.erase(conn->fd());
 }
 
+int PubSubThread::ClientChannelSize(PinkConn* conn) {
+  int subscribed = 0;
+  {
+    slash::MutexLock l(&channel_mutex_);
+    for (auto channel_ptr = pubsub_channel_.begin();
+              channel_ptr != pubsub_channel_.end();
+              ++channel_ptr) {
+      auto conn_ptr = std::find(channel_ptr->second.begin(),
+                                channel_ptr->second.end(),
+                                conn);
+      if (conn_ptr != channel_ptr->second.end()) {
+        subscribed++;
+      }
+    }
+  }
+  {
+    slash::MutexLock l(&pattern_mutex_);
+    for (auto channel_ptr = pubsub_pattern_.begin();
+              channel_ptr != pubsub_pattern_.end();
+              ++channel_ptr) {
+      auto conn_ptr = std::find(channel_ptr->second.begin(),
+                                channel_ptr->second.end(),
+                                conn);
+      if (conn_ptr != channel_ptr->second.end()) {
+        subscribed++;
+      }
+    }
+  }
+    return subscribed;
+}
+
 void PubSubThread::Subscribe(PinkConn *conn, const std::vector<std::string> channels,
                              bool pattern, std::vector<std::pair<std::string, int>>& result) {
   int subscribed = ClientChannelSize(conn);

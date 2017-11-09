@@ -51,36 +51,7 @@ class PubSubThread : public Thread {
  private:
   void RemoveConn(PinkConn* conn);
 
-  int ClientChannelSize(PinkConn* conn) {
-    int subscribed = 0;
-    {
-      slash::MutexLock l(&channel_mutex_);
-      for (auto channel_ptr = pubsub_channel_.begin();
-                channel_ptr != pubsub_channel_.end();
-                ++channel_ptr) {
-        auto conn_ptr = std::find(channel_ptr->second.begin(),
-                                  channel_ptr->second.end(),
-                                  conn);
-        if (conn_ptr != channel_ptr->second.end()) {
-          subscribed++;
-        }
-      }
-    }
-    {
-      slash::MutexLock l(&pattern_mutex_);
-      for (auto channel_ptr = pubsub_pattern_.begin();
-                channel_ptr != pubsub_pattern_.end();
-                ++channel_ptr) {
-        auto conn_ptr = std::find(channel_ptr->second.begin(),
-                                  channel_ptr->second.end(),
-                                  conn);
-        if (conn_ptr != channel_ptr->second.end()) {
-          subscribed++;
-        }
-      }
-    }
-    return subscribed;
-  }
+  int ClientChannelSize(PinkConn* conn);
 
   int msg_pfd_[2];
   bool should_exit_;

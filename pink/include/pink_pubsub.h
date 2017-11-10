@@ -42,9 +42,9 @@ class PubSubThread : public Thread {
 
   int Publish(const std::string& channel, const std::string& msg);
 
-  void Subscribe(PinkConn* conn, const std::vector<std::string> channels, bool pattern, std::vector<std::pair<std::string, int>>& result);
+  void Subscribe(PinkConn* conn, const std::vector<std::string>& channels, const bool pattern, std::vector<std::pair<std::string, int>>& result);
 
-  int UnSubscribe(PinkConn* conn, const std::vector<std::string> channels, bool pattern, std::vector<std::pair<std::string, int>>& result);
+  int UnSubscribe(PinkConn* conn, const std::vector<std::string>& channels, const bool pattern, std::vector<std::pair<std::string, int>>& result);
 
   void PubSub(std::map<std::string, std::vector<PinkConn* >>& pubsub_channel, std::map<std::string, std::vector<PinkConn* >>& pubsub_pattern);
 
@@ -58,7 +58,6 @@ class PubSubThread : public Thread {
 
   mutable slash::RWMutex rwlock_; /* For external statistics */
   std::map<int, PinkConn*> conns_;
-
 
   slash::Mutex pub_mutex_;
   slash::CondVar receiver_rsignal_;
@@ -74,6 +73,7 @@ class PubSubThread : public Thread {
   PinkEpoll *pink_epoll_;
 
   virtual void *ThreadMain() override;
+
   // clean conns
   void CloseFd(PinkConn* conn);
   void Cleanup();

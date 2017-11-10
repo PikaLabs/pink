@@ -139,8 +139,9 @@ int PubSubThread::ClientChannelSize(PinkConn* conn) {
     return subscribed;
 }
 
-void PubSubThread::Subscribe(PinkConn *conn, const std::vector<std::string> channels,
-                             bool pattern, std::vector<std::pair<std::string, int>>& result) {
+void PubSubThread::Subscribe(PinkConn *conn,
+                             const std::vector<std::string>& channels,
+                             const bool pattern, std::vector<std::pair<std::string, int>>& result) {
   int subscribed = ClientChannelSize(conn);
 
   for (size_t i = 0; i < channels.size(); i++) {
@@ -187,8 +188,9 @@ void PubSubThread::Subscribe(PinkConn *conn, const std::vector<std::string> chan
   pink_epoll_->PinkAddEvent(conn->fd(), EPOLLIN);
 }
 
-int PubSubThread::UnSubscribe(PinkConn *conn_ptr, const std::vector<std::string> channels,
-                              bool pattern, std::vector<std::pair<std::string, int>>& result) {
+int PubSubThread::UnSubscribe(PinkConn *conn_ptr, 
+                              const std::vector<std::string>& channels,
+                              const bool pattern, std::vector<std::pair<std::string, int>>& result) {
   int subscribed = ClientChannelSize(conn_ptr);
 
   if (channels.size() == 0) {       // if client want to unsubscribe all of channels

@@ -34,7 +34,7 @@ class PinkConn;
 
 class PubSubThread : public Thread {
  public:
-  explicit PubSubThread();
+  PubSubThread();
 
   virtual ~PubSubThread();
 

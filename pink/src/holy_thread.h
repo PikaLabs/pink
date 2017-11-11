@@ -47,8 +47,6 @@ class HolyThread: public ServerThread {
 
   virtual PinkConn* MoveConnOut(int fd) override;
   
-  virtual void MoveConnIn(PinkConn* conn) override;
-
   virtual void KillAllConns() override;
 
   virtual bool KillConn(const std::string& ip_port) override;

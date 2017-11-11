@@ -37,23 +37,40 @@ class PubSubThread : public Thread {
   PubSubThread();
 
   virtual ~PubSubThread();
+  
+  int notify_receive_fd() {
+    return notify_pfd_[0];
+  }
+
+  int notify_send_fd() {
+    return notify_pfd_[1];
+  }
+
+  /*
+   * receive fd from worker thread
+   */
+
+  slash::Mutex mutex_;
+  std::queue<int > fd_queue_;
 
   // PubSub
 
   int Publish(const std::string& channel, const std::string& msg);
 
-  void Subscribe(PinkConn* conn, const std::vector<std::string>& channels, const bool pattern, std::vector<std::pair<std::string, int>>& result);
+  void Subscribe(PinkConn* conn, const std::vector<std::string>& channels, const bool pattern, std::vector<std::pair<std::string, int>>* result);
 
-  int UnSubscribe(PinkConn* conn, const std::vector<std::string>& channels, const bool pattern, std::vector<std::pair<std::string, int>>& result);
+  int UnSubscribe(PinkConn* conn, const std::vector<std::string>& channels, const bool pattern, std::vector<std::pair<std::string, int>>* result);
 
   void PubSub(std::map<std::string, std::vector<PinkConn* >>& pubsub_channel, std::map<std::string, std::vector<PinkConn* >>& pubsub_pattern);
 
+  void MoveConnIn(int fd);
  private:
   void RemoveConn(PinkConn* conn);
 
   int ClientChannelSize(PinkConn* conn);
 
   int msg_pfd_[2];
+  int notify_pfd_[2];
   bool should_exit_;
 
   mutable slash::RWMutex rwlock_; /* For external statistics */

@@ -134,12 +134,6 @@ PinkConn* DispatchThread::MoveConnOut(int fd) {
   return nullptr;
 }
 
-void DispatchThread::MoveConnIn(PinkConn* conn) {
-  int next_thread = last_thread_;
-  slash::MutexLock l(&worker_thread_[next_thread]->mutex_);
-  worker_thread_[next_thread]->MoveConnIn(conn);
-}
-
 bool DispatchThread::KillConn(const std::string& ip_port) {
   bool result = false;
   for (int i = 0; i < work_num_; ++i) {

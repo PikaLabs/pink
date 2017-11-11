@@ -53,12 +53,11 @@ class DispatchThread : public ServerThread {
 
   virtual PinkConn* MoveConnOut(int fd) override;
   
-  virtual void MoveConnIn(PinkConn* conn) override;
-
   virtual void KillAllConns() override;
 
   virtual bool KillConn(const std::string& ip_port) override;
 
+  void HandleNewConn(const int connfd, const std::string& ip_port) override;
  private:
   /*
    * Here we used auto poll to find the next work thread,
@@ -73,7 +72,6 @@ class DispatchThread : public ServerThread {
   int queue_limit_;
   std::map<WorkerThread*, void*> localdata_;
 
-  void HandleNewConn(const int connfd, const std::string& ip_port) override;
   void HandleConnEvent(PinkFiredEvent *pfe) override {
     UNUSED(pfe);
   }

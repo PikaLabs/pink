@@ -145,11 +145,10 @@ class ServerThread : public Thread {
   // Move out from server thread
   virtual PinkConn* MoveConnOut(int fd) = 0;
   
-  // Move conn to server thread
-  virtual void MoveConnIn(PinkConn* conn) = 0;
-
   virtual void KillAllConns() = 0;
   virtual bool KillConn(const std::string& ip_port) = 0;
+
+  virtual void HandleNewConn(int connfd, const std::string& ip_port) = 0;
 
   virtual ~ServerThread();
 
@@ -186,9 +185,8 @@ class ServerThread : public Thread {
   virtual int InitHandle();
   virtual void *ThreadMain() override;
   /*
-   * The server connection and event handle
+   * The server event handle
    */
-  virtual void HandleNewConn(int connfd, const std::string& ip_port) = 0;
   virtual void HandleConnEvent(PinkFiredEvent *pfe) = 0;
 };
 

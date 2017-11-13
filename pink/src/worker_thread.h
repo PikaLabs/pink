@@ -49,8 +49,6 @@ class WorkerThread : public Thread {
 
   PinkConn* MoveConnOut(int fd);
 
-  void MoveConnIn(PinkConn* conn);
-  
   /*
    * The PbItem queue is the fd queue, receive from dispatch thread
    */

@@ -21,7 +21,6 @@
 #include "slash/include/slash_mutex.h"
 #include "slash/include/slash_string.h"
 
-#include "pink/include/server_thread.h"
 #include "pink/src/pink_epoll.h"
 #include "pink/include/pink_thread.h"
 #include "pink/include/pink_define.h"
@@ -49,7 +48,6 @@ class PubSubThread : public Thread {
   /*
    * receive fd from worker thread
    */
-
   slash::Mutex mutex_;
   std::queue<int > fd_queue_;
 
@@ -57,13 +55,24 @@ class PubSubThread : public Thread {
 
   int Publish(const std::string& channel, const std::string& msg);
 
-  void Subscribe(PinkConn* conn, const std::vector<std::string>& channels, const bool pattern, std::vector<std::pair<std::string, int>>* result);
+  void Subscribe(PinkConn* conn,
+                 const std::vector<std::string>& channels,
+                 const bool pattern,
+                 std::vector<std::pair<std::string, int>>* result);
 
-  int UnSubscribe(PinkConn* conn, const std::vector<std::string>& channels, const bool pattern, std::vector<std::pair<std::string, int>>* result);
+  int UnSubscribe(PinkConn* conn,
+                  const std::vector<std::string>& channels,
+                  const bool pattern,
+                  std::vector<std::pair<std::string, int>>* result);
 
-  void PubSub(std::map<std::string, std::vector<PinkConn* >>& pubsub_channel, std::map<std::string, std::vector<PinkConn* >>& pubsub_pattern);
+  void PubSubChannels(const std::string& pattern, 
+                      std::vector<std::string >* result);
 
-  void MoveConnIn(int fd);
+  void PubSubNumSub(const std::vector<std::string>& channels,
+                    std::vector<std::pair<std::string, int>>* result);
+
+  int PubSubNumPat();
+
  private:
   void RemoveConn(PinkConn* conn);
 

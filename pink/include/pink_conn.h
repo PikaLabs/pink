@@ -37,7 +37,10 @@ class PinkConn {
 
   virtual ReadStatus GetRequest() = 0;
   virtual WriteStatus SendReply() = 0;
-  virtual int ConstructPublishResp(const std::string& subscribe_channel, const std::string& channel, const std::string& msg, const bool pattern) = 0;
+  virtual int ConstructPublishResp(const std::string& subscribe_channel,
+                                   const std::string& channel,
+                                   const std::string& msg,
+                                   const bool pattern) = 0;
 
   int flags() const {
     return flags_;

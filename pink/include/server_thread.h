@@ -144,7 +144,7 @@ class ServerThread : public Thread {
 
   // Move out from server thread
   virtual PinkConn* MoveConnOut(int fd) = 0;
-  
+
   virtual void KillAllConns() = 0;
   virtual bool KillConn(const std::string& ip_port) = 0;
 

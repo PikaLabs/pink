@@ -74,14 +74,9 @@ void PubSubThread::RemoveConn(PinkConn* conn) {
     }
   }
 
-  {
-    slash::WriteLock l(&rwlock_);
-    pink_epoll_->PinkDelEvent(conn->fd());
-  }
-  {
-    slash::MutexLock l(&mutex_);
-    conns_.erase(conn->fd());
-  }
+  pink_epoll_->PinkDelEvent(conn->fd());
+  slash::MutexLock l(&mutex_);
+  conns_.erase(conn->fd());
 }
 
 int PubSubThread::Publish(const std::string& channel, const std::string &msg) {
@@ -101,7 +96,6 @@ int PubSubThread::Publish(const std::string& channel, const std::string &msg) {
   receiver_mutex_.Unlock();
 
   pub_mutex_.Unlock();
-
   return receivers;
 }
 
@@ -338,8 +332,8 @@ void PubSubThread::PubSubNumSub(const std::vector<std::string> & channels,
 }
 
 int PubSubThread::PubSubNumPat() {
-  slash::MutexLock l(&pattern_mutex_);
   int subscribed = 0;
+  slash::MutexLock l(&pattern_mutex_);
   for (auto it = pubsub_pattern_.begin();
        it != pubsub_pattern_.end();
        it++) {

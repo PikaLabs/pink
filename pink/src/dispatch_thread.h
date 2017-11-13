@@ -52,7 +52,7 @@ class DispatchThread : public ServerThread {
   virtual std::vector<ServerThread::ConnInfo> conns_info() const override;
 
   virtual PinkConn* MoveConnOut(int fd) override;
-  
+
   virtual void KillAllConns() override;
 
   virtual bool KillConn(const std::string& ip_port) override;

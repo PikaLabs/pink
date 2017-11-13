@@ -36,7 +36,7 @@ PubSubThread::PubSubThread()
   pink_epoll_->PinkAddEvent(msg_pfd_[0], EPOLLIN | EPOLLERR | EPOLLHUP);
 
   if (pipe(notify_pfd_)) {
-    exit(-1); 
+    exit(-1);
   }
   pink_epoll_->PinkAddEvent(notify_pfd_[0], EPOLLIN | EPOLLERR | EPOLLHUP);
 }
@@ -49,7 +49,9 @@ void PubSubThread::RemoveConn(PinkConn* conn) {
   {
     slash::MutexLock l(&pattern_mutex_);
     for (auto it = pubsub_pattern_.begin(); it != pubsub_pattern_.end(); ++it) {
-      for (auto conn_ptr = it->second.begin(); conn_ptr != it->second.end(); ++conn_ptr) {
+      for (auto conn_ptr = it->second.begin();
+           conn_ptr != it->second.end();
+           ++conn_ptr) {
         if ((*conn_ptr) == conn) {
           conn_ptr = it->second.erase(conn_ptr);
           break;
@@ -61,7 +63,9 @@ void PubSubThread::RemoveConn(PinkConn* conn) {
   {
     slash::MutexLock l(&channel_mutex_);
     for (auto it = pubsub_channel_.begin(); it != pubsub_channel_.end(); ++it) {
-      for (auto conn_ptr = it->second.begin(); conn_ptr != it->second.end(); ++conn_ptr) {
+      for (auto conn_ptr = it->second.begin();
+           conn_ptr != it->second.end();
+           ++conn_ptr) {
         if ((*conn_ptr) == conn) {
           conn_ptr = it->second.erase(conn_ptr);
           break;
@@ -180,11 +184,10 @@ void PubSubThread::Subscribe(PinkConn *conn,
       result->push_back(std::make_pair(channels[i], subscribed));
     }
   }
- 
   {
     slash::WriteLock l(&rwlock_);
     conns_[conn->fd()] = conn;
-  } 
+  }
   {
     slash::MutexLock l(&mutex_);
     fd_queue_.push(conn->fd());
@@ -196,14 +199,14 @@ void PubSubThread::Subscribe(PinkConn *conn,
  * Unsubscribes the client from the given channels, or from all of them if none
  * is given.
  */
-int PubSubThread::UnSubscribe(PinkConn *conn, 
+int PubSubThread::UnSubscribe(PinkConn *conn,
                               const std::vector<std::string>& channels,
                               const bool pattern,
                               std::vector<std::pair<std::string, int>>* result) {
   int subscribed = ClientChannelSize(conn);
   bool exist = true;
   if (subscribed == 0) {
-    exist = false; 
+    exist = false;
   }
   if (channels.size() == 0) {       // if client want to unsubscribe all of channels
     if (pattern) {                  // all of pattern channels
@@ -301,14 +304,14 @@ void PubSubThread::PubSubChannels(const std::string& pattern,
                     std::vector<std::string >* result) {
   if (pattern == "") {
     slash::MutexLock l(&channel_mutex_);
-    for(auto it = pubsub_channel_.begin(); it != pubsub_channel_.end(); it++) {
+    for (auto it = pubsub_channel_.begin(); it != pubsub_channel_.end(); it++) {
       if (it->second.size() != 0) {
         result->push_back(it->first);
       }
     }
   } else {
     slash::MutexLock l(&channel_mutex_);
-    for(auto it = pubsub_channel_.begin(); it != pubsub_channel_.end(); it++) {
+    for (auto it = pubsub_channel_.begin(); it != pubsub_channel_.end(); it++) {
       if (slash::stringmatchlen(it->first.c_str(), it->first.size(),
                                 pattern.c_str(), pattern.size(), 0)) {
         if (it->second.size() != 0) {
@@ -321,11 +324,11 @@ void PubSubThread::PubSubChannels(const std::string& pattern,
 
 void PubSubThread::PubSubNumSub(const std::vector<std::string> & channels,
                                 std::vector<std::pair<std::string, int>>* result) {
-  for(size_t i = 0; i < channels.size(); i++) {
+  for (size_t i = 0; i < channels.size(); i++) {
     result->push_back(std::make_pair(channels[i], 0));
     {
       slash::MutexLock l(&channel_mutex_);
-      for(auto it = pubsub_channel_.begin(); it != pubsub_channel_.end(); it++) {
+      for (auto it = pubsub_channel_.begin(); it != pubsub_channel_.end(); it++) {
         if (it->first == channels[i]) {
           result->push_back(std::make_pair(it->first, it->second.size()));
         }
@@ -336,9 +339,11 @@ void PubSubThread::PubSubNumSub(const std::vector<std::string> & channels,
 
 int PubSubThread::PubSubNumPat() {
   slash::MutexLock l(&pattern_mutex_);
-  int subscribed = 0; 
-  for(auto it = pubsub_pattern_.begin(); it != pubsub_pattern_.end(); it++) {
-    subscribed += it->second.size(); 
+  int subscribed = 0;
+  for (auto it = pubsub_pattern_.begin();
+       it != pubsub_pattern_.end();
+       it++) {
+    subscribed += it->second.size();
   }
   return subscribed;
 }
@@ -362,7 +367,7 @@ void *PubSubThread::ThreadMain() {
             int new_fd = fd_queue_.front();
             fd_queue_.pop();
             pink_epoll_->PinkAddEvent(new_fd, EPOLLIN);
-          } 
+          }
           continue;
         }
       }

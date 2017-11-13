@@ -12,6 +12,7 @@
 #include <functional>
 #include <queue>
 #include <map>
+#include <utility>
 #include <atomic>
 #include <vector>
 #include <set>
@@ -36,7 +37,7 @@ class PubSubThread : public Thread {
   PubSubThread();
 
   virtual ~PubSubThread();
-  
+
   int notify_receive_fd() {
     return notify_pfd_[0];
   }
@@ -65,7 +66,7 @@ class PubSubThread : public Thread {
                   const bool pattern,
                   std::vector<std::pair<std::string, int>>* result);
 
-  void PubSubChannels(const std::string& pattern, 
+  void PubSubChannels(const std::string& pattern,
                       std::vector<std::string >* result);
 
   void PubSubNumSub(const std::vector<std::string>& channels,
@@ -98,7 +99,7 @@ class PubSubThread : public Thread {
    */
   PinkEpoll *pink_epoll_;
 
-  virtual void *ThreadMain() override;
+  virtual void *ThreadMain();
 
   // clean conns
   void CloseFd(PinkConn* conn);
@@ -108,8 +109,8 @@ class PubSubThread : public Thread {
   slash::Mutex channel_mutex_;
   slash::Mutex pattern_mutex_;
 
-  std::map<std::string, std::vector<PinkConn* >> pubsub_channel_;    // channel <---> fds
-  std::map<std::string, std::vector<PinkConn* >> pubsub_pattern_;    // channel <---> fds
+  std::map<std::string, std::vector<PinkConn* >> pubsub_channel_;    // channel <---> conns
+  std::map<std::string, std::vector<PinkConn* >> pubsub_pattern_;    // channel <---> conns
 
   // No copying allowed
   PubSubThread(const PubSubThread&);
@@ -117,4 +118,4 @@ class PubSubThread : public Thread {
 };  // class PubSubThread
 
 }  // namespace pink
-#endif    // PINK_INCLUDE_PUBSUB_H_
+#endif  // THIRD_PINK_PINK_INCLUDE_PINK_PUBSUB_H_

@@ -408,18 +408,21 @@ WriteStatus RedisConn::SendReply() {
   }
 }
 
-int RedisConn::ConstructPublishResp(std::string subscribe_channel, std::string publish_channel, std::string msg, bool pattern) {
+int RedisConn::ConstructPublishResp(std::string subscribe_channel,
+                                    std::string publish_channel,
+                                    std::string msg,
+                                    bool pattern) {
   std::stringstream resp;
   std::string common_msg = "message";
   std::string pattern_msg = "pmessage";
   if (pattern) {
-    resp << "*4\r\n" << "$" << pattern_msg.length() << "\r\n" << pattern_msg << "\r\n" << 
-      "$" << subscribe_channel.length() << "\r\n" << subscribe_channel << 
-      "\r\n" << "$" << publish_channel.length() << "\r\n" << publish_channel << "\r\n" << 
+    resp << "*4\r\n" << "$" << pattern_msg.length() << "\r\n" << pattern_msg << "\r\n" <<
+      "$" << subscribe_channel.length() << "\r\n" << subscribe_channel <<
+      "\r\n" << "$" << publish_channel.length() << "\r\n" << publish_channel << "\r\n" <<
       "$" << msg.length() << "\r\n" << msg << "\r\n";
   } else {
-    resp << "*3\r\n" << "$" << common_msg.length() << "\r\n" << common_msg << "\r\n" << 
-      "$" << publish_channel.length() << "\r\n" << publish_channel << 
+    resp << "*3\r\n" << "$" << common_msg.length() << "\r\n" << common_msg << "\r\n" <<
+      "$" << publish_channel.length() << "\r\n" << publish_channel <<
       "\r\n" << "$" << msg.length() << "\r\n" << msg << "\r\n";
   }
   std::string str_resp = resp.str();
@@ -430,7 +433,7 @@ int RedisConn::ConstructPublishResp(std::string subscribe_channel, std::string p
       wbuf_len_ = 34;
       set_is_reply(true);
       return 0;
-    } 
+    }
   }
   memcpy(wbuf_ + wbuf_len_, str_resp.data(), str_resp.size());
   wbuf_len_ += str_resp.size();

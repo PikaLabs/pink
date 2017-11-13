@@ -441,10 +441,10 @@ void *PubSubThread::ThreadMain() {
         in_conn = iter->second;
         // Send reply
         if (pfe->mask & EPOLLOUT && in_conn->is_reply()) {
-          pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLIN);  // Remove EPOLLOUT
           WriteStatus write_status = in_conn->SendReply();
           if (write_status == kWriteAll) {
             in_conn->set_is_reply(false);
+            pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLIN);  // Remove EPOLLOUT
           } else if (write_status == kWriteHalf) {
             pink_epoll_->PinkModEvent(pfe->fd, EPOLLIN, EPOLLOUT);
             continue;  //  send all write buffer,

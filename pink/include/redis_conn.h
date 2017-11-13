@@ -30,7 +30,7 @@ class RedisConn: public PinkConn {
 
   virtual ReadStatus GetRequest();
   virtual WriteStatus SendReply();
-  virtual int ConstructPublishResp(std::string subscribe_channel, std::string publish_channel, std::string msg, bool pattern);
+  virtual int ConstructPublishResp(const std::string& subscribe_channel, const std::string& publish_channel, const std::string& msg, const bool pattern);
 
   ConnStatus connStatus_;
 

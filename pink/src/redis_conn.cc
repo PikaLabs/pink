@@ -408,10 +408,10 @@ WriteStatus RedisConn::SendReply() {
   }
 }
 
-int RedisConn::ConstructPublishResp(std::string subscribe_channel,
-                                    std::string publish_channel,
-                                    std::string msg,
-                                    bool pattern) {
+int RedisConn::ConstructPublishResp(const std::string& subscribe_channel,
+                                    const std::string& publish_channel,
+                                    const std::string& msg,
+                                    const bool pattern) {
   std::stringstream resp;
   std::string common_msg = "message";
   std::string pattern_msg = "pmessage";

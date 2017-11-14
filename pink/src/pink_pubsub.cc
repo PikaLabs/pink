@@ -39,8 +39,7 @@ PubSubThread::~PubSubThread() {
 }
 
 void PubSubThread::RemoveConn(PinkConn* conn) {
-  {
-  slash::MutexLock l(&pattern_mutex_);
+  pattern_mutex_.Lock();
   for (auto it = pubsub_pattern_.begin(); it != pubsub_pattern_.end(); it++) {
     for (auto conn_ptr = it->second.begin();
               conn_ptr != it->second.end();
@@ -51,10 +50,9 @@ void PubSubThread::RemoveConn(PinkConn* conn) {
       }
     }
   }
-  }
+  pattern_mutex_.UnLock();
 
-  {
-  slash::MutexLock l(&channel_mutex_);
+  channel_mutex_.Lock();
   for (auto it = pubsub_channel_.begin(); it != pubsub_channel_.end(); it++) {
     for (auto conn_ptr = it->second.begin();
               conn_ptr != it->second.end();
@@ -65,7 +63,7 @@ void PubSubThread::RemoveConn(PinkConn* conn) {
       }
     }
   }
-  }
+  channel_mutex_.UnLock();
 
   pink_epoll_->PinkDelEvent(conn->fd());
   slash::MutexLock l(&mutex_);
@@ -97,8 +95,8 @@ int PubSubThread::Publish(const std::string& channel, const std::string &msg) {
  */
 int PubSubThread::ClientChannelSize(PinkConn* conn) {
   int subscribed = 0;
-  {
-  slash::MutexLock l(&channel_mutex_);
+
+  channel_mutex_.Lock();
   for (auto& channel : pubsub_channel_) {
     auto conn_ptr = std::find(channel.second.begin(),
                               channel.second.end(),
@@ -107,10 +105,9 @@ int PubSubThread::ClientChannelSize(PinkConn* conn) {
       subscribed++;
     }
   }
-  }
+  channel_mutex_.UnLock();
 
-  {
-  slash::MutexLock l(&pattern_mutex_);
+  pattern_mutex_.Lock();
   for (auto& channel : pubsub_pattern_) {
     auto conn_ptr = std::find(channel.second.begin(),
                               channel.second.end(),
@@ -119,7 +116,8 @@ int PubSubThread::ClientChannelSize(PinkConn* conn) {
       subscribed++;
     }
   }
-  }
+  pattern_mutex_.UnLock();
+
   return subscribed;
 }
 

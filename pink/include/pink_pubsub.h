@@ -38,20 +38,6 @@ class PubSubThread : public Thread {
 
   virtual ~PubSubThread();
 
-  int notify_receive_fd() {
-    return notify_pfd_[0];
-  }
-
-  int notify_send_fd() {
-    return notify_pfd_[1];
-  }
-
-  /*
-   * receive fd from worker thread
-   */
-  slash::Mutex mutex_;
-  std::queue<int > fd_queue_;
-
   // PubSub
 
   int Publish(const std::string& channel, const std::string& msg);
@@ -90,9 +76,15 @@ class PubSubThread : public Thread {
   slash::CondVar receiver_rsignal_;
   slash::Mutex receiver_mutex_;
 
+  /*
+   * receive fd from worker thread
+   */
+  slash::Mutex mutex_;
+  std::queue<int > fd_queue_;
+
   std::string channel_;
   std::string message_;
-  int receivers_ = -1;
+  int receivers_;
 
   /*
    * The epoll handler
@@ -102,7 +94,6 @@ class PubSubThread : public Thread {
   virtual void *ThreadMain();
 
   // clean conns
-  void CloseFd(PinkConn* conn);
   void Cleanup();
 
   // PubSub

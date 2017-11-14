@@ -421,9 +421,9 @@ int RedisConn::ConstructPublishResp(const std::string& subscribe_channel,
                         "$" << publish_channel.length()   << "\r\n" << publish_channel   << "\r\n" <<
                         "$" << msg.length()               << "\r\n" << msg               << "\r\n";
   } else {
-    resp << "*3\r\n" << "$" << common_msg.length()      << "\r\n" << common_msg      << "\r\n" <<
-                        "$" << publish_channel.length() << "\r\n" << publish_channel << "\r\n" <<
-                        "$" << msg.length()             << "\r\n" << msg             << "\r\n";
+    resp << "*3\r\n" << "$" << common_msg.length()        << "\r\n" << common_msg        << "\r\n" <<
+                        "$" << publish_channel.length()   << "\r\n" << publish_channel   << "\r\n" <<
+                        "$" << msg.length()               << "\r\n" << msg               << "\r\n";
   }
   std::string str_resp = resp.str();
 

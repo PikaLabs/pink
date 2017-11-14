@@ -41,6 +41,8 @@ class PinkConn {
                                    const std::string& channel,
                                    const std::string& msg,
                                    const bool pattern) = 0;
+  virtual std::string ConstructPubSubResp(const std::string& cmd,
+                                    const std::vector<std::pair<std::string, int>>& result) = 0;
 
   int flags() const {
     return flags_;

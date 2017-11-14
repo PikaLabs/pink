@@ -34,6 +34,8 @@ class RedisConn: public PinkConn {
                                    const std::string& channel,
                                    const std::string& msg,
                                    const bool pattern);
+  virtual std::string ConstructPubSubResp(const std::string& cmd,
+                                const std::vector<std::pair<std::string, int>>& result);
 
   ConnStatus connStatus_;
 

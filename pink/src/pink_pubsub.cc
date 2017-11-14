@@ -201,7 +201,7 @@ int PubSubThread::UnSubscribe(PinkConn *conn,
       }
     } else {
       slash::MutexLock l(&channel_mutex_);
-      for (auto channel : pubsub_channel_) {
+      for (auto& channel : pubsub_channel_) {
         auto conn_ptr = std::find(channel.second.begin(),
                                 channel.second.end(),
                                 conn);
@@ -308,7 +308,7 @@ void PubSubThread::PubSubNumSub(const std::vector<std::string> & channels,
 int PubSubThread::PubSubNumPat() {
   int subscribed = 0;
   slash::MutexLock l(&pattern_mutex_);
-  for (auto channel : pubsub_pattern_) {
+  for (auto& channel : pubsub_pattern_) {
     subscribed += channel.second.size();
   }
   return subscribed;
@@ -418,7 +418,6 @@ void *PubSubThread::ThreadMain() {
             in_conn->set_is_reply(false);
             pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLIN);  // Remove EPOLLOUT
           } else if (write_status == kWriteHalf) {
-            pink_epoll_->PinkModEvent(pfe->fd, EPOLLIN, EPOLLOUT);
             continue;  //  send all write buffer,
                        //  in case of next GetRequest()
                        //  pollute the write buffer

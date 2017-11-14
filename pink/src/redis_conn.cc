@@ -441,6 +441,23 @@ int RedisConn::ConstructPublishResp(const std::string& subscribe_channel,
   return 0;
 }
 
+std::string RedisConn::ConstructPubSubResp(
+                                const std::string& cmd,
+                                const std::vector<std::pair<std::string, int>>& result) {
+  std::stringstream resp;
+  if (result.size() == 0) {
+    resp << "*3\r\n" << "$" << cmd.length() << "\r\n" << cmd << "\r\n" <<
+                        "$" << -1           << "\r\n" << ":" << 0      << "\r\n";
+  }
+  for (auto it = result.begin(); it != result.end(); it++) {
+    resp << "*3\r\n" << "$" << cmd.length()       << "\r\n" << cmd       << "\r\n" <<
+                        "$" << it->first.length() << "\r\n" << it->first << "\r\n" <<
+                        ":" << it->second         << "\r\n";
+  }
+  return resp.str();
+}
+
+
 int32_t RedisConn::FindNextSeparators() {
   int pos;
   if (next_parse_pos_ <= last_read_pos_) {

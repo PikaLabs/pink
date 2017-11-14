@@ -50,7 +50,7 @@ void PubSubThread::RemoveConn(PinkConn* conn) {
       }
     }
   }
-  pattern_mutex_.UnLock();
+  pattern_mutex_.Unlock();
 
   channel_mutex_.Lock();
   for (auto it = pubsub_channel_.begin(); it != pubsub_channel_.end(); it++) {
@@ -63,7 +63,7 @@ void PubSubThread::RemoveConn(PinkConn* conn) {
       }
     }
   }
-  channel_mutex_.UnLock();
+  channel_mutex_.Unlock();
 
   pink_epoll_->PinkDelEvent(conn->fd());
   slash::MutexLock l(&mutex_);
@@ -105,7 +105,7 @@ int PubSubThread::ClientChannelSize(PinkConn* conn) {
       subscribed++;
     }
   }
-  channel_mutex_.UnLock();
+  channel_mutex_.Unlock();
 
   pattern_mutex_.Lock();
   for (auto& channel : pubsub_pattern_) {
@@ -116,7 +116,7 @@ int PubSubThread::ClientChannelSize(PinkConn* conn) {
       subscribed++;
     }
   }
-  pattern_mutex_.UnLock();
+  pattern_mutex_.Unlock();
 
   return subscribed;
 }

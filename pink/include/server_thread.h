@@ -148,8 +148,6 @@ class ServerThread : public Thread {
   virtual void KillAllConns() = 0;
   virtual bool KillConn(const std::string& ip_port) = 0;
 
-  virtual void HandleNewConn(int connfd, const std::string& ip_port) = 0;
-
   virtual ~ServerThread();
 
  protected:
@@ -185,8 +183,9 @@ class ServerThread : public Thread {
   virtual int InitHandle();
   virtual void *ThreadMain() override;
   /*
-   * The server event handle
+   * The server connection and event handle
    */
+  virtual void HandleNewConn(int connfd, const std::string& ip_port) = 0;
   virtual void HandleConnEvent(PinkFiredEvent *pfe) = 0;
 };
 

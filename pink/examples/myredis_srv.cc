@@ -18,10 +18,10 @@ class MyConn: public RedisConn {
  public:
   MyConn(int fd, const std::string& ip_port, ServerThread *thread,
          void* worker_specific_data);
-  virtual ~MyConn();
+  virtual ~MyConn() = default;
 
  protected:
-  virtual int DealMessage();
+  int DealMessage(const RedisCmdArgsType& argv, std::string* response) override;
 
  private:
 };
@@ -32,46 +32,34 @@ MyConn::MyConn(int fd, const std::string& ip_port,
   // Handle worker_specific_data ...
 }
 
-MyConn::~MyConn() {
-}
-
-int MyConn::DealMessage() {
+int MyConn::DealMessage(const RedisCmdArgsType& argv, std::string* response) {
   printf("Get redis message ");
-  for (int i = 0; i < argv_.size(); i++) {
-    printf("%s ", argv_[i].c_str());
+  for (int i = 0; i < argv.size(); i++) {
+    printf("%s ", argv[i].ToString().c_str());
   }
   printf("\n");
 
   std::string val = "result";
   std::string res;
   // set command
-  if (argv_.size() == 3) {
-    res = "+OK\r\n";
-    db[argv_[1]] = argv_[2];
-    memcpy(wbuf_ + wbuf_len_, res.data(), res.size());
-    wbuf_len_ += res.size();
-  } else {
-    std::map<std::string, std::string>::iterator iter = db.find(argv_[1]);
+  if (argv.size() == 3) {
+    response->append("+OK\r\n");
+    db[argv[1].ToString()] = argv[2].ToString();
+  } else if (argv.size() == 2) {
+    std::map<std::string, std::string>::iterator iter = db.find(argv[1].ToString());
     if (iter != db.end()) {
-      val = iter->second;
-      memcpy(wbuf_ + wbuf_len_, "*1\r\n$", 5);
-      wbuf_len_ += 5;
-      std::string len = std::to_string(val.length());
-      memcpy(wbuf_ + wbuf_len_, len.data(), len.size());
-      wbuf_len_ += len.size();
-      memcpy(wbuf_ + wbuf_len_, "\r\n", 2);
-      wbuf_len_ += 2;
-      memcpy(wbuf_ + wbuf_len_, val.data(), val.size());
-      wbuf_len_ += val.size();
-      memcpy(wbuf_ + wbuf_len_, "\r\n", 2);
-      wbuf_len_ += 2;
+      const std::string& val = iter->second;
+      response->append("*1\r\n$");
+      response->append(std::to_string(val.length()));
+      response->append("\r\n");
+      response->append(val);
+      response->append("\r\n");
     } else {
-      res = "$-1\r\n";
-      memcpy(wbuf_ + wbuf_len_, res.data(), res.size());
-      wbuf_len_ += res.size();
+      response->append("$-1\r\n");
     }
+  } else {
+    response->append("+OK\r\n");
   }
-  set_is_reply(true);
   return 0;
 }
 

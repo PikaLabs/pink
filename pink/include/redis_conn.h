@@ -11,7 +11,6 @@
 #include <string>
 
 #include "slash/include/slash_status.h"
-#include "slash/include/xdebug.h"
 #include "pink/include/pink_define.h"
 #include "pink/include/pink_conn.h"
 
@@ -25,8 +24,8 @@ class RedisConn: public PinkConn {
   virtual ~RedisConn();
   void ResetClient();
 
-  bool ExpandWbufTo(uint32_t new_size);
-  uint32_t wbuf_size_;
+  // bool ExpandWbufTo(uint32_t new_size);
+  // uint32_t wbuf_size_;
 
   virtual ReadStatus GetRequest();
   virtual WriteStatus SendReply();
@@ -39,31 +38,29 @@ class RedisConn: public PinkConn {
 
   ConnStatus connStatus_;
 
- protected:
-  char* wbuf_;
-  uint32_t wbuf_len_;
-  RedisCmdArgsType argv_;
-  virtual int DealMessage() = 0;
+  virtual int DealMessage(RedisCmdArgsType& argv, std::string* response) = 0;
 
  private:
+  ReadStatus MakeRoomFor(int next_read_pos, int add_len);
   ReadStatus ProcessInputBuffer();
   ReadStatus ProcessMultibulkBuffer();
   ReadStatus ProcessInlineBuffer();
-  int32_t FindNextSeparators();
-  int32_t GetNextNum(int32_t pos, int32_t *value);
-  int32_t last_read_pos_;
-  int32_t next_parse_pos_;
-  int32_t req_type_;
-  int32_t multibulk_len_;
-  int32_t bulk_len_;
-  bool is_find_sep_;
-  bool is_overtake_;
+  int FindNextSeparators();
+  int GetNextNum(int pos, long *value);
 
-  /*
-   * The Variable need by read the buf,
-   * We allocate the memory when we start the server
-   */
   char* rbuf_;
+  int rbuf_len_;
+  RedisCmdArgsType argv_;
+  std::string response_;
+
+  // For Redis Protocol parser
+  int last_read_pos_;
+  int next_parse_pos_;
+  int req_type_;
+  long multibulk_len_;
+  long bulk_len_;
+
+  uint32_t wbuf_len_;
   uint32_t wbuf_pos_;
 };
 

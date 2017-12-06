@@ -73,7 +73,7 @@ enum REDIS_STATUS {
 };
 
 RedisCli::RedisCli()
-    : rbuf_size_(REDIS_MAX_MESSAGE),
+    : rbuf_size_(REDIS_IOBUF_LEN),
       rbuf_pos_(0),
       rbuf_offset_(0),
       err_(REDIS_OK) {

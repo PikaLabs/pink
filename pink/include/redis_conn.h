@@ -22,10 +22,6 @@ class RedisConn: public PinkConn {
  public:
   RedisConn(const int fd, const std::string &ip_port, ServerThread *thread);
   virtual ~RedisConn();
-  void ResetClient();
-
-  // bool ExpandWbufTo(uint32_t new_size);
-  // uint32_t wbuf_size_;
 
   virtual ReadStatus GetRequest();
   virtual WriteStatus SendReply();
@@ -36,12 +32,9 @@ class RedisConn: public PinkConn {
   virtual std::string ConstructPubSubResp(const std::string& cmd,
                                 const std::vector<std::pair<std::string, int>>& result);
 
-  ConnStatus connStatus_;
-
   virtual int DealMessage(RedisCmdArgsType& argv, std::string* response) = 0;
 
  private:
-  ReadStatus MakeRoomFor(int next_read_pos, int add_len);
   ReadStatus ProcessInputBuffer();
   ReadStatus ProcessMultibulkBuffer();
   ReadStatus ProcessInlineBuffer();

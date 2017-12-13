@@ -221,28 +221,6 @@ ReadStatus RedisConn::ProcessMultibulkBuffer() {
   }
 }
 
-void RedisConn::ResetClient() {
-  argv_.clear();
-  req_type_ = 0;
-  multibulk_len_ = 0;
-  bulk_len_ = -1;
-}
-
-// bool RedisConn::ExpandWbufTo(uint32_t new_size) {
-//   if (new_size <= wbuf_size_) {
-//     return true;
-//   }
-//   void* new_wbuf = realloc(wbuf_, new_size);
-//   if (new_wbuf != nullptr) {
-//     wbuf_ = reinterpret_cast<char*>(new_wbuf);
-//     wbuf_size_ = new_size;
-//     return true;
-//   } else {
-//     wbuf_pos_ = 0;
-//     return false;
-//   }
-// }
-
 ReadStatus RedisConn::ProcessInputBuffer() {
   ReadStatus ret;
   while (next_parse_pos_ <= last_read_pos_) {
@@ -276,45 +254,35 @@ ReadStatus RedisConn::ProcessInputBuffer() {
         set_is_reply(true);
       }
     }
-    ResetClient();
+    // ResetClient
+    argv_.clear();
+    req_type_ = 0;
+    multibulk_len_ = 0;
+    bulk_len_ = -1;
   }
 
-  free(rbuf_);
-  rbuf_ = nullptr; // Must be assigned to nullptr here for realloc(rbuf_, ...)
-  rbuf_len_ = 0;
-  next_parse_pos_ = 0;
-  last_read_pos_ = -1;
   return kReadAll; // OK
-}
-
-ReadStatus RedisConn::MakeRoomFor(int next_read_pos, int add_len) {
-  if (next_read_pos + add_len < rbuf_len_) {
-    return kOk;
-  }
-  if (rbuf_len_ + add_len > REDIS_MAX_MESSAGE) {
-    return kFullError;
-  }
-  rbuf_ = static_cast<char*>(realloc(rbuf_, rbuf_len_ + add_len));
-  if (rbuf_ == nullptr) {
-    return kFullError;
-  }
-  rbuf_len_ += add_len;
-  return kOk;
 }
 
 ReadStatus RedisConn::GetRequest() {
   ssize_t nread = 0;
-  int32_t next_read_pos = (last_read_pos_ + 1) % REDIS_MAX_MESSAGE;
+  int next_read_pos = last_read_pos_ + 1;
 
-  size_t read_len = std::max(REDIS_IOBUF_LEN, static_cast<int>(bulk_len_));
-
-  ReadStatus ret = MakeRoomFor(next_read_pos, read_len);
-  if (ret != kOk) {
-    // err_msg_ = "-ERR: Protocol error: too big mbulk count string\r\n";
-    return kFullError;
+  int remain = rbuf_len_ - next_read_pos;  // Remain buffer size
+  if (remain == 0) {
+    size_t new_size = rbuf_len_ + REDIS_IOBUF_LEN;
+    if (new_size > REDIS_MAX_MESSAGE) {
+      return kFullError;
+    }
+    rbuf_ = static_cast<char*>(realloc(rbuf_, new_size));
+    if (rbuf_ == nullptr) {
+      return kFullError;
+    }
+    rbuf_len_ = new_size;
+    remain += REDIS_IOBUF_LEN;
   }
 
-  nread = read(fd(), rbuf_ + next_read_pos, read_len);
+  nread = read(fd(), rbuf_ + next_read_pos, remain);
   if (nread == -1) {
     if (errno == EAGAIN) {
       nread = 0;
@@ -330,7 +298,15 @@ ReadStatus RedisConn::GetRequest() {
 
   last_read_pos_ += nread;
 
-  ret = ProcessInputBuffer();
+  ReadStatus ret = ProcessInputBuffer();
+  if (ret == kReadAll) {
+    free(rbuf_);
+    rbuf_ = nullptr; // Must be assigned to nullptr here for realloc(rbuf_, ...)
+    rbuf_len_ = 0;
+    next_parse_pos_ = 0;
+    last_read_pos_ = -1;
+  }
+
   return ret; // OK || HALF || FULL_ERROR || PARSE_ERROR
 }
 

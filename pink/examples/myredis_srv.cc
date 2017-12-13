@@ -21,7 +21,7 @@ class MyConn: public RedisConn {
   virtual ~MyConn() = default;
 
  protected:
-  int DealMessage(const RedisCmdArgsType& argv, std::string* response) override;
+  int DealMessage(RedisCmdArgsType& argv, std::string* response) override;
 
  private:
 };
@@ -32,10 +32,10 @@ MyConn::MyConn(int fd, const std::string& ip_port,
   // Handle worker_specific_data ...
 }
 
-int MyConn::DealMessage(const RedisCmdArgsType& argv, std::string* response) {
+int MyConn::DealMessage(RedisCmdArgsType& argv, std::string* response) {
   printf("Get redis message ");
   for (int i = 0; i < argv.size(); i++) {
-    printf("%s ", argv[i].ToString().c_str());
+    printf("%s ", argv[i].c_str());
   }
   printf("\n");
 
@@ -44,9 +44,9 @@ int MyConn::DealMessage(const RedisCmdArgsType& argv, std::string* response) {
   // set command
   if (argv.size() == 3) {
     response->append("+OK\r\n");
-    db[argv[1].ToString()] = argv[2].ToString();
+    db[argv[1]] = argv[2];
   } else if (argv.size() == 2) {
-    std::map<std::string, std::string>::iterator iter = db.find(argv[1].ToString());
+    std::map<std::string, std::string>::iterator iter = db.find(argv[1]);
     if (iter != db.end()) {
       const std::string& val = iter->second;
       response->append("*1\r\n$");

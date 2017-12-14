@@ -51,6 +51,8 @@ class PinkConn {
     return nullptr;
   }
 
+  virtual void TryResizeBuffer() {}
+
   int flags() const {
     return flags_;
   }

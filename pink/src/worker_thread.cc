@@ -240,26 +240,29 @@ void WorkerThread::DoCronTask() {
 
   std::map<int, PinkConn*>::iterator iter = conns_.begin();
   while (iter != conns_.end()) {
+    PinkConn* conn = iter->second;
     // Check connection should be closed
-    if (deleting_conn_ipport_.count(iter->second->ip_port())) {
-      CloseFd(iter->second);
-      deleting_conn_ipport_.erase(iter->second->ip_port());
-      delete iter->second;
+    if (deleting_conn_ipport_.count(conn->ip_port())) {
+      CloseFd(conn);
+      deleting_conn_ipport_.erase(conn->ip_port());
+      delete conn;
       iter = conns_.erase(iter);
       continue;
     }
 
     // Check keepalive timeout connection
     if (keepalive_timeout_ > 0 &&
-        (now.tv_sec - iter->second->last_interaction().tv_sec >
-         keepalive_timeout_)) {
-      CloseFd(iter->second);
-      server_thread_->handle_->FdTimeoutHandle(
-          iter->first, iter->second->ip_port());
-      delete iter->second;
+        (now.tv_sec - conn->last_interaction().tv_sec > keepalive_timeout_)) {
+      CloseFd(conn);
+      server_thread_->handle_->FdTimeoutHandle(conn->fd(), conn->ip_port());
+      delete conn;
       iter = conns_.erase(iter);
       continue;
     }
+
+    // Maybe resize connection buffer
+    conn->TryResizeBuffer();
+
     ++iter;
   }
 }

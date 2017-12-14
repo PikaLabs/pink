@@ -137,13 +137,13 @@ RedisConn::RedisConn(const int fd,
     : PinkConn(fd, ip_port, thread),
       rbuf_(nullptr),
       rbuf_len_(0),
+      msg_peak_(0),
+      wbuf_pos_(0),
       last_read_pos_(-1),
       next_parse_pos_(0),
       req_type_(0),
       multibulk_len_(0),
-      bulk_len_(-1),
-      wbuf_len_(0),
-      wbuf_pos_(0) {
+      bulk_len_(-1) {
 }
 
 RedisConn::~RedisConn() {
@@ -249,8 +249,7 @@ ReadStatus RedisConn::ProcessInputBuffer() {
 
     if (!argv_.empty()) {
       DealMessage(argv_, &response_);
-      wbuf_len_ = response_.size();
-      if (wbuf_len_ > 0) {
+      if (!response_.empty()) {
         set_is_reply(true);
       }
     }
@@ -269,8 +268,15 @@ ReadStatus RedisConn::GetRequest() {
   int next_read_pos = last_read_pos_ + 1;
 
   int remain = rbuf_len_ - next_read_pos;  // Remain buffer size
+  int new_size = 0;
   if (remain == 0) {
-    size_t new_size = rbuf_len_ + REDIS_IOBUF_LEN;
+    new_size = rbuf_len_ + REDIS_IOBUF_LEN;
+    remain += REDIS_IOBUF_LEN;
+  } else if (remain < bulk_len_) {
+    new_size = next_read_pos + bulk_len_;
+    remain = bulk_len_;
+  }
+  if (new_size > rbuf_len_) {
     if (new_size > REDIS_MAX_MESSAGE) {
       return kFullError;
     }
@@ -279,7 +285,6 @@ ReadStatus RedisConn::GetRequest() {
       return kFullError;
     }
     rbuf_len_ = new_size;
-    remain += REDIS_IOBUF_LEN;
   }
 
   nread = read(fd(), rbuf_ + next_read_pos, remain);
@@ -296,13 +301,12 @@ ReadStatus RedisConn::GetRequest() {
     return kReadClose;
   }
 
+  // assert(nread > 0);
   last_read_pos_ += nread;
+  msg_peak_ = last_read_pos_;
 
   ReadStatus ret = ProcessInputBuffer();
   if (ret == kReadAll) {
-    free(rbuf_);
-    rbuf_ = nullptr; // Must be assigned to nullptr here for realloc(rbuf_, ...)
-    rbuf_len_ = 0;
     next_parse_pos_ = 0;
     last_read_pos_ = -1;
   }
@@ -312,20 +316,24 @@ ReadStatus RedisConn::GetRequest() {
 
 WriteStatus RedisConn::SendReply() {
   ssize_t nwritten = 0;
-  while (wbuf_len_ > 0) {
-    nwritten = write(fd(), response_.data() + wbuf_pos_, wbuf_len_ - wbuf_pos_);
+  size_t wbuf_len = response_.size();
+  while (wbuf_len > 0) {
+    nwritten = write(fd(), response_.data() + wbuf_pos_, wbuf_len - wbuf_pos_);
     if (nwritten <= 0) {
       break;
     }
     wbuf_pos_ += nwritten;
-    if (wbuf_pos_ == wbuf_len_) {
+    if (wbuf_pos_ == wbuf_len) {
       // Have sended all response data
-      wbuf_len_ = 0;
-      wbuf_pos_ = 0;
+      if (wbuf_len > DEFAULT_WBUF_SIZE) {
+        std::string buf;
+        buf.reserve(DEFAULT_WBUF_SIZE);
+        response_.swap(buf);
+      }
+      response_.clear();
 
-      std::string buf;
-      buf.reserve(DEFAULT_WBUF_SIZE);
-      response_.swap(buf);
+      wbuf_len = 0;
+      wbuf_pos_ = 0;
     }
   }
   if (nwritten == -1) {
@@ -336,7 +344,7 @@ WriteStatus RedisConn::SendReply() {
       return kWriteError;
     }
   }
-  if (wbuf_len_ == 0) {
+  if (wbuf_len == 0) {
     return kWriteAll;
   } else {
     return kWriteHalf;
@@ -361,19 +369,7 @@ int RedisConn::ConstructPublishResp(const std::string& subscribe_channel,
                         "$" << msg.length()               << "\r\n" << msg               << "\r\n";
   }
   std::string str_resp = resp.str();
-  wbuf_len_ += str_resp.size();
   response_.append(str_resp);
-
-  // if ((wbuf_size_ - wbuf_len_ < str_resp.size())) {
-  //   if (!ExpandWbufTo(wbuf_len_ + str_resp.size())) {
-  //     memcpy(wbuf_, "-ERR expand writer buffer failed\r\n", 34);
-  //     wbuf_len_ = 34;
-  //     set_is_reply(true);
-  //     return 0;
-  //   }
-  // }
-  // memcpy(wbuf_ + wbuf_len_, str_resp.data(), str_resp.size());
-  // wbuf_len_ += str_resp.size();
 
   set_is_reply(true);
   return 0;
@@ -395,6 +391,24 @@ std::string RedisConn::ConstructPubSubResp(
   return resp.str();
 }
 
+void RedisConn::TryResizeBuffer() {
+  log_info("Current buffer size: %d", rbuf_len_);
+  struct timeval now;
+  gettimeofday(&now, nullptr);
+  int idletime = now.tv_sec - last_interaction().tv_sec;
+  if (rbuf_len_ > REDIS_MBULK_BIG_ARG &&
+      ((rbuf_len_ / (msg_peak_ + 1)) > 2 || idletime > 2)) {
+    int new_size =
+      ((last_read_pos_ + REDIS_IOBUF_LEN) / REDIS_IOBUF_LEN) * REDIS_IOBUF_LEN;
+    if (new_size < rbuf_len_) {
+      rbuf_ = static_cast<char*>(realloc(rbuf_, new_size));
+      rbuf_len_ = new_size;
+      log_info("Resize buffer to %d, last_read_pos_: %d\n",
+               rbuf_len_, last_read_pos_);
+    }
+    msg_peak_ = 0;
+  }
+}
 
 int RedisConn::FindNextSeparators() {
   int pos = next_parse_pos_ <= last_read_pos_ ? next_parse_pos_ : 0;

@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
 
   ConnFactory *conn_factory = new MyConnFactory();
 
-  ServerThread* my_thread = NewHolyThread(my_port, conn_factory);
+  ServerThread* my_thread = NewHolyThread(my_port, conn_factory, 1000);
   if (my_thread->StartThread() != 0) {
     printf("StartThread error happened!\n");
     exit(-1);

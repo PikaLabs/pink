@@ -32,6 +32,8 @@ class RedisConn: public PinkConn {
   virtual std::string ConstructPubSubResp(const std::string& cmd,
                                 const std::vector<std::pair<std::string, int>>& result);
 
+  void TryResizeBuffer() override;
+
   virtual int DealMessage(RedisCmdArgsType& argv, std::string* response) = 0;
 
  private:
@@ -43,7 +45,10 @@ class RedisConn: public PinkConn {
 
   char* rbuf_;
   int rbuf_len_;
+  int msg_peak_;
   RedisCmdArgsType argv_;
+
+  uint32_t wbuf_pos_;
   std::string response_;
 
   // For Redis Protocol parser
@@ -52,9 +57,6 @@ class RedisConn: public PinkConn {
   int req_type_;
   long multibulk_len_;
   long bulk_len_;
-
-  uint32_t wbuf_len_;
-  uint32_t wbuf_pos_;
 };
 
 }  // namespace pink

@@ -156,8 +156,8 @@ ReadStatus RedisConn::ProcessInlineBuffer() {
   if (pos == -1) {
     return rbuf_len_ > REDIS_INLINE_MAXLEN ? kFullError : kReadHalf;
   }
-  assert(pos > next_parse_pos_);
-  std::string req_buf(rbuf_ + next_parse_pos_, pos - next_parse_pos_ - 1);
+  // args \r\n
+  std::string req_buf(rbuf_ + next_parse_pos_, pos + 1 - next_parse_pos_);
 
   argv_.clear();
   ret = split2args(req_buf, argv_);

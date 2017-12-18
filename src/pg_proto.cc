@@ -268,6 +268,7 @@ void InsertParser::Init(const std::string &str, const uint32_t type) {
   parse_pos_ = 0;
   len_ = str.size();
   rows_.clear();
+  attributes_.clear();
 }
 
 //static void Tokenize(const std::string& str, std::vector<std::string>& tokens, const char& delimiter = ' ') {

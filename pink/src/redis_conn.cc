@@ -368,9 +368,8 @@ int RedisConn::ConstructPublishResp(const std::string& subscribe_channel,
                         "$" << publish_channel.length()   << "\r\n" << publish_channel   << "\r\n" <<
                         "$" << msg.length()               << "\r\n" << msg               << "\r\n";
   }
-  std::string str_resp = resp.str();
-  response_.append(str_resp);
 
+  response_.append(resp.str());
   set_is_reply(true);
   return 0;
 }

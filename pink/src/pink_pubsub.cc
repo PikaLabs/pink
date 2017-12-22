@@ -361,7 +361,9 @@ void *PubSubThread::ThreadMain() {
                   pink_epoll_->PinkModEvent(it->second[i]->fd(),
                                             EPOLLIN, EPOLLOUT);
                 } else if (write_status == kWriteError) {
+                  channel_mutex_.Unlock();
                   RemoveConn(it->second[i]);
+                  channel_mutex_.Lock();
                   CloseFd(it->second[i]);
                   delete(it->second[i]);
                 } else if (write_status == kWriteAll) {
@@ -384,7 +386,9 @@ void *PubSubThread::ThreadMain() {
                   pink_epoll_->PinkModEvent(it->second[i]->fd(),
                                             EPOLLIN, EPOLLOUT);
                 } else if (write_status == kWriteError) {
+                  pattern_mutex_.Unlock();
                   RemoveConn(it->second[i]);
+                  pattern_mutex_.Lock();
                   CloseFd(it->second[i]);
                   delete(it->second[i]);
                 } else if (write_status == kWriteAll) {

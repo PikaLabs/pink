@@ -210,15 +210,15 @@ void *ServerThread::ThreadMain() {
           ip_port =
             inet_ntop(AF_INET, &cliaddr.sin_addr, ip_addr, sizeof(ip_addr));
 
-          ip_port.append(":");
-          snprintf(port_buf, sizeof(port_buf), "%d", ntohs(cliaddr.sin_port));
-          ip_port.append(port_buf);
-
           if (!handle_->AccessHandle(ip_port) ||
               !handle_->AccessHandle(connfd, ip_port)) {
             close(connfd);
             continue;
           }
+
+          ip_port.append(":");
+          snprintf(port_buf, sizeof(port_buf), "%d", ntohs(cliaddr.sin_port));
+          ip_port.append(port_buf);
 
           /*
            * Handle new connection,

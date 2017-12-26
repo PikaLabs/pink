@@ -76,10 +76,11 @@ enum RetCode {
 /*
  * define the redis protocol
  */
-// #define REDIS_MAX_MESSAGE 67108864  // 64MB
-#define REDIS_MAX_MESSAGE 2097152 // 2MB
+#define REDIS_MAX_MESSAGE (1 << 29) // 512MB
+#define REDIS_MBULK_BIG_ARG (1024 * 32) // 32KB
 #define DEFAULT_WBUF_SIZE 262144 // 256KB
-#define REDIS_IOBUF_LEN 16384
+#define REDIS_INLINE_MAXLEN (1024 * 64) // 64KB
+#define REDIS_IOBUF_LEN 16384 // 16KB
 #define REDIS_REQ_INLINE 1
 #define REDIS_REQ_MULTIBULK 2
 

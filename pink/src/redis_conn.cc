@@ -351,43 +351,9 @@ WriteStatus RedisConn::SendReply() {
   }
 }
 
-int RedisConn::ConstructPublishResp(const std::string& subscribe_channel,
-                           const std::string& publish_channel,
-                           const std::string& msg,
-                           const bool pattern) {
-  std::stringstream resp;
-  std::string common_msg = "message";
-  std::string pattern_msg = "pmessage";
-  if (pattern) {
-    resp << "*4\r\n" << "$" << pattern_msg.length()       << "\r\n" << pattern_msg       << "\r\n" <<
-                        "$" << subscribe_channel.length() << "\r\n" << subscribe_channel << "\r\n" <<
-                        "$" << publish_channel.length()   << "\r\n" << publish_channel   << "\r\n" <<
-                        "$" << msg.length()               << "\r\n" << msg               << "\r\n";
-  } else {
-    resp << "*3\r\n" << "$" << common_msg.length()        << "\r\n" << common_msg        << "\r\n" <<
-                        "$" << publish_channel.length()   << "\r\n" << publish_channel   << "\r\n" <<
-                        "$" << msg.length()               << "\r\n" << msg               << "\r\n";
-  }
-
-  response_.append(resp.str());
+void RedisConn::WriteResp(const std::string& resp) {
+  response_.append(resp);
   set_is_reply(true);
-  return 0;
-}
-
-std::string RedisConn::ConstructPubSubResp(
-                                const std::string& cmd,
-                                const std::vector<std::pair<std::string, int>>& result) {
-  std::stringstream resp;
-  if (result.size() == 0) {
-    resp << "*3\r\n" << "$" << cmd.length() << "\r\n" << cmd << "\r\n" <<
-                        "$" << -1           << "\r\n" << ":" << 0      << "\r\n";
-  }
-  for (auto it = result.begin(); it != result.end(); it++) {
-    resp << "*3\r\n" << "$" << cmd.length()       << "\r\n" << cmd       << "\r\n" <<
-                        "$" << it->first.length() << "\r\n" << it->first << "\r\n" <<
-                        ":" << it->second         << "\r\n";
-  }
-  return resp.str();
 }
 
 void RedisConn::TryResizeBuffer() {

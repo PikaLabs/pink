@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <sstream>
 
 #include "pink/src/worker_thread.h"
 
@@ -14,6 +15,26 @@
 #include "pink/include/pink_pubsub.h"
 
 namespace pink {
+
+static std::string ConstructPublishResp(const std::string& subscribe_channel,
+                           const std::string& publish_channel,
+                           const std::string& msg,
+                           const bool pattern) {
+  std::stringstream resp;
+  std::string common_msg = "message";
+  std::string pattern_msg = "pmessage";
+  if (pattern) {
+    resp << "*4\r\n" << "$" << pattern_msg.length()       << "\r\n" << pattern_msg       << "\r\n" <<
+                        "$" << subscribe_channel.length() << "\r\n" << subscribe_channel << "\r\n" <<
+                        "$" << publish_channel.length()   << "\r\n" << publish_channel   << "\r\n" <<
+                        "$" << msg.length()               << "\r\n" << msg               << "\r\n";
+  } else {
+    resp << "*3\r\n" << "$" << common_msg.length()        << "\r\n" << common_msg        << "\r\n" <<
+                        "$" << publish_channel.length()   << "\r\n" << publish_channel   << "\r\n" <<
+                        "$" << msg.length()               << "\r\n" << msg               << "\r\n";
+  }
+  return resp.str();
+}
 
 void CloseFd(PinkConn* conn) {
   close(conn->fd());
@@ -355,7 +376,8 @@ void *PubSubThread::ThreadMain() {
           for (auto it = pubsub_channel_.begin(); it != pubsub_channel_.end(); it++) {
             if (channel == it->first) {
               for (size_t i = 0; i < it->second.size(); i++) {
-                it->second[i]->ConstructPublishResp(it->first, channel, msg, false);
+                std::string resp = ConstructPublishResp(it->first, channel, msg, false);
+                it->second[i]->WriteResp(resp);
                 WriteStatus write_status = it->second[i]->SendReply();
                 if (write_status == kWriteHalf) {
                   pink_epoll_->PinkModEvent(it->second[i]->fd(),
@@ -380,7 +402,8 @@ void *PubSubThread::ThreadMain() {
             if (slash::stringmatchlen(it->first.c_str(), it->first.size(),
                                       channel.c_str(), channel.size(), 0)) {
               for (size_t i = 0; i < it->second.size(); i++) {
-                it->second[i]->ConstructPublishResp(it->first, channel, msg, true);
+                std::string resp = ConstructPublishResp(it->first, channel, msg, true);
+                it->second[i]->WriteResp(resp);
                 WriteStatus write_status = it->second[i]->SendReply();
                 if (write_status == kWriteHalf) {
                   pink_epoll_->PinkModEvent(it->second[i]->fd(),

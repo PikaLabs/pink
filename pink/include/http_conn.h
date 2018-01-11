@@ -115,8 +115,8 @@ class HTTPResponse {
   ResponseStatus resp_status_;
 
   char* wbuf_;
-  uint64_t buf_len_;
-  uint64_t wbuf_pos_;
+  int64_t buf_len_;
+  int64_t wbuf_pos_;
 
   uint64_t remain_send_len_;
   bool finished_;

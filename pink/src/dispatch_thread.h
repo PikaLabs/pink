@@ -58,6 +58,8 @@ class DispatchThread : public ServerThread {
   virtual bool KillConn(const std::string& ip_port) override;
 
   void HandleNewConn(const int connfd, const std::string& ip_port) override;
+
+  void SetQueueLimit(int queue_limit) override;
  private:
   /*
    * Here we used auto poll to find the next work thread,

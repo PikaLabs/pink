@@ -369,7 +369,7 @@ int RedisCli::GetReplyFromReader() {
     case REDIS_REPLY_INTEGER:
       //elements_ = 1;
       result = ProcessLineItem();
-			   break;
+      break;
     case REDIS_REPLY_STRING:
       // need processBulkItem();
       //elements_ = 1;
@@ -384,13 +384,13 @@ int RedisCli::GetReplyFromReader() {
   }
  
   //when result is REDIS_HALF, the ReadBytes has read a char, 
-	 //but GetReplyFromReader will call ReadBytes to read a char next, so rollback a char
-	 if (REDIS_HALF == result && rbuf_pos_ >= 1) {
-		 rbuf_pos_ -= 1;
-		 rbuf_offset_ += 1;
-	 }
+  //but GetReplyFromReader will call ReadBytes to read a char next, so rollback a char
+  if (REDIS_HALF == result && rbuf_pos_ >= 1) {
+    rbuf_pos_ -= 1;
+    rbuf_offset_ += 1;
+  }
 
-	 return result;
+  return result;
 }
 
 extern PinkCli *NewRedisCli() {

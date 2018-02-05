@@ -341,6 +341,7 @@ int RedisCli::GetReplyFromReader() {
   }
 
   int type;
+  int result = REDIS_OK;
   // Check reply type 
   switch (*p) {
     case '-':
@@ -367,17 +368,29 @@ int RedisCli::GetReplyFromReader() {
     case REDIS_REPLY_STATUS:
     case REDIS_REPLY_INTEGER:
       //elements_ = 1;
-      return ProcessLineItem();
+      result = ProcessLineItem();
+			   break;
     case REDIS_REPLY_STRING:
       // need processBulkItem();
       //elements_ = 1;
-      return ProcessBulkItem();
+      result = ProcessBulkItem();
+      break;
     case REDIS_REPLY_ARRAY:
       // need processMultiBulkItem();
-      return ProcessMultiBulkItem();
+      result = ProcessMultiBulkItem();
+      break;
     default:
       return REDIS_EPARSE_TYPE; // Avoid warning.
   }
+ 
+  //when result is REDIS_HALF, the ReadBytes has read a char, 
+	 //but GetReplyFromReader will call ReadBytes to read a char next, so rollback a char
+	 if (REDIS_HALF == result && rbuf_pos_ >= 1) {
+		 rbuf_pos_ -= 1;
+		 rbuf_offset_ += 1;
+	 }
+
+	 return result;
 }
 
 extern PinkCli *NewRedisCli() {

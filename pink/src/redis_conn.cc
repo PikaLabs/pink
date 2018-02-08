@@ -376,7 +376,10 @@ void RedisConn::TryResizeBuffer() {
 }
 
 int RedisConn::FindNextSeparators() {
-  int pos = next_parse_pos_ <= last_read_pos_ ? next_parse_pos_ : 0;
+  if (next_parse_pos_ > last_read_pos_) {
+    return -1;
+  }
+  int pos = next_parse_pos_;
   while (pos <= last_read_pos_) {
     if (rbuf_[pos] == '\n') {
       return pos;

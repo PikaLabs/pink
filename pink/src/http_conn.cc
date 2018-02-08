@@ -614,6 +614,11 @@ bool HTTPResponse::Flush() {
       buf_len_ = conn_->handles_->WriteResponseBody(
           wbuf_ + wbuf_pos_, needed_size);
     }
+
+    if (buf_len_ == -1) {
+      return false;
+    }
+
     ssize_t nwritten;
 #ifdef __ENABLE_SSL
     if (conn_->security_) {

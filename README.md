@@ -1,6 +1,6 @@
 ## Pink
 
-[![Build Status](https://travis-ci.org/Qihoo360/pink.svg?branch=master)](https://travis-ci.org/Qihoo360/pink)
+[![Build Status](https://travis-ci.org/PikaLabs/pink.svg?branch=master)](https://travis-ci.org/PikaLabs/pink)
 
 Pink is a wrapper of pthread. Why you need it?
 
@@ -68,13 +68,13 @@ t->StartThread();
 
 You can see example/myholy_srv_chandle.cc example/myholy_srv.cc for more detail
 
-Now we will use pink build our project [pika](https://github.com/Qihoo360/pika), [floyd](https://github.com/Qihoo360/floyd), [zeppelin](https://github.com/Qihoo360/zeppelin)
+Now we will use pink build our project [pika](https://github.com/Qihoo360/pika), [floyd](https://github.com/PikaLabs/floyd), [zeppelin](https://github.com/Qihoo360/zeppelin)
 
 In the future, I will add some thread manager in pink.
 
 ### Dependencies
 
-- [slash v1.0+](https://github.com/Qihoo360/slash)
+- [slash v1.0+](https://github.com/PikaLabs/slash)
 
 - [protobuf v2.5.0](https://github.com/google/protobuf/releases/tag/v2.5.0)
 
@@ -98,6 +98,6 @@ CPU, Intel(R) Xeon(R) CPU E5-2630 0 @ 2.30GHz, 24 cores
 Memory, 142 GB
 
 [test
-program](https://github.com/Qihoo360/pink/tree/master/pink/example/performance)
+program](https://github.com/PikaLabs/pink/tree/master/pink/example/performance)
 
 ![](https://ws4.sinaimg.cn/large/006tKfTcly1fho384upsjj30f00a5gm8.jpg)

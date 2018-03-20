@@ -161,6 +161,7 @@ void DispatchThread::HandleNewConn(
     slash::MutexLock l(&worker_thread_[next_thread]->mutex_);
     std::queue<PinkItem> *q = &(worker_thread_[next_thread]->conn_queue_);
     if (q->size() < static_cast<size_t>(queue_limit_)) {
+      log_info("queue limit is %d", queue_limit_);
       q->push(ti);
       find = true;
       break;
@@ -180,6 +181,10 @@ void DispatchThread::HandleNewConn(
     // TODO(anan) maybe add log
     close(connfd);
   }
+}
+
+void DispatchThread::SetQueueLimit(int queue_limit) {
+  queue_limit_ = queue_limit;
 }
 
 extern ServerThread *NewDispatchThread(

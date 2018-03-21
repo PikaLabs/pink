@@ -190,6 +190,20 @@ void *WorkerThread::ThreadMain() {
             continue;
           }
         }
+
+        if (pfe->mask & EPOLLOUT) {
+          WriteStatus write_status = in_conn->SendReply();
+          in_conn->set_last_interaction(now);
+          if (write_status == kWriteAll) {
+            in_conn->set_is_reply(false);
+            pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLIN);
+          } else if (write_status == kWriteHalf) {
+            continue;
+          } else if (write_status == kWriteError) {
+            should_close = 1;
+          }
+        }
+
         if ((pfe->mask & EPOLLERR) || (pfe->mask & EPOLLHUP) || should_close) {
           {
             slash::WriteLock l(&rwlock_);

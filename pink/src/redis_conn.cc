@@ -248,7 +248,9 @@ ReadStatus RedisConn::ProcessInputBuffer() {
     }
 
     if (!argv_.empty()) {
-      DealMessage(argv_, &response_);
+      if (DealMessage(argv_, &response_) != 0) {
+        return kDealError;
+      }
       if (!response_.empty()) {
         set_is_reply(true);
       }

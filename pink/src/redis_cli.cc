@@ -258,11 +258,17 @@ int RedisCli::ProcessBulkItem() {
     bytelen = s - p + 2; /* include \r\n */
     len = readLongLong(p);
 
-    if (len < 0 || len + 2 <= rbuf_offset_) {
+    if (len == -1) {
+      elements_--;
+
+      rbuf_pos_ += bytelen; /* case '$-1\r\n' */
+      rbuf_offset_ -= bytelen;
+      return REDIS_OK;
+    } else if (len + 2 <= rbuf_offset_) {
       argv_.push_back(std::string(p + bytelen, len));
       elements_--;
 
-      bytelen += len + 2; /* include \r\n */
+      bytelen += len + 2;   /* include \r\n */
       rbuf_pos_ += bytelen;
       rbuf_offset_ -= bytelen;
       return REDIS_OK;

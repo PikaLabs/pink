@@ -35,6 +35,40 @@ void BGThread::QueueClear() {
   std::priority_queue<TimerItem>().swap(timer_queue_);
 }
 
+void BGThread::SwallowReadyTasks() {
+  // it's safe to swallow all the remain tasks in ready and timer queue,
+  // while the schedule function would stop to add any tasks.
+  mu_.Lock();
+  while (!queue_.empty()) {
+    void (*function)(void*) = queue_.front().function;
+    void* arg = queue_.front().arg;
+    queue_.pop();
+    mu_.Unlock();
+    (*function)(arg);
+    mu_.Lock();
+  }
+  mu_.Unlock();
+
+  struct timeval now;
+  gettimeofday(&now, NULL);
+  uint64_t unow = now.tv_sec * 1000000 + now.tv_usec;
+  mu_.Lock();
+  while(!timer_queue_.empty()) {
+    TimerItem top_item = timer_queue_.top();
+    if (unow / 1000 < top_item.exec_time / 1000) {
+      break;
+    }
+    void (*function)(void*) = top_item.function;
+    void* arg = top_item.arg;
+    timer_queue_.pop();
+    // Don't lock while doing task
+    mu_.Unlock();
+    (*function)(arg);
+    mu_.Lock();
+  }
+  mu_.Unlock();
+}
+
 void *BGThread::ThreadMain() {
   while (!should_stop()) {
     mu_.Lock();
@@ -74,6 +108,8 @@ void *BGThread::ThreadMain() {
       (*function)(arg);
     }
   }
+  // swalloc all the remain tasks in ready and timer queue
+  SwallowReadyTasks();
   return NULL;
 }
 
@@ -92,8 +128,10 @@ void BGThread::DelaySchedule(
   exec_time = now.tv_sec * 1000000 + timeout * 1000 + now.tv_usec;
 
   mu_.Lock();
-  timer_queue_.push(TimerItem(exec_time, function, arg));
-  rsignal_.Signal();
+  if (!should_stop()) {
+    timer_queue_.push(TimerItem(exec_time, function, arg));
+    rsignal_.Signal();
+  }
   mu_.Unlock();
 }
 

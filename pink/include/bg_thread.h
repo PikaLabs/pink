@@ -58,6 +58,7 @@ class BGThread : public Thread {
 
   void QueueSize(int* pri_size, int* qu_size);
   void QueueClear();
+  void SwallowReadyTasks();
 
  private:
 
@@ -67,7 +68,6 @@ class BGThread : public Thread {
     BGItem(void (*_function)(void*), void* _arg)
       : function(_function), arg(_arg) {}
   };
-
 
   std::queue<BGItem> queue_;
   std::priority_queue<TimerItem> timer_queue_;

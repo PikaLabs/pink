@@ -192,6 +192,10 @@ class ServerThread : public Thread {
   virtual void HandleConnEvent(PinkFiredEvent *pfe) = 0;
 };
 
+// !!!Attention: If u use this constructor, the keepalive_timeout_ will
+// be equal to kDefaultKeepAliveTime(60s). In master-slave mode, the slave
+// binlog receiver will close the binlog sync connection in HolyThread::DoCronTask
+// if master did not send data in kDefaultKeepAliveTime.
 extern ServerThread *NewHolyThread(
     int port,
     ConnFactory *conn_factory,

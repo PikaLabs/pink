@@ -9,15 +9,19 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <poll.h>
 
 #include <string>
 #include <vector>
+#include <atomic>
 
 #include "pink/include/pink_define.h"
 #include "pink/include/pink_cli.h"
 
 
 namespace pink {
+
+static time_t kCheckDiff = 1;
 
 class RedisCli : public PinkCli {
  public:
@@ -29,6 +33,8 @@ class RedisCli : public PinkCli {
 
   // Read, parse and store the reply
   virtual Status Recv(void *result = NULL);
+  // Check whether the connection got fin from peer or not
+  virtual int CheckAliveness(void);
 
  private:
   RedisCmdArgsType argv_;   // The parsed result
@@ -39,6 +45,7 @@ class RedisCli : public PinkCli {
   int32_t rbuf_offset_;
   int elements_;    // the elements number of this current reply
   int err_;
+  std::atomic<time_t> last_write_time_;
 
   int GetReply();
   int GetReplyFromReader();
@@ -76,12 +83,49 @@ RedisCli::RedisCli()
     : rbuf_size_(REDIS_IOBUF_LEN),
       rbuf_pos_(0),
       rbuf_offset_(0),
+      last_write_time_(0),
       err_(REDIS_OK) {
   rbuf_ = reinterpret_cast<char*>(malloc(sizeof(char) * rbuf_size_));
+
+  last_write_time_ = time(NULL);
 }
 
 RedisCli::~RedisCli() {
   free(rbuf_);
+}
+
+static inline int pollFd(int fd, int events, int ms) {
+  pollfd fds[1];
+  fds[0].fd = fd;
+  fds[0].events = events;
+  fds[0].revents = 0;
+
+  int ret = poll(fds, 1, ms);
+  if (ret > 0) {
+      return fds[0].revents;
+  }
+
+  return ret;
+}
+
+int RedisCli::CheckAliveness() {
+  char buf[1];
+
+  int ret = 0;
+  ret = pollFd(fd(), POLLIN | POLLPRI, 0);
+  if (0 < ret) {
+    int num = pread(fd(), buf, 1, MSG_PEEK);
+    if (num == 0) {
+      return -1;
+    }
+    if (num == -1) {
+      if (errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK) {
+        return -1;
+      }
+    }
+  }
+
+  return 0;
 }
 
 // We use passed-in send buffer here
@@ -96,6 +140,16 @@ Status RedisCli::Send(void *msg) {
   int wbuf_pos = 0;
 
   ssize_t nwritten;
+
+  time_t now;
+  time(&now);
+  if (kCheckDiff < now - last_write_time_) {
+    int ret = CheckAliveness();
+    if (ret < 0) {
+      return Status::IOError("connection closed");
+    }
+    last_write_time_ = now;
+  }
 
   while (nleft > 0) {
     if ((nwritten = write(fd(), wbuf + wbuf_pos, nleft)) <= 0) {

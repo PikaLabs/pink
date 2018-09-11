@@ -9,9 +9,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <poll.h>
 
 #include <string>
 #include <vector>
+#include <atomic>
 
 #include "pink/include/pink_define.h"
 #include "pink/include/pink_cli.h"
@@ -29,6 +31,8 @@ class RedisCli : public PinkCli {
 
   // Read, parse and store the reply
   virtual Status Recv(void *result = NULL);
+  // Check whether the connection got fin from peer or not
+  virtual int CheckAliveness(void);
 
  private:
   RedisCmdArgsType argv_;   // The parsed result
@@ -78,10 +82,70 @@ RedisCli::RedisCli()
       rbuf_offset_(0),
       err_(REDIS_OK) {
   rbuf_ = reinterpret_cast<char*>(malloc(sizeof(char) * rbuf_size_));
+
 }
 
 RedisCli::~RedisCli() {
   free(rbuf_);
+}
+
+static inline int pollFd(int fd, int events, int ms) {
+  pollfd fds[1];
+  fds[0].fd = fd;
+  fds[0].events = events;
+  fds[0].revents = 0;
+
+  int ret = ::poll(fds, 1, ms);
+  if (ret > 0) {
+      return fds[0].revents;
+  }
+
+  return ret;
+}
+
+static inline int checkAliveness(int fd) {
+  char buf[1];
+  int ret;
+
+  ret = pollFd(fd, POLLIN | POLLPRI, 0);
+  if (0 < ret) {
+    int num = ::recv(fd, buf, 1, MSG_PEEK);
+    if (num == 0) {
+      return -1;
+    }
+    if (num == -1) {
+      int errnum = errno;
+      if (errnum != EINTR && errnum != EAGAIN && errnum != EWOULDBLOCK) {
+        return -1;
+      }
+    }
+  }
+
+  return 0;
+}
+
+int RedisCli::CheckAliveness() {
+  int flag;
+  bool block;
+  int sock = fd();
+
+  if (sock < 0) {
+    return -1;
+  }
+
+  flag = fcntl(sock, F_GETFL, 0);
+  block = !(flag & O_NONBLOCK);
+  if (block) {
+    fcntl(sock, F_SETFL, flag | O_NONBLOCK);
+  }
+
+  int ret = checkAliveness(sock);
+
+  if (block) {
+    fcntl(sock, F_SETFL, flag);
+  }
+
+  return ret;
 }
 
 // We use passed-in send buffer here
@@ -96,7 +160,6 @@ Status RedisCli::Send(void *msg) {
   int wbuf_pos = 0;
 
   ssize_t nwritten;
-
   while (nleft > 0) {
     if ((nwritten = write(fd(), wbuf + wbuf_pos, nleft)) <= 0) {
       if (errno == EINTR) {

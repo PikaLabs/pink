@@ -26,13 +26,6 @@ WorkerThread::WorkerThread(ConnFactory *conn_factory,
    * install the protobuf handler here
    */
   pink_epoll_ = new PinkEpoll();
-  int fds[2];
-  if (pipe(fds)) {
-    exit(-1);
-  }
-  notify_receive_fd_ = fds[0];
-  notify_send_fd_ = fds[1];
-  pink_epoll_->PinkAddEvent(notify_receive_fd_, EPOLLIN | EPOLLERR | EPOLLHUP);
 }
 
 WorkerThread::~WorkerThread() {
@@ -107,14 +100,16 @@ void *WorkerThread::ThreadMain() {
 
     for (int i = 0; i < nfds; i++) {
       pfe = (pink_epoll_->firedevent()) + i;
-      if (pfe->fd == notify_receive_fd_) {
+      if (pfe->fd == pink_epoll_->notify_receive_fd()) {
         if (pfe->mask & EPOLLIN) {
-          read(notify_receive_fd_, bb, 1);
+          read(pink_epoll_->notify_receive_fd(), bb, 1);
           {
-            slash::MutexLock l(&mutex_);
-            ti = conn_queue_.front();
-            conn_queue_.pop();
+            pink_epoll()->notify_queue_lock();
+            ti = pink_epoll_->notify_queue_.front();
+            pink_epoll_->notify_queue_.pop();
+            pink_epoll()->notify_queue_unlock();
           }
+
           PinkConn *tc = conn_factory_->NewPinkConn(
               ti.fd(), ti.ip_port(),
               server_thread_, private_data_);

@@ -158,20 +158,22 @@ void DispatchThread::HandleNewConn(
   bool find = false;
   for (int cnt = 0; cnt < work_num_; cnt++) {
     {
-    slash::MutexLock l(&worker_thread_[next_thread]->mutex_);
-    std::queue<PinkItem> *q = &(worker_thread_[next_thread]->conn_queue_);
-    if (q->size() < static_cast<size_t>(queue_limit_)) {
-      log_info("queue limit is %d", queue_limit_);
-      q->push(ti);
-      find = true;
-      break;
-    }
+      worker_thread_[next_thread]->pink_epoll()->notify_queue_lock();
+      std::queue<PinkItem> *q = &(worker_thread_[next_thread]->pink_epoll()->notify_queue_);
+      if (q->size() < static_cast<size_t>(queue_limit_)) {
+        log_info("queue limit is %d", queue_limit_);
+        q->push(ti);
+        find = true;
+        worker_thread_[next_thread]->pink_epoll()->notify_queue_unlock();
+        break;
+      }
+      worker_thread_[next_thread]->pink_epoll()->notify_queue_unlock();
     }
     next_thread = (next_thread + 1) % work_num_;
   }
 
   if (find) {
-    write(worker_thread_[next_thread]->notify_send_fd(), "", 1);
+    write(worker_thread_[next_thread]->pink_epoll()->notify_send_fd(), "", 1);
     last_thread_ = (next_thread + 1) % work_num_;
     log_info("find worker(%d), refresh the last_thread_ to %d",
              next_thread, last_thread_);

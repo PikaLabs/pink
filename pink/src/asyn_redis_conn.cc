@@ -13,6 +13,7 @@
 
 #include "slash/include/xdebug.h"
 #include "slash/include/slash_string.h"
+#include "pink/src/pink_item.h"
 
 namespace pink {
 
@@ -133,8 +134,9 @@ static int split2args(const std::string& req_buf, RedisCmdArgsType& argv) {
 
 AsynRedisConn::AsynRedisConn(const int fd,
                              const std::string &ip_port,
-                             ServerThread *thread)
-    : PinkConn(fd, ip_port, thread),
+                             ServerThread *thread,
+                             PinkEpoll* pink_epoll)
+    : PinkConn(fd, ip_port, thread, pink_epoll),
       rbuf_(nullptr),
       rbuf_len_(0),
       msg_peak_(0),
@@ -248,21 +250,41 @@ ReadStatus AsynRedisConn::ProcessInputBuffer() {
     }
 
     if (!argv_.empty()) {
-      if (DealMessage(argv_, &response_) != 0) {
-        return kDealError;
-      }
-      if (!response_.empty()) {
-        set_is_reply(true);
-      }
+      argvs_.push_back(argv_);
     }
+
     // ResetClient
     argv_.clear();
     req_type_ = 0;
     multibulk_len_ = 0;
     bulk_len_ = -1;
   }
-
+  BatchExecRedisCmd();
   return kReadAll; // OK
+}
+
+void AsynRedisConn::BatchExecRedisCmd() {
+  int ret = kOk;
+  for (auto& argv : argvs_) {
+    if (DealMessage(argv, &response_) != 0) {
+      ret = kDealError;
+      break;
+    }
+  }
+  argvs_.clear();
+  set_is_reply(true);
+
+  //PinkItem ti(fd(), ip_port(), (ret == kOk ? kNotiEpollout : kNotiClose));
+  //pink_epoll()->notify_queue_lock();
+  //std::queue<PinkItem> *q = &(pink_epoll()->notify_queue_);
+  //q->push(ti);
+  //write(pink_epoll()->notify_send_fd(), "", 1);
+  //pink_epoll()->notify_queue_unlock();
+}
+
+void AsynRedisConn::DoBackgroundTask(void* arg) {
+  AsynRedisConn* conn = static_cast<AsynRedisConn*>(arg);
+  conn->BatchExecRedisCmd();
 }
 
 ReadStatus AsynRedisConn::GetRequest() {

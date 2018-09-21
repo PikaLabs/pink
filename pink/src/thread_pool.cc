@@ -52,27 +52,26 @@ ThreadPool::~ThreadPool() {
 }
 
 int ThreadPool::start_thread_pool() {
-  int res = 0;
   if (!running_.load()) {
     should_stop_.store(false);
     for (size_t i = 0; i < worker_num_; ++i) {
       workers_.push_back(new Worker(this));
-      res = workers_[i]->start();
+      int res = workers_[i]->start();
       if (res != 0) {
-        break;
+        return kCreateThreadError;
       }
     }
     running_.store(true);
   }
-  return res;
+  return kSuccess;
 }
 
 int ThreadPool::stop_thread_pool() {
   int res = 0;
   if (running_.load()) {
     should_stop_.store(true);
-    rsignal_.Signal();
-    wsignal_.Signal();
+    rsignal_.SignalAll();
+    wsignal_.SignalAll();
     for (const auto worker : workers_) {
       res = worker->stop();
       if (res != 0) {
@@ -102,7 +101,7 @@ void ThreadPool::Schedule(TaskFunc func, void* arg) {
   }
   if (!should_stop()) {
     queue_.push(Task(func, arg));
-    rsignal_.Signal();
+    rsignal_.SignalAll();
   }
   mu_.Unlock();
 }
@@ -125,7 +124,7 @@ void ThreadPool::runInThread() {
       TaskFunc func = queue_.front().func;
       void* arg = queue_.front().arg;
       queue_.pop();
-      wsignal_.Signal();
+      wsignal_.SignalAll();
       mu_.Unlock();
       (*func)(arg);
     }

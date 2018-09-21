@@ -12,6 +12,7 @@
 #include <pthread.h>
 
 #include "slash/include/slash_mutex.h"
+#include "pink/include/pink_define.h"
 
 namespace pink {
 

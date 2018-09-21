@@ -66,7 +66,7 @@ PinkConn* WorkerThread::MoveConnOut(int fd) {
 void *WorkerThread::ThreadMain() {
   int nfds;
   PinkFiredEvent *pfe = NULL;
-  char bb[1];
+  char bb[2048];
   PinkItem ti;
   PinkConn *in_conn = NULL;
 
@@ -102,37 +102,50 @@ void *WorkerThread::ThreadMain() {
       pfe = (pink_epoll_->firedevent()) + i;
       if (pfe->fd == pink_epoll_->notify_receive_fd()) {
         if (pfe->mask & EPOLLIN) {
-          read(pink_epoll_->notify_receive_fd(), bb, 1);
-          {
-            pink_epoll()->notify_queue_lock();
-            ti = pink_epoll_->notify_queue_.front();
-            pink_epoll_->notify_queue_.pop();
-            pink_epoll()->notify_queue_unlock();
-          }
-
-          PinkConn *tc = conn_factory_->NewPinkConn(
-              ti.fd(), ti.ip_port(),
-              server_thread_, private_data_);
-          if (!tc || !tc->SetNonblock()) {
-            delete tc;
+          int32_t nread = read(pink_epoll_->notify_receive_fd(), bb, 2048);
+          if (nread == 0) {
             continue;
-          }
+          } else {
+            for (int32_t idx = 0; idx < nread; ++idx) {
+              {
+                pink_epoll_->notify_queue_lock();
+                ti = pink_epoll_->notify_queue_.front();
+                pink_epoll_->notify_queue_.pop();
+                pink_epoll_->notify_queue_unlock();
+              }
+
+              if (ti.notify_type() == kNotiConnect) {
+                PinkConn *tc = conn_factory_->NewPinkConn(
+                    ti.fd(), ti.ip_port(),
+                    server_thread_, private_data_, pink_epoll_);
+                if (!tc || !tc->SetNonblock()) {
+                  delete tc;
+                  continue;
+                }
 
 #ifdef __ENABLE_SSL
-          // Create SSL failed
-          if (server_thread_->security() &&
-              !tc->CreateSSL(server_thread_->ssl_ctx())) {
-            CloseFd(tc);
-            delete tc;
-            continue;
-          }
+                // Create SSL failed
+                if (server_thread_->security() &&
+                  !tc->CreateSSL(server_thread_->ssl_ctx())) {
+                  CloseFd(tc);
+                  delete tc;
+                  continue;
+                }
 #endif
 
-          {
-          slash::WriteLock l(&rwlock_);
-          conns_[ti.fd()] = tc;
+                {
+                  slash::WriteLock l(&rwlock_);
+                  conns_[ti.fd()] = tc;
+                }
+                pink_epoll_->PinkAddEvent(ti.fd(), EPOLLIN);
+              } else if (ti.notify_type() == kNotiEpollout) {
+                pink_epoll_->PinkModEvent(ti.fd(), 0, EPOLLOUT);
+              } else {
+                printf("need close\n");
+                // close ?
+              }
+            }
           }
-          pink_epoll_->PinkAddEvent(ti.fd(), EPOLLIN);
         } else {
           continue;
         }
@@ -150,39 +163,15 @@ void *WorkerThread::ThreadMain() {
 
         in_conn = iter->second;
 
-        if (pfe->mask & EPOLLOUT && in_conn->is_reply()) {
-          WriteStatus write_status = in_conn->SendReply();
+        if (pfe->mask & EPOLLIN) {
+          ReadStatus read_status = in_conn->GetRequest();
           in_conn->set_last_interaction(now);
-          if (write_status == kWriteAll) {
-            pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLIN);  // Remove EPOLLOUT
-            in_conn->set_is_reply(false);
-          } else if (write_status == kWriteHalf) {
-            pink_epoll_->PinkModEvent(pfe->fd, EPOLLIN, EPOLLOUT);
-            continue; //  send all write buffer,
-                      //  in case of next GetRequest()
-                      //  pollute the write buffer
-          } else if (write_status == kWriteError) {
-            should_close = 1;
-          }
-        }
-
-        if (!should_close && pfe->mask & EPOLLIN) {
-          ReadStatus getRes = in_conn->GetRequest();
-          in_conn->set_last_interaction(now);
-          if (getRes != kReadAll && getRes != kReadHalf) {
-            // kReadError kReadClose kFullError kParseError kDealError
-            should_close = 1;
-          } else if (in_conn->is_reply()) {
-            WriteStatus write_status = in_conn->SendReply();
-            if (write_status == kWriteAll) {
-              in_conn->set_is_reply(false);
-            } else if (write_status == kWriteHalf) {
-              pink_epoll_->PinkModEvent(pfe->fd, EPOLLIN, EPOLLOUT);
-            } else if (write_status == kWriteError) {
-              should_close = 1;
-            }
-          } else {
+          if (read_status == kReadAll) {
+            pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLOUT);
+          } else if (read_status == kReadHalf) {
             continue;
+          } else {
+            should_close = 1;
           }
         }
 
@@ -190,11 +179,10 @@ void *WorkerThread::ThreadMain() {
           WriteStatus write_status = in_conn->SendReply();
           in_conn->set_last_interaction(now);
           if (write_status == kWriteAll) {
-            in_conn->set_is_reply(false);
             pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLIN);
           } else if (write_status == kWriteHalf) {
             continue;
-          } else if (write_status == kWriteError) {
+          } else {
             should_close = 1;
           }
         }

@@ -20,7 +20,7 @@ typedef std::vector<std::string> RedisCmdArgsType;
 
 class AsynRedisConn: public PinkConn {
  public:
-  AsynRedisConn(const int fd, const std::string &ip_port, ServerThread *thread);
+  AsynRedisConn(const int fd, const std::string &ip_port, ServerThread *thread, PinkEpoll* pink_epoll);
   virtual ~AsynRedisConn();
 
   virtual ReadStatus GetRequest();
@@ -29,7 +29,9 @@ class AsynRedisConn: public PinkConn {
 
   void TryResizeBuffer() override;
 
+  void BatchExecRedisCmd();
   virtual int DealMessage(RedisCmdArgsType& argv, std::string* response) = 0;
+  static void DoBackgroundTask(void* arg);
 
  private:
   ReadStatus ProcessInputBuffer();

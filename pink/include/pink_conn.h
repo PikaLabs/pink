@@ -16,6 +16,7 @@
 
 #include "pink/include/pink_define.h"
 #include "pink/include/server_thread.h"
+#include "pink/src/pink_epoll.h"
 
 namespace pink {
 
@@ -23,7 +24,7 @@ class Thread;
 
 class PinkConn {
  public:
-  PinkConn(const int fd, const std::string &ip_port, ServerThread *thread);
+  PinkConn(const int fd, const std::string &ip_port, ServerThread *thread, PinkEpoll* pink_epoll = nullptr);
   virtual ~PinkConn();
 
   /*
@@ -77,6 +78,10 @@ class PinkConn {
     return server_thread_;
   }
 
+  PinkEpoll* pink_epoll() const {
+    return pink_epoll_;
+  }
+
 #ifdef __ENABLE_SSL
   SSL* ssl() {
     return ssl_;
@@ -100,6 +105,8 @@ class PinkConn {
 
   // the server thread this conn belong to
   ServerThread *server_thread_;
+  // the pink epoll this conn belong to
+  PinkEpoll *pink_epoll_;
 
   /*
    * No allowed copy and copy assign operator
@@ -119,7 +126,8 @@ class ConnFactory {
     int connfd,
     const std::string &ip_port,
     ServerThread *server_thread,
-    void* worker_private_data /* Has set in ThreadEnvHandle */) const = 0;
+    void* worker_private_data, /* Has set in ThreadEnvHandle */
+    PinkEpoll* pink_epoll = nullptr) const = 0;
 };
 
 }  // namespace pink

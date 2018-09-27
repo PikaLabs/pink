@@ -26,12 +26,10 @@ class AsynRedisConn: public PinkConn {
   virtual ReadStatus GetRequest();
   virtual WriteStatus SendReply();
   virtual void WriteResp(const std::string& resp);
+  virtual void AsynProcessRedisCmd() = 0;
 
   void TryResizeBuffer() override;
-
-  void BatchExecRedisCmd();
-  virtual int DealMessage(RedisCmdArgsType& argv, std::string* response) = 0;
-  static void DoBackgroundTask(void* arg);
+  void NotifyEpoll(bool success);
 
  private:
   ReadStatus ProcessInputBuffer();
@@ -44,10 +42,8 @@ class AsynRedisConn: public PinkConn {
   int rbuf_len_;
   int msg_peak_;
   RedisCmdArgsType argv_;
-  std::vector<RedisCmdArgsType> argvs_;
 
   uint32_t wbuf_pos_;
-  std::string response_;
 
   // For Redis Protocol parser
   int last_read_pos_;
@@ -55,6 +51,9 @@ class AsynRedisConn: public PinkConn {
   int req_type_;
   long multibulk_len_;
   long bulk_len_;
+ protected:
+  std::string response_;
+  std::vector<RedisCmdArgsType> argvs_;
 };
 
 }  // namespace pink

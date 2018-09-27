@@ -167,7 +167,8 @@ void *WorkerThread::ThreadMain() {
           ReadStatus read_status = in_conn->GetRequest();
           in_conn->set_last_interaction(now);
           if (read_status == kReadAll) {
-            pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLOUT);
+            // Wait for the conn complete asynchronous task and
+            // Mod Event to EPOLLOUT
           } else if (read_status == kReadHalf) {
             continue;
           } else {

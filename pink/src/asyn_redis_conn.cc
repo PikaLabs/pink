@@ -259,32 +259,8 @@ ReadStatus AsynRedisConn::ProcessInputBuffer() {
     multibulk_len_ = 0;
     bulk_len_ = -1;
   }
-  BatchExecRedisCmd();
+  AsynProcessRedisCmd();
   return kReadAll; // OK
-}
-
-void AsynRedisConn::BatchExecRedisCmd() {
-  int ret = kOk;
-  for (auto& argv : argvs_) {
-    if (DealMessage(argv, &response_) != 0) {
-      ret = kDealError;
-      break;
-    }
-  }
-  argvs_.clear();
-  set_is_reply(true);
-
-  //PinkItem ti(fd(), ip_port(), (ret == kOk ? kNotiEpollout : kNotiClose));
-  //pink_epoll()->notify_queue_lock();
-  //std::queue<PinkItem> *q = &(pink_epoll()->notify_queue_);
-  //q->push(ti);
-  //write(pink_epoll()->notify_send_fd(), "", 1);
-  //pink_epoll()->notify_queue_unlock();
-}
-
-void AsynRedisConn::DoBackgroundTask(void* arg) {
-  AsynRedisConn* conn = static_cast<AsynRedisConn*>(arg);
-  conn->BatchExecRedisCmd();
 }
 
 ReadStatus AsynRedisConn::GetRequest() {
@@ -378,6 +354,15 @@ WriteStatus AsynRedisConn::SendReply() {
 void AsynRedisConn::WriteResp(const std::string& resp) {
   response_.append(resp);
   set_is_reply(true);
+}
+
+void AsynRedisConn::NotifyEpoll(bool success) {
+  PinkItem ti(fd(), ip_port(), success ? kNotiEpollout : kNotiClose);
+  pink_epoll()->notify_queue_lock();
+  std::queue<PinkItem> *q = &(pink_epoll()->notify_queue_);
+  q->push(ti);
+  pink_epoll()->notify_queue_unlock();
+  write(pink_epoll()->notify_send_fd(), "", 1);
 }
 
 void AsynRedisConn::TryResizeBuffer() {

@@ -32,7 +32,7 @@ class RedisCli : public PinkCli {
   // Read, parse and store the reply
   virtual Status Recv(void *result = NULL);
   // Check whether the connection got fin from peer or not
-  virtual int CheckAliveness(void);
+  int CheckAliveness(void);
 
  private:
   RedisCmdArgsType argv_;   // The parsed result

@@ -22,7 +22,7 @@ namespace pink {
 
 class Thread;
 
-class PinkConn {
+class PinkConn : public std::enable_shared_from_this<PinkConn> {
  public:
   PinkConn(const int fd, const std::string &ip_port, ServerThread *thread, PinkEpoll* pink_epoll = nullptr);
   virtual ~PinkConn();
@@ -122,7 +122,7 @@ class PinkConn {
 class ConnFactory {
  public:
   virtual ~ConnFactory() {}
-  virtual PinkConn* NewPinkConn(
+  virtual std::shared_ptr<PinkConn> NewPinkConn(
     int connfd,
     const std::string &ip_port,
     ServerThread *server_thread,

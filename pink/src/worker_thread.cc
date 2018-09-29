@@ -50,9 +50,9 @@ std::vector<ServerThread::ConnInfo> WorkerThread::conns_info() const {
   return result;
 }
 
-PinkConn* WorkerThread::MoveConnOut(int fd) {
+std::shared_ptr<PinkConn> WorkerThread::MoveConnOut(int fd) {
   slash::WriteLock l(&rwlock_);
-  PinkConn* conn = nullptr;
+  std::shared_ptr<PinkConn> conn = nullptr;
   auto iter = conns_.find(fd);
   if (iter != conns_.end()) {
     int fd = iter->first;
@@ -68,7 +68,7 @@ void *WorkerThread::ThreadMain() {
   PinkFiredEvent *pfe = NULL;
   char bb[2048];
   PinkItem ti;
-  PinkConn *in_conn = NULL;
+  std::shared_ptr<PinkConn> in_conn = nullptr;
 
   struct timeval when;
   gettimeofday(&when, NULL);
@@ -115,11 +115,10 @@ void *WorkerThread::ThreadMain() {
               }
 
               if (ti.notify_type() == kNotiConnect) {
-                PinkConn *tc = conn_factory_->NewPinkConn(
+                std::shared_ptr<PinkConn> tc = conn_factory_->NewPinkConn(
                     ti.fd(), ti.ip_port(),
                     server_thread_, private_data_, pink_epoll_);
                 if (!tc || !tc->SetNonblock()) {
-                  delete tc;
                   continue;
                 }
 
@@ -128,7 +127,6 @@ void *WorkerThread::ThreadMain() {
                 if (server_thread_->security() &&
                   !tc->CreateSSL(server_thread_->ssl_ctx())) {
                   CloseFd(tc);
-                  delete tc;
                   continue;
                 }
 #endif
@@ -155,7 +153,7 @@ void *WorkerThread::ThreadMain() {
         if (pfe == NULL) {
           continue;
         }
-        std::map<int, PinkConn *>::iterator iter = conns_.find(pfe->fd);
+        std::map<int, std::shared_ptr<PinkConn>>::iterator iter = conns_.find(pfe->fd);
         if (iter == conns_.end()) {
           pink_epoll_->PinkDelEvent(pfe->fd);
           continue;
@@ -193,9 +191,7 @@ void *WorkerThread::ThreadMain() {
             slash::WriteLock l(&rwlock_);
             pink_epoll_->PinkDelEvent(pfe->fd);
             CloseFd(in_conn);
-            delete(in_conn);
             in_conn = NULL;
-
             conns_.erase(pfe->fd);
           }
         }
@@ -217,21 +213,19 @@ void WorkerThread::DoCronTask() {
   if (deleting_conn_ipport_.count(kKillAllConnsTask)) {
     for (auto& conn : conns_) {
       CloseFd(conn.second);
-      delete conn.second;
     }
     conns_.clear();
     deleting_conn_ipport_.clear();
     return;
   }
 
-  std::map<int, PinkConn*>::iterator iter = conns_.begin();
+  std::map<int, std::shared_ptr<PinkConn>>::iterator iter = conns_.begin();
   while (iter != conns_.end()) {
-    PinkConn* conn = iter->second;
+    std::shared_ptr<PinkConn> conn = iter->second;
     // Check connection should be closed
     if (deleting_conn_ipport_.count(conn->ip_port())) {
       CloseFd(conn);
       deleting_conn_ipport_.erase(conn->ip_port());
-      delete conn;
       iter = conns_.erase(iter);
       continue;
     }
@@ -241,7 +235,6 @@ void WorkerThread::DoCronTask() {
         (now.tv_sec - conn->last_interaction().tv_sec > keepalive_timeout_)) {
       CloseFd(conn);
       server_thread_->handle_->FdTimeoutHandle(conn->fd(), conn->ip_port());
-      delete conn;
       iter = conns_.erase(iter);
       continue;
     }
@@ -272,7 +265,7 @@ bool WorkerThread::TryKillConn(const std::string& ip_port) {
   return false;
 }
 
-void WorkerThread::CloseFd(PinkConn* conn) {
+void WorkerThread::CloseFd(std::shared_ptr<PinkConn> conn) {
   close(conn->fd());
   server_thread_->handle_->FdClosedHandle(conn->fd(), conn->ip_port());
 }
@@ -281,7 +274,6 @@ void WorkerThread::Cleanup() {
   slash::WriteLock l(&rwlock_);
   for (auto& iter : conns_) {
     CloseFd(iter.second);
-    delete iter.second;
   }
   conns_.clear();
 }

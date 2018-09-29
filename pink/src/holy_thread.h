@@ -45,7 +45,7 @@ class HolyThread: public ServerThread {
 
   virtual std::vector<ServerThread::ConnInfo> conns_info() const override;
 
-  virtual PinkConn* MoveConnOut(int fd) override;
+  virtual std::shared_ptr<PinkConn> MoveConnOut(int fd) override;
 
   virtual void KillAllConns() override;
 
@@ -53,7 +53,7 @@ class HolyThread: public ServerThread {
 
  private:
   mutable slash::RWMutex rwlock_; /* For external statistics */
-  std::map<int, PinkConn*> conns_;
+  std::map<int, std::shared_ptr<PinkConn>> conns_;
 
   ConnFactory *conn_factory_;
   void* private_data_;
@@ -68,7 +68,7 @@ class HolyThread: public ServerThread {
   void HandleNewConn(int connfd, const std::string &ip_port) override;
   void HandleConnEvent(PinkFiredEvent *pfe) override;
 
-  void CloseFd(PinkConn* conn);
+  void CloseFd(std::shared_ptr<PinkConn> conn);
   void Cleanup();
 };  // class HolyThread
 

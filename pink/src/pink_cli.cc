@@ -173,6 +173,65 @@ Status PinkCli::Connect(const std::string &ip, const int port,
   return s;
 }
 
+static int PollFd(int fd, int events, int ms) {
+  pollfd fds[1];
+  fds[0].fd = fd;
+  fds[0].events = events;
+  fds[0].revents = 0;
+
+  int ret = ::poll(fds, 1, ms);
+  if (ret > 0) {
+      return fds[0].revents;
+  }
+
+  return ret;
+}
+
+static int CheckSockAliveness(int fd) {
+  char buf[1];
+  int ret;
+
+  ret = PollFd(fd, POLLIN | POLLPRI, 0);
+  if (0 < ret) {
+    int num = ::recv(fd, buf, 1, MSG_PEEK);
+    if (num == 0) {
+      return -1;
+    }
+    if (num == -1) {
+      int errnum = errno;
+      if (errnum != EINTR && errnum != EAGAIN && errnum != EWOULDBLOCK) {
+        return -1;
+      }
+    }
+  }
+
+  return 0;
+}
+
+int PinkCli::CheckAliveness() {
+  int flag;
+  bool block;
+  int sock = fd();
+
+  if (sock < 0) {
+    return -1;
+  }
+
+  flag = fcntl(sock, F_GETFL, 0);
+  block = !(flag & O_NONBLOCK);
+  if (block) {
+    fcntl(sock, F_SETFL, flag | O_NONBLOCK);
+  }
+
+  int ret = CheckSockAliveness(sock);
+
+  if (block) {
+    fcntl(sock, F_SETFL, flag);
+  }
+
+  return ret;
+}
+
 Status PinkCli::SendRaw(void *buf, size_t count) {
   char* wbuf = reinterpret_cast<char*>(buf);
   size_t nleft = count;

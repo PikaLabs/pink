@@ -127,9 +127,9 @@ std::vector<ServerThread::ConnInfo> DispatchThread::conns_info() const {
   return result;
 }
 
-PinkConn* DispatchThread::MoveConnOut(int fd) {
+std::shared_ptr<PinkConn> DispatchThread::MoveConnOut(int fd) {
   for (int i = 0; i < work_num_; ++i) {
-    PinkConn* conn = worker_thread_[i]->MoveConnOut(fd);
+    std::shared_ptr<PinkConn> conn = worker_thread_[i]->MoveConnOut(fd);
     if (conn != nullptr) {
       return conn;
     }

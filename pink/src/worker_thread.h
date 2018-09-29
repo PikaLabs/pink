@@ -46,7 +46,7 @@ class WorkerThread : public Thread {
 
   std::vector<ServerThread::ConnInfo> conns_info() const;
 
-  PinkConn* MoveConnOut(int fd);
+  std::shared_ptr<PinkConn> MoveConnOut(int fd);
 
 
   PinkEpoll* pink_epoll() {
@@ -56,7 +56,7 @@ class WorkerThread : public Thread {
 
 
   mutable slash::RWMutex rwlock_; /* For external statistics */
-  std::map<int, PinkConn*> conns_;
+  std::map<int, std::shared_ptr<PinkConn>> conns_;
 
   void* private_data_;
 
@@ -80,7 +80,7 @@ class WorkerThread : public Thread {
   std::set<std::string> deleting_conn_ipport_;
 
   // clean conns
-  void CloseFd(PinkConn* conn);
+  void CloseFd(std::shared_ptr<PinkConn> conn);
   void Cleanup();
 };  // class WorkerThread
 

@@ -52,11 +52,11 @@ int MyConn::DealMessage() {
 
 class MyConnFactory : public ConnFactory {
  public:
-  virtual PinkConn *NewPinkConn(int connfd, const std::string &ip_port,
-                                ServerThread *thread,
-                                void* worker_specific_data,
-                                PinkEpoll* pink_epoll) const {
-    return new MyConn(connfd, ip_port, thread, worker_specific_data);
+  virtual std::shared_ptr<PinkConn> NewPinkConn(int connfd, const std::string &ip_port,
+                                                ServerThread *thread,
+                                                void* worker_specific_data,
+                                                PinkEpoll* pink_epoll) const {
+    return std::make_shared<MyConn>(connfd, ip_port, thread, worker_specific_data);
   }
 };
 

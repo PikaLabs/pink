@@ -22,6 +22,8 @@ class PinkCli {
   Status Connect(const std::string& bind_ip = "");
   Status Connect(const std::string &peer_ip, const int peer_port,
       const std::string& bind_ip = "");
+  // Check whether the connection got fin from peer or not
+  virtual int CheckAliveness(void);
   // Compress and write the message
   virtual Status Send(void *msg) = 0;
 

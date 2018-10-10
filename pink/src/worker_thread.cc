@@ -137,10 +137,9 @@ void *WorkerThread::ThreadMain() {
                 }
                 pink_epoll_->PinkAddEvent(ti.fd(), EPOLLIN);
               } else if (ti.notify_type() == kNotiEpollout) {
-                pink_epoll_->PinkModEvent(ti.fd(), 0, EPOLLOUT);
+                pink_epoll_->PinkModEvent(ti.fd(), 0, EPOLLIN | EPOLLOUT);
               } else {
-                printf("need close\n");
-                // close ?
+                // should close?
               }
             }
           }
@@ -161,10 +160,11 @@ void *WorkerThread::ThreadMain() {
 
         in_conn = iter->second;
 
-        if (pfe->mask & EPOLLIN) {
+        if (pfe->mask & EPOLLIN && !(pfe->mask & EPOLLOUT)) {
           ReadStatus read_status = in_conn->GetRequest();
           in_conn->set_last_interaction(now);
           if (read_status == kReadAll) {
+            pink_epoll_->PinkModEvent(pfe->fd, 0, 0);
             // Wait for the conn complete asynchronous task and
             // Mod Event to EPOLLOUT
           } else if (read_status == kReadHalf) {

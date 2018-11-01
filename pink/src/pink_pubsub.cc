@@ -363,14 +363,11 @@ void *PubSubThread::ThreadMain() {
           read(msg_pfd_[0], triger, 1);
           std::string channel, msg;
           int32_t receivers = 0;
-          if (channel_ != "" && message_ != "") {
-            channel = channel_;
-            msg = message_;
-            channel_ = "";
-            message_ = "";
-          } else {
-            continue;
-          }
+          channel = channel_;
+          msg = message_;
+          channel_.clear();
+          message_.clear();
+
           // Send message to clients
           channel_mutex_.Lock();
           for (auto it = pubsub_channel_.begin(); it != pubsub_channel_.end(); it++) {
@@ -421,6 +418,7 @@ void *PubSubThread::ThreadMain() {
             }
           }
           pattern_mutex_.Unlock();
+
           receiver_mutex_.Lock();
           receivers_ = receivers;
           receiver_rsignal_.Signal();

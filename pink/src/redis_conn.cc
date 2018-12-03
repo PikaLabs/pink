@@ -132,9 +132,12 @@ static int split2args(const std::string& req_buf, RedisCmdArgsType& argv) {
 }
 
 RedisConn::RedisConn(const int fd,
-                     const std::string &ip_port,
-                     ServerThread *thread)
-    : PinkConn(fd, ip_port, thread),
+                     const std::string& ip_port,
+                     ServerThread* thread,
+                     PinkEpoll* pink_epoll,
+                     const HandleType& handle_type)
+    : PinkConn(fd, ip_port, thread, pink_epoll),
+      handle_type_(handle_type),
       rbuf_(nullptr),
       rbuf_len_(0),
       msg_peak_(0),
@@ -248,11 +251,15 @@ ReadStatus RedisConn::ProcessInputBuffer() {
     }
 
     if (!argv_.empty()) {
-      if (DealMessage(argv_, &response_) != 0) {
-        return kDealError;
-      }
-      if (!response_.empty()) {
-        set_is_reply(true);
+      if (handle_type_ == kSynchronous) {
+        if (DealMessage(argv_, &response_) != 0) {
+          return kDealError;
+        }
+        if (!response_.empty()) {
+          set_is_reply(true);
+        }
+      } else {
+        argvs_.push_back(argv_);
       }
     }
     // ResetClient
@@ -262,6 +269,9 @@ ReadStatus RedisConn::ProcessInputBuffer() {
     bulk_len_ = -1;
   }
 
+  if (handle_type_ == kAsynchronous) {
+    AsynProcessRedisCmd();
+  }
   return kReadAll; // OK
 }
 
@@ -375,6 +385,24 @@ void RedisConn::TryResizeBuffer() {
     }
     msg_peak_ = 0;
   }
+}
+
+void RedisConn::SetHandleType(const HandleType& handle_type) {
+  handle_type_ = handle_type;
+}
+
+void RedisConn::AsynProcessRedisCmd() {
+  // If the current HandleType is kAsynchronous
+  // you need to implement this method yourself
+}
+
+void RedisConn::NotifyEpoll(bool success) {
+  PinkItem ti(fd(), ip_port(), success ? kNotiEpollout : kNotiClose);
+  pink_epoll()->notify_queue_lock();
+  std::queue<PinkItem> *q = &(pink_epoll()->notify_queue_);
+  q->push(ti);
+  pink_epoll()->notify_queue_unlock();
+  write(pink_epoll()->notify_send_fd(), "", 1);
 }
 
 int RedisConn::FindNextSeparators() {

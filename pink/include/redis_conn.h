@@ -18,9 +18,18 @@ namespace pink {
 
 typedef std::vector<std::string> RedisCmdArgsType;
 
+enum HandleType {
+  kSynchronous,
+  kAsynchronous
+};
+
 class RedisConn: public PinkConn {
  public:
-  RedisConn(const int fd, const std::string &ip_port, ServerThread *thread);
+  RedisConn(const int fd,
+            const std::string& ip_port,
+            ServerThread* thread,
+            PinkEpoll* pink_epoll = nullptr,
+            const HandleType& handle_type = kSynchronous);
   virtual ~RedisConn();
 
   virtual ReadStatus GetRequest();
@@ -28,6 +37,10 @@ class RedisConn: public PinkConn {
   virtual void WriteResp(const std::string& resp);
 
   void TryResizeBuffer() override;
+  void SetHandleType(const HandleType& handle_type);
+
+  virtual void AsynProcessRedisCmd();
+  void NotifyEpoll(bool success);
 
   virtual int DealMessage(RedisCmdArgsType& argv, std::string* response) = 0;
 
@@ -38,13 +51,14 @@ class RedisConn: public PinkConn {
   int FindNextSeparators();
   int GetNextNum(int pos, long *value);
 
+  HandleType handle_type_;
+
   char* rbuf_;
   int rbuf_len_;
   int msg_peak_;
   RedisCmdArgsType argv_;
 
   uint32_t wbuf_pos_;
-  std::string response_;
 
   // For Redis Protocol parser
   int last_read_pos_;
@@ -52,6 +66,10 @@ class RedisConn: public PinkConn {
   int req_type_;
   long multibulk_len_;
   long bulk_len_;
+
+ protected:
+  std::string response_;
+  std::vector<RedisCmdArgsType> argvs_;
 };
 
 }  // namespace pink

@@ -147,6 +147,7 @@ void PubSubThread::Subscribe(PinkConn *conn,
                              const bool pattern,
                              std::vector<std::pair<std::string, int>>* result) {
   int subscribed = ClientChannelSize(conn);
+  bool exist = (subscribed != 0);
 
   for (size_t i = 0; i < channels.size(); i++) {
     if (pattern) {  // if pattern mode, register channel to map
@@ -184,15 +185,17 @@ void PubSubThread::Subscribe(PinkConn *conn,
     }
   }
 
-  {
-  slash::WriteLock l(&rwlock_);
-  conns_[conn->fd()] = conn;
-  }
+  if (!exist) {
+    {
+      slash::WriteLock l(&rwlock_);
+      conns_[conn->fd()] = conn;
+    }
 
-  {
-  slash::MutexLock l(&mutex_);
-  fd_queue_.push(conn->fd());
-  write(notify_pfd_[1], "", 1);
+    {
+      slash::MutexLock l(&mutex_);
+      fd_queue_.push(conn->fd());
+      write(notify_pfd_[1], "", 1);
+    }
   }
 }
 

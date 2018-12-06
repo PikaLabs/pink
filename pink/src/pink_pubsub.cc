@@ -16,6 +16,22 @@
 
 namespace pink {
 
+static std::string ConstructPubSubResp(
+                                const std::string& cmd,
+                                const std::vector<std::pair<std::string, int>>& result) {
+  std::stringstream resp;
+  if (result.size() == 0) {
+    resp << "*3\r\n" << "$" << cmd.length() << "\r\n" << cmd << "\r\n" <<
+                        "$" << -1           << "\r\n" << ":" << 0      << "\r\n";
+  }
+  for (auto it = result.begin(); it != result.end(); it++) {
+    resp << "*3\r\n" << "$" << cmd.length()       << "\r\n" << cmd       << "\r\n" <<
+                        "$" << it->first.length() << "\r\n" << it->first << "\r\n" <<
+                        ":" << it->second         << "\r\n";
+  }
+  return resp.str();
+}
+
 static std::string ConstructPublishResp(const std::string& subscribe_channel,
                            const std::string& publish_channel,
                            const std::string& msg,
@@ -188,6 +204,7 @@ void PubSubThread::Subscribe(std::shared_ptr<PinkConn> conn,
   if (!exist) {
     {
       slash::WriteLock l(&rwlock_);
+      conn->WriteResp(ConstructPubSubResp(pattern ? "psubscribe" : "subscribe", *result));
       conns_[conn->fd()] = conn;
     }
 
@@ -356,7 +373,7 @@ void *PubSubThread::ThreadMain() {
             slash::MutexLock l(&mutex_);
             int new_fd = fd_queue_.front();
             fd_queue_.pop();
-            pink_epoll_->PinkAddEvent(new_fd, EPOLLIN);
+            pink_epoll_->PinkAddEvent(new_fd, EPOLLIN | EPOLLOUT);
           }
           continue;
         }

@@ -48,6 +48,8 @@ pink/examples/myproto.pb.h
 *redis_cli_test
 *simple_http_server
 *myredis_srv
+*binlog_parser_test
+*redis_parser_test
 
 pink/src/build_version.cc
 

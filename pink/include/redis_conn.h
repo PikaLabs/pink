@@ -13,6 +13,7 @@
 #include "slash/include/slash_status.h"
 #include "pink/include/pink_define.h"
 #include "pink/include/pink_conn.h"
+#include "pink/include/redis_parser.h"
 
 namespace pink {
 
@@ -44,27 +45,22 @@ class RedisConn: public PinkConn {
 
   virtual int DealMessage(RedisCmdArgsType& argv, std::string* response) = 0;
 
+  std::string response_;
  private:
-  ReadStatus ProcessInputBuffer();
-  ReadStatus ProcessMultibulkBuffer();
-  ReadStatus ProcessInlineBuffer();
-  int FindNextSeparators();
-  int GetNextNum(int pos, long *value);
+  static int ParserDealMessageCb(RedisParser* parser, RedisCmdArgsType& argv_);
+  ReadStatus ParseRedisParserStatus(RedisParserStatus status);
 
   HandleType handle_type_;
 
   char* rbuf_;
   int rbuf_len_;
   int msg_peak_;
-  RedisCmdArgsType argv_;
 
   uint32_t wbuf_pos_;
 
   // For Redis Protocol parser
   int last_read_pos_;
-  int next_parse_pos_;
-  int req_type_;
-  long multibulk_len_;
+  RedisParser redis_parser_;
   long bulk_len_;
 
  protected:

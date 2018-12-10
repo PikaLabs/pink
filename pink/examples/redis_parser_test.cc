@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
   }
 
   pink::RedisCmdArgsType redis_argv;
-  
+
   std::string one_command = "*3\r\n$3\r\nSET\r\n$1\r\na\r\n$2\r\nab\r\n";
 
   {
@@ -44,8 +44,8 @@ int main(int argc, char* argv[]) {
 
   {
   printf ("\nTest Send command into two times bulk itself break\n");
-  std::string half_command = "*3\r\n$3\r\nSET\r\n$3\r\nabc\r\n$10\r\n12345"; 
-  std::string another_half_command = "67890\r\n"; 
+  std::string half_command = "*3\r\n$3\r\nSET\r\n$3\r\nabc\r\n$10\r\n12345";
+  std::string another_half_command = "67890\r\n";
   std::string one_command_and_a_half = one_command + half_command;
   s = rcli->Send(&one_command_and_a_half);
   printf("Send  %s\n",  s.ToString().c_str());
@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
   {
   printf ("\nTest Send command into two times bulk num break\n");
   std::string half_command = "*3\r\n$3\r\nSET\r\n$1";
-  std::string another_half_command = "0\r\n0123456789\r\n$10\r\n1234567890\r\n"; 
+  std::string another_half_command = "0\r\n0123456789\r\n$10\r\n1234567890\r\n";
   std::string one_command_and_a_half = one_command + half_command;
   s = rcli->Send(&one_command_and_a_half);
   printf("Send  %s\n",  s.ToString().c_str());
@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
     printf("  redis_argv[0]  is (%s)\n", redis_argv[0].c_str());
   }
   }
-  
+
   {
   printf ("\nTest Send command byte by byte\n");
   std::string half_command = "*";
@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
   s = rcli->Send(&one_command_and_a_half);
   printf("Send  %s\n",  s.ToString().c_str());
   for (size_t i = 0; i < another_half_command.size(); ++i) {
-    sleep(1); 
+    sleep(1);
     std::string one_char_str(another_half_command, i, 1);
     s = rcli->Send(&one_char_str);
     printf("Send %d  %s\n", i, s.ToString().c_str());

@@ -53,19 +53,17 @@ class RedisParser {
   RedisParser();
   RedisParserStatus RedisParserInit(RedisParserType type, const RedisParserSettings& settings);
   RedisParserStatus ProcessInputBuffer(const char* input_buf, int length, int* parsed_len);
-  void ResetRedisParser();
-  void ResetCommandStatus();
   long get_bulk_len() {
     return bulk_len_;
   }
   RedisParserError get_error_code() {
     return error_code_;
-  } 
+  }
   void *data; /* A pointer to get hook to the "connection" or "socket" object */
  private:
   // for DEBUG
   void PrintCurrentStatus();
-  
+
   void CacheHalfArgv();
   int FindNextSeparators();
   int GetNextNum(int pos, long* value);
@@ -74,19 +72,24 @@ class RedisParser {
   RedisParserStatus ProcessRequestBuffer();
   RedisParserStatus ProcessResponseBuffer();
   void SetParserStatus(RedisParserStatus status, RedisParserError error = kRedisParserOk);
+  void ResetRedisParser();
+  void ResetCommandStatus();
 
   RedisParserSettings parser_settings_;
   RedisParserStatus status_code_;
   RedisParserError error_code_;
 
   int redis_type_; // REDIS_PARSER_REQUEST or REDIS_PARSER_RESPONSE
+
   long multibulk_len_;
   long bulk_len_;
+  std::string half_argv_;
+
   int redis_parser_type_; // REDIS_REQ_INLINE or REDIS_REQ_MULTIBULK
   RedisCmdArgsType argv_;
+
   int cur_pos_;
   const char* input_buf_;
-  std::string half_argv_;
   std::string input_str_;
   int length_;
 };

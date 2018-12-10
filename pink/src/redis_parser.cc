@@ -167,7 +167,7 @@ RedisParser::RedisParser()
     cur_pos_(0),
     input_buf_(NULL),
     length_(0) {
-} 
+}
 
 void RedisParser::SetParserStatus(RedisParserStatus status,
     RedisParserError error) {
@@ -175,7 +175,7 @@ void RedisParser::SetParserStatus(RedisParserStatus status,
     CacheHalfArgv();
   }
   status_code_ = status;
-  error_code_ = error; 
+  error_code_ = error;
 }
 
 void RedisParser::CacheHalfArgv() {
@@ -192,8 +192,8 @@ RedisParserStatus RedisParser::RedisParserInit(
   }
   if (type != REDIS_PARSER_REQUEST && type != REDIS_PARSER_RESPONSE) {
     SetParserStatus(kRedisParserError, kRedisParserInitError);
-    return status_code_; 
-  } 
+    return status_code_;
+  }
   redis_parser_type_ = type;
   parser_settings_ = settings;
   SetParserStatus(kRedisParserInitDone);
@@ -206,10 +206,10 @@ RedisParserStatus RedisParser::ProcessInlineBuffer() {
   if (pos == -1) {
     // change rbuf_len_ to length_
     if (length_ > REDIS_INLINE_MAXLEN) {
-      SetParserStatus(kRedisParserError, kRedisParserFullError); 
+      SetParserStatus(kRedisParserError, kRedisParserFullError);
       return status_code_;
     } else {
-      SetParserStatus(kRedisParserHalf); 
+      SetParserStatus(kRedisParserHalf);
       return status_code_;
     }
   }
@@ -301,7 +301,7 @@ void RedisParser::PrintCurrentStatus() {
   log_info("cur_pos : %d", cur_pos_);
   log_info("input_buf_ is clean ? %d", input_buf_ == NULL);
   if (input_buf_ != NULL) {
-    log_info(" input_buf %s", input_buf_); 
+    log_info(" input_buf %s", input_buf_);
   }
   log_info("half_argv_ : %s", half_argv_.c_str());
   log_info("input_buf len %d", length_);
@@ -318,9 +318,9 @@ RedisParserStatus RedisParser::ProcessInputBuffer(
     input_buf_ = input_str_.c_str();
     length_ = length + half_argv_.size();
     if (redis_parser_type_ == REDIS_PARSER_REQUEST) {
-      ProcessRequestBuffer(); 
+      ProcessRequestBuffer();
     } else if (redis_parser_type_ == REDIS_PARSER_RESPONSE) {
-      ProcessResponseBuffer(); 
+      ProcessResponseBuffer();
     } else {
       SetParserStatus(kRedisParserError, kRedisParserInitError);
       return status_code_;
@@ -338,7 +338,7 @@ RedisParserStatus RedisParser::ProcessInputBuffer(
 // TODO AZ
 RedisParserStatus RedisParser::ProcessResponseBuffer() {
   SetParserStatus(kRedisParserDone);
-  return status_code_; 
+  return status_code_;
 }
 
 RedisParserStatus RedisParser::ProcessRequestBuffer() {
@@ -380,8 +380,8 @@ RedisParserStatus RedisParser::ProcessRequestBuffer() {
     if (parser_settings_.Complete) {
       if (parser_settings_.Complete(this) != 0) {
         SetParserStatus(kRedisParserError, kRedisParserCompleteError);
-        return status_code_; 
-      } 
+        return status_code_;
+      }
     }
   }
   SetParserStatus(kRedisParserDone);
@@ -389,13 +389,13 @@ RedisParserStatus RedisParser::ProcessRequestBuffer() {
 }
 
 void RedisParser::ResetCommandStatus() {
-  multibulk_len_ = 0; 
-  bulk_len_ = -1; 
-  half_argv_.clear();  
+  multibulk_len_ = 0;
+  bulk_len_ = -1;
+  half_argv_.clear();
 }
 
 void RedisParser::ResetRedisParser() {
-  cur_pos_ = 0; 
+  cur_pos_ = 0;
   input_buf_ = NULL;
   input_str_.clear();
   length_ = 0;

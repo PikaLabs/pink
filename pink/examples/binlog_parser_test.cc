@@ -44,11 +44,11 @@ int main(int argc, char* argv[]) {
   std::string header;
   slash::PutFixed16(&header, 2);
   slash::PutFixed32(&header, binlog_body.size());
-   
-  std::string command = header + binlog_body; 
+
+  std::string command = header + binlog_body;
   {
   for (size_t i = 0; i < command.size(); ++i) {
-    sleep(1); 
+    sleep(1);
     std::string one_char_str(command, i, 1);
     s = rcli->Send(&one_char_str);
     printf("Send %d  %s\n", i, s.ToString().c_str());

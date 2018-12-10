@@ -16,7 +16,7 @@ PINK_LIBRARY=$(PINK_PATH)/pink/lib/libpink.a
 
 ifndef SLASH_PATH
   $(warning Warning: missing slash path, using default)
-	SLASH_PATH=$(CURDIR)/../../../../third/slash
+	SLASH_PATH=$(CURDIR)/../third/slash
 endif
 SLASH_INCLUDE_DIR=$(SLASH_PATH)
 SLASH_LIBRARY=$(SLASH_PATH)/slash/lib/libslash.a

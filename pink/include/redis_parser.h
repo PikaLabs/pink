@@ -19,6 +19,7 @@ class RedisParser;
 
 typedef std::vector<std::string> RedisCmdArgsType;
 typedef int (*RedisParserDataCb) (RedisParser*, RedisCmdArgsType&);
+typedef int (*RedisParserMultiDataCb) (RedisParser*, std::vector<RedisCmdArgsType>&);
 typedef int (*RedisParserCb) (RedisParser*);
 typedef int RedisParserType;
 
@@ -41,7 +42,7 @@ enum RedisParserError {
 
 struct RedisParserSettings {
   RedisParserDataCb DealMessage;
-  RedisParserCb Complete;
+  RedisParserMultiDataCb Complete;
   RedisParserSettings() {
     DealMessage = NULL;
     Complete = NULL;
@@ -87,6 +88,7 @@ class RedisParser {
 
   int redis_parser_type_; // REDIS_REQ_INLINE or REDIS_REQ_MULTIBULK
   RedisCmdArgsType argv_;
+  std::vector<RedisCmdArgsType> argvs_;
 
   int cur_pos_;
   const char* input_buf_;

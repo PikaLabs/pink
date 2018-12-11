@@ -48,6 +48,7 @@ class RedisConn: public PinkConn {
   std::string response_;
  private:
   static int ParserDealMessageCb(RedisParser* parser, RedisCmdArgsType& argv_);
+  static int ParserCompleteCb(RedisParser* parser, std::vector<RedisCmdArgsType>& argvs_);
   ReadStatus ParseRedisParserStatus(RedisParserStatus status);
 
   HandleType handle_type_;

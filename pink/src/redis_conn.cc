@@ -183,6 +183,23 @@ void RedisConn::TryResizeBuffer() {
     msg_peak_ = 0;
   }
 }
+void RedisConn::SetHandleType(const HandleType& handle_type) {
+   handle_type_ = handle_type;
+ }
+
+void RedisConn::AsynProcessRedisCmd() {
+  // If the current HandleType is kAsynchronous
+  // you need to implement this method yourself
+}
+
+void RedisConn::NotifyEpoll(bool success) {
+  PinkItem ti(fd(), ip_port(), success ? kNotiEpollout : kNotiClose);
+  pink_epoll()->notify_queue_lock();
+  std::queue<PinkItem> *q = &(pink_epoll()->notify_queue_);
+  q->push(ti);
+  pink_epoll()->notify_queue_unlock();
+  write(pink_epoll()->notify_send_fd(), "", 1);
+}
 
 int RedisConn::ParserDealMessageCb(RedisParser* parser, RedisCmdArgsType& argv_) {
   RedisConn* conn = reinterpret_cast<RedisConn*>(parser->data);

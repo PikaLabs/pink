@@ -65,7 +65,6 @@ class RedisConn: public PinkConn {
   long bulk_len_;
 
  protected:
-  std::string response_;
   std::vector<RedisCmdArgsType> argvs_;
 };
 

@@ -39,16 +39,17 @@ class RedisConn: public PinkConn {
 
   void TryResizeBuffer() override;
   void SetHandleType(const HandleType& handle_type);
+  HandleType GetHandleType();
 
-  virtual void AsynProcessRedisCmd();
+  virtual void AsynProcessRedisCmds(const std::vector<RedisCmdArgsType>& argvs);
   void NotifyEpoll(bool success);
 
-  virtual int DealMessage(RedisCmdArgsType& argv, std::string* response) = 0;
+  virtual int DealMessage(const RedisCmdArgsType& argv, std::string* response) = 0;
 
   std::string response_;
  private:
-  static int ParserDealMessageCb(RedisParser* parser, RedisCmdArgsType& argv_);
-  static int ParserCompleteCb(RedisParser* parser, std::vector<RedisCmdArgsType>& argvs_);
+  static int ParserDealMessageCb(RedisParser* parser, const RedisCmdArgsType& argv);
+  static int ParserCompleteCb(RedisParser* parser, const std::vector<RedisCmdArgsType>& argvs);
   ReadStatus ParseRedisParserStatus(RedisParserStatus status);
 
   HandleType handle_type_;
@@ -63,9 +64,6 @@ class RedisConn: public PinkConn {
   int last_read_pos_;
   RedisParser redis_parser_;
   long bulk_len_;
-
- protected:
-  std::vector<RedisCmdArgsType> argvs_;
 };
 
 }  // namespace pink

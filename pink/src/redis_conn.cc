@@ -31,6 +31,7 @@ RedisConn::RedisConn(const int fd,
       bulk_len_(-1) {
   RedisParserSettings settings;
   settings.DealMessage = ParserDealMessageCb;
+  settings.Complete = ParserCompleteCb;
   redis_parser_.RedisParserInit(REDIS_PARSER_REQUEST, settings);
   redis_parser_.data = this;
 }
@@ -183,11 +184,16 @@ void RedisConn::TryResizeBuffer() {
     msg_peak_ = 0;
   }
 }
-void RedisConn::SetHandleType(const HandleType& handle_type) {
-   handle_type_ = handle_type;
- }
 
-void RedisConn::AsynProcessRedisCmd() {
+void RedisConn::SetHandleType(const HandleType& handle_type) {
+  handle_type_ = handle_type;
+}
+
+HandleType RedisConn::GetHandleType() {
+  return handle_type_;
+}
+
+void RedisConn::AsynProcessRedisCmds(const std::vector<RedisCmdArgsType>& argvs) {
   // If the current HandleType is kAsynchronous
   // you need to implement this method yourself
 }
@@ -201,13 +207,20 @@ void RedisConn::NotifyEpoll(bool success) {
   write(pink_epoll()->notify_send_fd(), "", 1);
 }
 
-int RedisConn::ParserDealMessageCb(RedisParser* parser, RedisCmdArgsType& argv_) {
+int RedisConn::ParserDealMessageCb(RedisParser* parser, const RedisCmdArgsType& argv) {
   RedisConn* conn = reinterpret_cast<RedisConn*>(parser->data);
-  int res = conn->DealMessage(argv_, &(conn->response_));
-  return res;
+  if (conn->GetHandleType() == HandleType::kSynchronous) {
+    return conn->DealMessage(argv, &(conn->response_));
+  } else {
+    return 0;
+  }
 }
 
-int RedisConn::ParserCompleteCb(RedisParser* parser, std::vector<RedisCmdArgsType>& argvs_) {
+int RedisConn::ParserCompleteCb(RedisParser* parser, const std::vector<RedisCmdArgsType>& argvs) {
+  RedisConn* conn = reinterpret_cast<RedisConn*>(parser->data);
+  if (conn->GetHandleType() == HandleType::kAsynchronous) {
+    conn->AsynProcessRedisCmds(argvs);
+  }
   return 0;
 }
 

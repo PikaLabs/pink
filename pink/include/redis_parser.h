@@ -18,8 +18,8 @@ namespace pink {
 class RedisParser;
 
 typedef std::vector<std::string> RedisCmdArgsType;
-typedef int (*RedisParserDataCb) (RedisParser*, RedisCmdArgsType&);
-typedef int (*RedisParserMultiDataCb) (RedisParser*, std::vector<RedisCmdArgsType>&);
+typedef int (*RedisParserDataCb) (RedisParser*, const RedisCmdArgsType&);
+typedef int (*RedisParserMultiDataCb) (RedisParser*, const std::vector<RedisCmdArgsType>&);
 typedef int (*RedisParserCb) (RedisParser*);
 typedef int RedisParserType;
 

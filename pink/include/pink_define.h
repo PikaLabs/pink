@@ -38,6 +38,8 @@ enum NotifyType {
   kNotiConnect = 0,
   kNotiClose = 1,
   kNotiEpollout = 2,
+  kNotiEpollin = 3,
+  kNotiEpolloutAndEpollin = 4
 };
 
 enum EventStatus {

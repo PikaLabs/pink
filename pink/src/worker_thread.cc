@@ -136,10 +136,14 @@ void *WorkerThread::ThreadMain() {
                   conns_[ti.fd()] = tc;
                 }
                 pink_epoll_->PinkAddEvent(ti.fd(), EPOLLIN);
-              } else if (ti.notify_type() == kNotiEpollout) {
-                pink_epoll_->PinkModEvent(ti.fd(), 0, EPOLLIN | EPOLLOUT);
-              } else {
+              } else if (ti.notify_type() == kNotiClose) {
                 // should close?
+              } else if (ti.notify_type() == kNotiEpollout) {
+                pink_epoll_->PinkModEvent(ti.fd(), 0, EPOLLOUT);
+              } else if (ti.notify_type() == kNotiEpollin) {
+                pink_epoll_->PinkModEvent(ti.fd(), 0, EPOLLIN);
+              } else if (ti.notify_type() == kNotiEpolloutAndEpollin) {
+                pink_epoll_->PinkModEvent(ti.fd(), 0, EPOLLOUT | EPOLLIN);
               }
             }
           }
@@ -160,7 +164,20 @@ void *WorkerThread::ThreadMain() {
 
         in_conn = iter->second;
 
-        if (pfe->mask & EPOLLIN && !(pfe->mask & EPOLLOUT)) {
+        if ((pfe->mask & EPOLLOUT) && in_conn->is_reply()) {
+          WriteStatus write_status = in_conn->SendReply();
+          in_conn->set_last_interaction(now);
+          if (write_status == kWriteAll) {
+            pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLIN);
+            in_conn->set_is_reply(false);
+          } else if (write_status == kWriteHalf) {
+            continue;
+          } else {
+            should_close = 1;
+          }
+        }
+
+        if (!should_close && (pfe->mask & EPOLLIN)) {
           ReadStatus read_status = in_conn->GetRequest();
           in_conn->set_last_interaction(now);
           if (read_status == kReadAll) {
@@ -168,18 +185,6 @@ void *WorkerThread::ThreadMain() {
             // Wait for the conn complete asynchronous task and
             // Mod Event to EPOLLOUT
           } else if (read_status == kReadHalf) {
-            continue;
-          } else {
-            should_close = 1;
-          }
-        }
-
-        if (pfe->mask & EPOLLOUT) {
-          WriteStatus write_status = in_conn->SendReply();
-          in_conn->set_last_interaction(now);
-          if (write_status == kWriteAll) {
-            pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLIN);
-          } else if (write_status == kWriteHalf) {
             continue;
           } else {
             should_close = 1;

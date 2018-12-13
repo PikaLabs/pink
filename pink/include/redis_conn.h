@@ -41,12 +41,11 @@ class RedisConn: public PinkConn {
   void SetHandleType(const HandleType& handle_type);
   HandleType GetHandleType();
 
-  virtual void AsynProcessRedisCmds(const std::vector<RedisCmdArgsType>& argvs);
+  virtual void AsynProcessRedisCmds(const std::vector<RedisCmdArgsType>& argvs, std::string* response);
   void NotifyEpoll(bool success);
 
   virtual int DealMessage(const RedisCmdArgsType& argv, std::string* response) = 0;
 
-  std::string response_;
  private:
   static int ParserDealMessageCb(RedisParser* parser, const RedisCmdArgsType& argv);
   static int ParserCompleteCb(RedisParser* parser, const std::vector<RedisCmdArgsType>& argvs);
@@ -59,6 +58,7 @@ class RedisConn: public PinkConn {
   int msg_peak_;
 
   uint32_t wbuf_pos_;
+  std::string response_;
 
   // For Redis Protocol parser
   int last_read_pos_;

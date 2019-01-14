@@ -51,6 +51,7 @@ class HolyThread: public ServerThread {
 
   virtual bool KillConn(const std::string& ip_port) override;
 
+  virtual std::shared_ptr<PinkConn> get_conn(int fd);
  private:
   mutable slash::RWMutex rwlock_; /* For external statistics */
   std::map<int, std::shared_ptr<PinkConn>> conns_;

@@ -24,7 +24,7 @@ class Thread;
 
 class PinkConn : public std::enable_shared_from_this<PinkConn> {
  public:
-  PinkConn(const int fd, const std::string &ip_port, ServerThread *thread, PinkEpoll* pink_epoll = nullptr);
+  PinkConn(const int fd, const std::string &ip_port, Thread *thread, PinkEpoll* pink_epoll = nullptr);
   virtual ~PinkConn();
 
   /*
@@ -74,8 +74,8 @@ class PinkConn : public std::enable_shared_from_this<PinkConn> {
     return last_interaction_;
   }
 
-  ServerThread *server_thread() const {
-    return server_thread_;
+  Thread *thread() const {
+    return thread_;
   }
 
   PinkEpoll* pink_epoll() const {
@@ -103,8 +103,8 @@ class PinkConn : public std::enable_shared_from_this<PinkConn> {
   SSL* ssl_;
 #endif
 
-  // the server thread this conn belong to
-  ServerThread *server_thread_;
+  // thread this conn belong to
+  Thread *thread_;
   // the pink epoll this conn belong to
   PinkEpoll *pink_epoll_;
 
@@ -125,7 +125,7 @@ class ConnFactory {
   virtual std::shared_ptr<PinkConn> NewPinkConn(
     int connfd,
     const std::string &ip_port,
-    ServerThread *server_thread,
+    Thread *thread,
     void* worker_private_data, /* Has set in ThreadEnvHandle */
     PinkEpoll* pink_epoll = nullptr) const = 0;
 };

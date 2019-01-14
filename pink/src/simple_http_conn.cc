@@ -294,7 +294,7 @@ void Response::SetStatusCode(int code) {
 }
 
 SimpleHTTPConn::SimpleHTTPConn(const int fd, const std::string &ip_port,
-                               ServerThread *thread)
+                               Thread *thread)
     : PinkConn(fd, ip_port, thread),
       conn_status_(kHeader),
       rbuf_pos_(0),

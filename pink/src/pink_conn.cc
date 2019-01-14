@@ -15,7 +15,7 @@ namespace pink {
 
 PinkConn::PinkConn(const int fd,
                    const std::string &ip_port,
-                   ServerThread *thread,
+                   Thread *thread,
                    PinkEpoll* pink_epoll)
     : fd_(fd),
       ip_port_(ip_port),
@@ -23,7 +23,7 @@ PinkConn::PinkConn(const int fd,
 #ifdef __ENABLE_SSL
       ssl_(nullptr),
 #endif
-      server_thread_(thread),
+      thread_(thread),
       pink_epoll_(pink_epoll) {
   gettimeofday(&last_interaction_, nullptr);
 }

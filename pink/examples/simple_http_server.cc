@@ -16,7 +16,7 @@ using namespace pink;
 
 class MyHTTPConn : public pink::SimpleHTTPConn {
  public:
-  MyHTTPConn(const int fd, const std::string& ip_port, ServerThread* worker) :
+  MyHTTPConn(const int fd, const std::string& ip_port, Thread* worker) :
     SimpleHTTPConn(fd, ip_port, worker) {
   }
   virtual void DealMessage(const pink::Request* req, pink::Response* res) {
@@ -46,7 +46,7 @@ class MyHTTPConn : public pink::SimpleHTTPConn {
 class MyConnFactory : public ConnFactory {
  public:
   virtual std::shared_ptr<PinkConn> NewPinkConn(int connfd, const std::string& ip_port,
-                                                ServerThread* thread,
+                                                Thread* thread,
                                                 void* worker_specific_data,
                                                 PinkEpoll* pink_epoll) const {
     return std::make_shared<MyHTTPConn>(connfd, ip_port, thread);

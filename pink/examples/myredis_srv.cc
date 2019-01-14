@@ -16,23 +16,23 @@ std::map<std::string, std::string> db;
 
 class MyConn: public RedisConn {
  public:
-  MyConn(int fd, const std::string& ip_port, ServerThread *thread,
+  MyConn(int fd, const std::string& ip_port, Thread *thread,
          void* worker_specific_data);
   virtual ~MyConn() = default;
 
  protected:
-  int DealMessage(RedisCmdArgsType& argv, std::string* response) override;
+  int DealMessage(const RedisCmdArgsType& argv, std::string* response) override;
 
  private:
 };
 
 MyConn::MyConn(int fd, const std::string& ip_port,
-               ServerThread *thread, void* worker_specific_data)
+               Thread *thread, void* worker_specific_data)
     : RedisConn(fd, ip_port, thread) {
   // Handle worker_specific_data ...
 }
 
-int MyConn::DealMessage(RedisCmdArgsType& argv, std::string* response) {
+int MyConn::DealMessage(const RedisCmdArgsType& argv, std::string* response) {
   printf("Get redis message ");
   for (int i = 0; i < argv.size(); i++) {
     printf("%s ", argv[i].c_str());
@@ -65,10 +65,10 @@ int MyConn::DealMessage(RedisCmdArgsType& argv, std::string* response) {
 
 class MyConnFactory : public ConnFactory {
  public:
-  virtual PinkConn *NewPinkConn(int connfd, const std::string &ip_port,
-                                ServerThread *thread,
-                                void* worker_specific_data) const {
-    return new MyConn(connfd, ip_port, thread, worker_specific_data);
+  virtual std::shared_ptr<PinkConn> NewPinkConn(int connfd, const std::string &ip_port,
+                                Thread *thread,
+                                void* worker_specific_data, pink::PinkEpoll* pink_epoll=nullptr) const {
+    return std::make_shared<MyConn>(connfd, ip_port, thread, worker_specific_data);
   }
 };
 

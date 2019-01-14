@@ -168,6 +168,9 @@ class ServerThread : public Thread {
   int cron_interval_;
   virtual void DoCronTask();
 
+  // process events in epoll notify_queue
+  virtual void ProcessNotifyEvents(const PinkFiredEvent* pfe);
+
   const ServerHandle *handle_;
   bool own_handle_;
 

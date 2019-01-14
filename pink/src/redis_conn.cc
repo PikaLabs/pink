@@ -18,7 +18,7 @@ namespace pink {
 
 RedisConn::RedisConn(const int fd,
                      const std::string& ip_port,
-                     ServerThread* thread,
+                     Thread* thread,
                      PinkEpoll* pink_epoll,
                      const HandleType& handle_type)
     : PinkConn(fd, ip_port, thread, pink_epoll),
@@ -105,7 +105,6 @@ ReadStatus RedisConn::GetRequest() {
     // client closed, close client
     return kReadClose;
   }
-
   // assert(nread > 0);
   last_read_pos_ += nread;
   msg_peak_ = last_read_pos_;
@@ -167,7 +166,6 @@ void RedisConn::WriteResp(const std::string& resp) {
 }
 
 void RedisConn::TryResizeBuffer() {
-  log_info("Current buffer size: %d", rbuf_len_);
   struct timeval now;
   gettimeofday(&now, nullptr);
   int idletime = now.tv_sec - last_interaction().tv_sec;

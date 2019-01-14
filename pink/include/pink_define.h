@@ -39,7 +39,8 @@ enum NotifyType {
   kNotiClose = 1,
   kNotiEpollout = 2,
   kNotiEpollin = 3,
-  kNotiEpolloutAndEpollin = 4
+  kNotiEpolloutAndEpollin = 4,
+  kNotiWrite = 5
 };
 
 enum EventStatus {

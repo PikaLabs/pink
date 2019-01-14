@@ -328,7 +328,7 @@ RedisParserStatus RedisParser::ProcessInputBuffer(
     // cur_pos_ starts from 0, val of cur_pos_ is the parsed_len
     *parsed_len = cur_pos_;
     ResetRedisParser();
-    PrintCurrentStatus();
+    //PrintCurrentStatus();
     return status_code_;
   }
   SetParserStatus(kRedisParserError, kRedisParserInitError);

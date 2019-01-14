@@ -28,7 +28,7 @@ class RedisConn: public PinkConn {
  public:
   RedisConn(const int fd,
             const std::string& ip_port,
-            ServerThread* thread,
+            Thread* thread,
             PinkEpoll* pink_epoll = nullptr,
             const HandleType& handle_type = kSynchronous);
   virtual ~RedisConn();

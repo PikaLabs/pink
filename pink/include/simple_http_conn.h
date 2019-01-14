@@ -99,7 +99,7 @@ class SimpleHTTPConn: public PinkConn {
   SimpleHTTPConn(
       const int fd,
       const std::string &ip_port,
-      ServerThread *thread);
+      Thread *thread);
   virtual ~SimpleHTTPConn();
 
   virtual ReadStatus GetRequest() override;

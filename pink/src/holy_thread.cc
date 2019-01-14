@@ -10,6 +10,7 @@
 #include "pink/src/pink_epoll.h"
 #include "pink/src/pink_item.h"
 #include "pink/include/pink_conn.h"
+#include "slash/include/xdebug.h"
 
 namespace pink {
 
@@ -71,6 +72,16 @@ std::shared_ptr<PinkConn> HolyThread::MoveConnOut(int fd) {
   return conn;
 }
 
+std::shared_ptr<PinkConn> HolyThread::get_conn(int fd) {
+  slash::ReadLock l(&rwlock_);
+  auto iter = conns_.find(fd);
+  if (iter != conns_.end()) {
+    return iter->second;
+  } else {
+    return nullptr;
+  }
+}
+
 int HolyThread::StartThread() {
   int ret = handle_->CreateWorkerSpecificData(&private_data_);
   if (ret != 0) {
@@ -118,20 +129,20 @@ void HolyThread::HandleConnEvent(PinkFiredEvent *pfe) {
   }
   in_conn = iter->second;
   if (pfe->mask & EPOLLIN) {
-    ReadStatus getRes = in_conn->GetRequest();
+    ReadStatus read_status = in_conn->GetRequest();
     struct timeval now;
     gettimeofday(&now, nullptr);
     in_conn->set_last_interaction(now);
-    if (getRes != kReadAll && getRes != kReadHalf) {
+    if (read_status == kReadAll) {
+      pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLOUT);
+    } else if (read_status == kReadHalf) {
+      return;
+    } else {
       // kReadError kReadClose kFullError kParseError kDealError
       should_close = 1;
-    } else if (in_conn->is_reply()) {
-      pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLOUT);
-    } else {
-      return;
     }
   }
-  if (pfe->mask & EPOLLOUT) {
+  if ((pfe->mask & EPOLLOUT) && in_conn->is_reply()) {
     WriteStatus write_status = in_conn->SendReply();
     if (write_status == kWriteAll) {
       in_conn->set_is_reply(false);
@@ -251,5 +262,4 @@ extern ServerThread *NewHolyThread(
     int cron_interval, const ServerHandle* handle) {
   return new HolyThread(bind_ips, port, conn_factory, cron_interval, handle);
 }
-
 };  // namespace pink

@@ -13,7 +13,7 @@ using namespace pink;
 
 class MyConn: public PbConn {
  public:
-  MyConn(int fd, const std::string& ip_port, ServerThread *thread,
+  MyConn(int fd, const std::string& ip_port, Thread *thread,
          void* worker_specific_data);
   virtual ~MyConn();
 
@@ -26,7 +26,7 @@ class MyConn: public PbConn {
 };
 
 MyConn::MyConn(int fd, const std::string& ip_port,
-               ServerThread *thread, void* worker_specific_data)
+               Thread *thread, void* worker_specific_data)
     : PbConn(fd, ip_port, thread) {
   // Handle worker_specific_data ...
 }
@@ -50,7 +50,7 @@ int MyConn::DealMessage() {
 class MyConnFactory : public ConnFactory {
  public:
   virtual std::shared_ptr<PinkConn> NewPinkConn(int connfd, const std::string &ip_port,
-                                                ServerThread *thread,
+                                                Thread *thread,
                                                 void* worker_specific_data,
                                                 PinkEpoll* pink_epoll) const {
     return std::make_shared<MyConn>(connfd, ip_port, thread, worker_specific_data);

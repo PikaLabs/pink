@@ -50,6 +50,7 @@ pink/examples/myproto.pb.h
 *myredis_srv
 *binlog_parser_test
 *redis_parser_test
+*thread_pool_test
 
 pink/src/build_version.cc
 

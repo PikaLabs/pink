@@ -5,7 +5,8 @@ CXXFLAGS=-O2 -std=c++11 -fno-builtin-memcmp -msse -msse4.2
 .PHONY: clean all
 
 all: bg_thread http_server mydispatch_srv myholy_srv myholy_srv_chandle myproto_cli \
-	redis_cli_test simple_http_server myredis_srv redis_parser_test binlog_parser_test
+	redis_cli_test simple_http_server myredis_srv redis_parser_test binlog_parser_test \
+	thread_pool_test
 
 ifndef PINK_PATH
   $(warning Warning: missing pink path, using default)
@@ -27,6 +28,9 @@ DEP_LIBS = $(PINK_LIBRARY) $(SLASH_LIBRARY)
 LDFLAGS := $(DEP_LIBS) $(LDFLAGS)
 
 bg_thread: bg_thread.cc
+	$(CXX) $(CXXFLAGS) $^ -o$@ $(LDFLAGS)
+
+thread_pool_test: thread_pool_test.cc
 	$(CXX) $(CXXFLAGS) $^ -o$@ $(LDFLAGS)
 
 http_server: http_server.cc
@@ -68,4 +72,5 @@ myproto.pb.cc: myproto.proto
 clean:
 	find . -name "*.[oda]" -exec rm -f {} \;
 	rm -rf ./bg_thread ./http_server ./https_server ./mydispatch_srv ./myholy_srv \
-					./myholy_srv_chandle ./myproto_cli ./redis_cli_test ./simple_http_server ./redis_parser_test ./myredis_srv ./binlog_parser_test
+					./myholy_srv_chandle ./myproto_cli ./redis_cli_test ./simple_http_server \
+					./redis_parser_test ./myredis_srv ./binlog_parser_test ./thread_pool_test

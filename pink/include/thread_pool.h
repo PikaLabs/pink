@@ -25,6 +25,19 @@ struct Task {
      : func(_func), arg(_arg) {}
 };
 
+struct TimeTask {
+  uint64_t exec_time;
+  TaskFunc func;
+  void* arg;
+  TimeTask(uint64_t _exec_time, TaskFunc _func, void* _arg) :
+    exec_time(_exec_time),
+    func(_func),
+    arg(_arg) {}
+  bool operator < (const TimeTask& task) const {
+    return exec_time > task.exec_time;
+  }
+};
+
 class ThreadPool {
 
  public:
@@ -58,8 +71,11 @@ class ThreadPool {
   void set_should_stop();
 
   void Schedule(TaskFunc func, void* arg);
-  size_t queue_size();
+  void DelaySchedule(uint64_t timeout, TaskFunc func, void* arg);
+  size_t max_queue_size();
   size_t worker_size();
+  void cur_queue_size(size_t* qsize);
+  void cur_time_queue_size(size_t* qsize);
 
  private:
   void runInThread();
@@ -68,6 +84,7 @@ class ThreadPool {
   size_t max_queue_size_;
   std::string thread_pool_name_;
   std::queue<Task> queue_;
+  std::priority_queue<TimeTask> time_queue_;
   std::vector<Worker*> workers_;
   std::atomic<bool> running_;
   std::atomic<bool> should_stop_;

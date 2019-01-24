@@ -5,6 +5,8 @@
 
 #include "pink/include/thread_pool.h"
 
+#include <sys/time.h>
+
 namespace pink {
 
 void* ThreadPool::Worker::WorkerMain(void* arg) {
@@ -106,19 +108,71 @@ void ThreadPool::Schedule(TaskFunc func, void* arg) {
   mu_.Unlock();
 }
 
-size_t ThreadPool::queue_size() {
+/*
+ * timeout is in millisecond
+ */
+void ThreadPool::DelaySchedule(
+    uint64_t timeout, TaskFunc func, void* arg) {
+  /*
+   * pthread_cond_timedwait api use absolute API
+   * so we need gettimeofday + timeout
+   */
+  struct timeval now;
+  gettimeofday(&now, NULL);
+  uint64_t exec_time;
+  exec_time = now.tv_sec * 1000000 + timeout * 1000 + now.tv_usec;
+
+  mu_.Lock();
+  if (!should_stop()) {
+    time_queue_.push(TimeTask(exec_time, func, arg));
+    rsignal_.Signal();
+  }
+  mu_.Unlock();
+}
+
+size_t ThreadPool::max_queue_size() {
   return max_queue_size_;
+}
+
+void ThreadPool::cur_queue_size(size_t* qsize) {
+  slash::MutexLock l(&mu_);
+  *qsize = queue_.size();
+}
+
+void ThreadPool::cur_time_queue_size(size_t* qsize) {
+  slash::MutexLock l(&mu_);
+  *qsize = time_queue_.size();
 }
 
 void ThreadPool::runInThread() {
   while (!should_stop()) {
     mu_.Lock();
-    while (queue_.empty() && !should_stop()) {
+    while (queue_.empty() && time_queue_.empty() && !should_stop()) {
       rsignal_.Wait();
     }
     if (should_stop()) {
       mu_.Unlock();
       break;
+    }
+    if (!time_queue_.empty()) {
+      struct timeval now;
+      gettimeofday(&now, NULL);
+
+      TimeTask time_task = time_queue_.top();
+      uint64_t unow = now.tv_sec * 1000000 + now.tv_usec;
+      if (unow / 1000 >= time_task.exec_time / 1000) {
+        TaskFunc func = time_task.func;
+        void* arg = time_task.arg;
+        time_queue_.pop();
+        mu_.Unlock();
+        (*func)(arg);
+        continue;
+      } else if (queue_.empty() && !should_stop()) {
+        rsignal_.TimedWait(
+            static_cast<uint32_t>((time_task.exec_time - unow) / 1000));
+        mu_.Unlock();
+        continue;
+      }
     }
     if (!queue_.empty()) {
       TaskFunc func = queue_.front().func;

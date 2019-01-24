@@ -33,6 +33,14 @@ PinkEpoll::PinkEpoll() : timeout_(1000) {
 
   firedevent_ = reinterpret_cast<PinkFiredEvent*>(malloc(
       sizeof(PinkFiredEvent) * kPinkMaxClients));
+
+  int fds[2];
+  if (pipe(fds)) {
+    exit(-1);
+  }
+  notify_receive_fd_ = fds[0];
+  notify_send_fd_ = fds[1];
+  PinkAddEvent(notify_receive_fd_, EPOLLIN | EPOLLERR | EPOLLHUP);
 }
 
 PinkEpoll::~PinkEpoll() {

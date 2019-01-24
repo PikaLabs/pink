@@ -34,6 +34,15 @@ enum BlockType {
   kNonBlock = 1,
 };
 
+enum NotifyType {
+  kNotiConnect = 0,
+  kNotiClose = 1,
+  kNotiEpollout = 2,
+  kNotiEpollin = 3,
+  kNotiEpolloutAndEpollin = 4,
+  kNotiWrite = 5
+};
+
 enum EventStatus {
   kNone = 0,
   kReadable = 1,
@@ -71,6 +80,7 @@ enum RetCode {
   kCreateThreadError = 2,
   kListenError = 3,
   kSetSockOptError = 4,
+  kCreateThreadPoolError = 5,
 };
 
 /*

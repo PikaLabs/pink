@@ -5,7 +5,11 @@
 
 #ifndef PINK_SRC_PINK_EPOLL_H_
 #define PINK_SRC_PINK_EPOLL_H_
+#include <queue>
 #include "sys/epoll.h"
+
+#include "pink/src/pink_item.h"
+#include "slash/include/slash_mutex.h"
 
 namespace pink {
 
@@ -26,11 +30,38 @@ class PinkEpoll {
 
   PinkFiredEvent *firedevent() const { return firedevent_; }
 
+  int notify_receive_fd() {
+    return notify_receive_fd_;
+  }
+  int notify_send_fd() {
+    return notify_send_fd_;
+  }
+
+  void notify_queue_lock() {
+    notify_queue_protector_.Lock();
+  }
+  void notify_queue_unlock() {
+    notify_queue_protector_.Unlock();
+  }
+
+  /*
+   * The PbItem queue is the fd queue, receive from dispatch thread
+   */
+  std::queue<PinkItem> notify_queue_;
+
  private:
   int epfd_;
   struct epoll_event *events_;
   int timeout_;
   PinkFiredEvent *firedevent_;
+
+  slash::Mutex notify_queue_protector_;
+
+  /*
+   * These two fd receive the notify from dispatch thread
+   */
+  int notify_receive_fd_;
+  int notify_send_fd_;
 };
 
 }  // namespace pink

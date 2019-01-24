@@ -13,10 +13,10 @@ using namespace pink;
 
 class MyConn: public PbConn {
  public:
-  MyConn(int fd, std::string ip_port, ServerThread *thread, void* private_data);
+  MyConn(int fd, std::string ip_port, Thread *thread, void* private_data);
   virtual ~MyConn();
 
-  ServerThread* thread() {
+  Thread* thread() {
     return thread_;
   }
 
@@ -24,13 +24,13 @@ class MyConn: public PbConn {
   virtual int DealMessage();
 
  private:
-  ServerThread *thread_;
+  Thread *thread_;
   int* private_data_;
   myproto::Ping ping_;
   myproto::PingRes ping_res_;
 };
 
-MyConn::MyConn(int fd, ::std::string ip_port, ServerThread *thread,
+MyConn::MyConn(int fd, ::std::string ip_port, Thread *thread,
                void* worker_specific_data)
     : PbConn(fd, ip_port, thread),
       thread_(thread),
@@ -58,10 +58,11 @@ int MyConn::DealMessage() {
 
 class MyConnFactory : public ConnFactory {
  public:
-  virtual PinkConn *NewPinkConn(int connfd, const std::string &ip_port,
-                                ServerThread *thread,
-                                void* worker_specific_data) const {
-    return new MyConn(connfd, ip_port, thread, worker_specific_data);
+  virtual std::shared_ptr<PinkConn> NewPinkConn(int connfd, const std::string &ip_port,
+                                                 Thread *thread,
+                                                 void* worker_specific_data,
+                                                 PinkEpoll* pink_epoll) const {
+    return std::make_shared<MyConn>(connfd, ip_port, thread, worker_specific_data);
   }
 };
 

@@ -148,6 +148,10 @@ int ServerThread::InitHandle() {
 void ServerThread::DoCronTask() {
 }
 
+void ServerThread::ProcessNotifyEvents(const PinkFiredEvent* pfe) {
+  UNUSED(pfe);
+}
+
 void *ServerThread::ThreadMain() {
   int nfds;
   PinkFiredEvent *pfe;
@@ -193,6 +197,12 @@ void *ServerThread::ThreadMain() {
     for (int i = 0; i < nfds; i++) {
       pfe = (pink_epoll_->firedevent()) + i;
       fd = pfe->fd;
+
+      if (pfe->fd == pink_epoll_->notify_receive_fd()) {
+        ProcessNotifyEvents(pfe);
+        continue;
+      }
+
       /*
        * Handle server event
        */

@@ -42,12 +42,12 @@ class PubSubThread : public Thread {
 
   int Publish(const std::string& channel, const std::string& msg);
 
-  void Subscribe(PinkConn* conn,
+  void Subscribe(std::shared_ptr<PinkConn> conn,
                  const std::vector<std::string>& channels,
                  const bool pattern,
                  std::vector<std::pair<std::string, int>>* result);
 
-  int UnSubscribe(PinkConn* conn,
+  int UnSubscribe(std::shared_ptr<PinkConn> conn,
                   const std::vector<std::string>& channels,
                   const bool pattern,
                   std::vector<std::pair<std::string, int>>* result);
@@ -61,16 +61,16 @@ class PubSubThread : public Thread {
   int PubSubNumPat();
 
  private:
-  void RemoveConn(PinkConn* conn);
+  void RemoveConn(std::shared_ptr<PinkConn> conn);
 
-  int ClientChannelSize(PinkConn* conn);
+  int ClientChannelSize(std::shared_ptr<PinkConn> conn);
 
   int msg_pfd_[2];
   int notify_pfd_[2];
   bool should_exit_;
 
   mutable slash::RWMutex rwlock_; /* For external statistics */
-  std::map<int, PinkConn*> conns_;
+  std::map<int, std::shared_ptr<PinkConn>> conns_;
 
   slash::Mutex pub_mutex_;
   slash::CondVar receiver_rsignal_;
@@ -100,8 +100,8 @@ class PubSubThread : public Thread {
   slash::Mutex channel_mutex_;
   slash::Mutex pattern_mutex_;
 
-  std::map<std::string, std::vector<PinkConn* >> pubsub_channel_;    // channel <---> conns
-  std::map<std::string, std::vector<PinkConn* >> pubsub_pattern_;    // channel <---> conns
+  std::map<std::string, std::vector<std::shared_ptr<PinkConn> >> pubsub_channel_;    // channel <---> conns
+  std::map<std::string, std::vector<std::shared_ptr<PinkConn> >> pubsub_pattern_;    // channel <---> conns
 
   // No copying allowed
   PubSubThread(const PubSubThread&);

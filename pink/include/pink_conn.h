@@ -16,14 +16,15 @@
 
 #include "pink/include/pink_define.h"
 #include "pink/include/server_thread.h"
+#include "pink/src/pink_epoll.h"
 
 namespace pink {
 
 class Thread;
 
-class PinkConn {
+class PinkConn : public std::enable_shared_from_this<PinkConn> {
  public:
-  PinkConn(const int fd, const std::string &ip_port, ServerThread *thread);
+  PinkConn(const int fd, const std::string &ip_port, Thread *thread, PinkEpoll* pink_epoll = nullptr);
   virtual ~PinkConn();
 
   /*
@@ -73,8 +74,12 @@ class PinkConn {
     return last_interaction_;
   }
 
-  ServerThread *server_thread() const {
-    return server_thread_;
+  Thread *thread() const {
+    return thread_;
+  }
+
+  PinkEpoll* pink_epoll() const {
+    return pink_epoll_;
   }
 
 #ifdef __ENABLE_SSL
@@ -98,8 +103,10 @@ class PinkConn {
   SSL* ssl_;
 #endif
 
-  // the server thread this conn belong to
-  ServerThread *server_thread_;
+  // thread this conn belong to
+  Thread *thread_;
+  // the pink epoll this conn belong to
+  PinkEpoll *pink_epoll_;
 
   /*
    * No allowed copy and copy assign operator
@@ -115,11 +122,12 @@ class PinkConn {
 class ConnFactory {
  public:
   virtual ~ConnFactory() {}
-  virtual PinkConn* NewPinkConn(
+  virtual std::shared_ptr<PinkConn> NewPinkConn(
     int connfd,
     const std::string &ip_port,
-    ServerThread *server_thread,
-    void* worker_private_data /* Has set in ThreadEnvHandle */) const = 0;
+    Thread *thread,
+    void* worker_private_data, /* Has set in ThreadEnvHandle */
+    PinkEpoll* pink_epoll = nullptr) const = 0;
 };
 
 }  // namespace pink

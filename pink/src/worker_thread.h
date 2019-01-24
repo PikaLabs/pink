@@ -10,7 +10,6 @@
 
 #include <string>
 #include <functional>
-#include <queue>
 #include <map>
 #include <atomic>
 #include <vector>
@@ -47,28 +46,17 @@ class WorkerThread : public Thread {
 
   std::vector<ServerThread::ConnInfo> conns_info() const;
 
-  PinkConn* MoveConnOut(int fd);
+  std::shared_ptr<PinkConn> MoveConnOut(int fd);
 
-  /*
-   * The PbItem queue is the fd queue, receive from dispatch thread
-   */
-  std::queue<PinkItem> conn_queue_;
 
-  int notify_receive_fd() {
-    return notify_receive_fd_;
-  }
-  int notify_send_fd() {
-    return notify_send_fd_;
-  }
   PinkEpoll* pink_epoll() {
     return pink_epoll_;
   }
   bool TryKillConn(const std::string& ip_port);
 
-  slash::Mutex mutex_;
 
   mutable slash::RWMutex rwlock_; /* For external statistics */
-  std::map<int, PinkConn*> conns_;
+  std::map<int, std::shared_ptr<PinkConn>> conns_;
 
   void* private_data_;
 
@@ -77,11 +65,6 @@ class WorkerThread : public Thread {
   ConnFactory *conn_factory_;
   int cron_interval_;
 
-  /*
-   * These two fd receive the notify from dispatch thread
-   */
-  int notify_receive_fd_;
-  int notify_send_fd_;
 
   /*
    * The epoll handler
@@ -97,7 +80,7 @@ class WorkerThread : public Thread {
   std::set<std::string> deleting_conn_ipport_;
 
   // clean conns
-  void CloseFd(PinkConn* conn);
+  void CloseFd(std::shared_ptr<PinkConn> conn);
   void Cleanup();
 };  // class WorkerThread
 

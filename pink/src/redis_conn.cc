@@ -16,253 +16,56 @@
 
 namespace pink {
 
-static bool IsHexDigit(char ch) {
-  return (ch>='0' && ch<='9') || (ch>='a' && ch<='f') || (ch>='A' && ch<'F');
-}
-
-static int HexDigitToInt32(char ch) {
-  if (ch <= '9' && ch >= '0') {
-    return ch-'0';
-  } else if (ch <= 'F' && ch >= 'A') {
-    return ch-'A';
-  } else if (ch <= 'f' && ch >= 'a') {
-    return ch-'a';
-  } else {
-    return 0;
-  }
-}
-
-static int split2args(const std::string& req_buf, RedisCmdArgsType& argv) {
-  const char *p = req_buf.data();
-  std::string arg;
-
-  while (1) {
-    // skip blanks
-    while (*p && isspace(*p)) p++;
-    if (*p) {
-      // get a token
-      int inq = 0;  // set to 1 if we are in "quotes"
-      int insq = 0;  // set to 1 if we are in 'single quotes'
-      int done = 0;
-
-      arg.clear();
-      while (!done) {
-        if (inq) {
-          if (*p == '\\' && *(p+1) == 'x' &&
-              IsHexDigit(*(p+2)) &&
-              IsHexDigit(*(p+3))) {
-            unsigned char byte = HexDigitToInt32(*(p+2))*16 + HexDigitToInt32(*(p+3));
-            arg.append(1, byte);
-            p += 3;
-          } else if (*p == '\\' && *(p + 1)) {
-            char c;
-
-            p++;
-            switch (*p) {
-              case 'n': c = '\n'; break;
-              case 'r': c = '\r'; break;
-              case 't': c = '\t'; break;
-              case 'b': c = '\b'; break;
-              case 'a': c = '\a'; break;
-              default: c = *p; break;
-            }
-            arg.append(1, c);
-          } else if (*p == '"') {
-            /* closing quote must be followed by a space or
-            * nothing at all. */
-            if (*(p+1) && !isspace(*(p+1))) {
-              argv.clear();
-              return -1;
-            }
-            done = 1;
-          } else if (!*p) {
-            // unterminated quotes
-            argv.clear();
-            return -1;
-          } else {
-            arg.append(1, *p);
-          }
-        } else if (insq) {
-          if (*p == '\\' && *(p+1) == '\'') {
-            p++;
-            arg.append(1, '\'');
-          } else if (*p == '\'') {
-            /* closing quote must be followed by a space or
-            * nothing at all. */
-            if (*(p+1) && !isspace(*(p+1))) {
-              argv.clear();
-              return -1;
-            }
-            done = 1;
-          } else if (!*p) {
-            // unterminated quotes
-            argv.clear();
-            return -1;
-          } else {
-            arg.append(1, *p);
-          }
-        } else {
-          switch (*p) {
-            case ' ':
-            case '\n':
-            case '\r':
-            case '\t':
-            case '\0':
-              done = 1;
-            break;
-            case '"':
-              inq = 1;
-            break;
-            case '\'':
-              insq = 1;
-            break;
-            default:
-              // current = sdscatlen(current,p,1);
-              arg.append(1, *p);
-              break;
-          }
-        }
-        if (*p) p++;
-      }
-      argv.push_back(arg);
-    } else {
-      return 0;
-    }
-  }
-}
-
 RedisConn::RedisConn(const int fd,
-                     const std::string &ip_port,
-                     ServerThread *thread)
-    : PinkConn(fd, ip_port, thread),
+                     const std::string& ip_port,
+                     Thread* thread,
+                     PinkEpoll* pink_epoll,
+                     const HandleType& handle_type)
+    : PinkConn(fd, ip_port, thread, pink_epoll),
+      handle_type_(handle_type),
       rbuf_(nullptr),
       rbuf_len_(0),
       msg_peak_(0),
       wbuf_pos_(0),
       last_read_pos_(-1),
-      next_parse_pos_(0),
-      req_type_(0),
-      multibulk_len_(0),
       bulk_len_(-1) {
+  RedisParserSettings settings;
+  settings.DealMessage = ParserDealMessageCb;
+  settings.Complete = ParserCompleteCb;
+  redis_parser_.RedisParserInit(REDIS_PARSER_REQUEST, settings);
+  redis_parser_.data = this;
 }
 
 RedisConn::~RedisConn() {
   free(rbuf_);
 }
 
-ReadStatus RedisConn::ProcessInlineBuffer() {
-  int pos, ret;
-  pos = FindNextSeparators();
-  if (pos == -1) {
-    return rbuf_len_ > REDIS_INLINE_MAXLEN ? kFullError : kReadHalf;
-  }
-  // args \r\n
-  std::string req_buf(rbuf_ + next_parse_pos_, pos + 1 - next_parse_pos_);
-
-  argv_.clear();
-  ret = split2args(req_buf, argv_);
-  next_parse_pos_ = pos + 1;
-
-  return ret == -1 ? kParseError : kReadAll;
-}
-
-ReadStatus RedisConn::ProcessMultibulkBuffer() {
-  int pos = 0;
-  if (multibulk_len_ == 0) {
-    /* The client should have been reset */
-    pos = FindNextSeparators();
-    if (pos != -1) {
-      if (GetNextNum(pos, &multibulk_len_) != 0) {
-        // Protocol error: invalid multibulk length
+ReadStatus RedisConn::ParseRedisParserStatus(RedisParserStatus status) {
+  if (status == kRedisParserInitDone) {
+    return kOk;
+  } else if (status == kRedisParserHalf) {
+    return kReadHalf;
+  } else if (status == kRedisParserDone) {
+    return kReadAll;
+  } else if (status == kRedisParserError) {
+    RedisParserError error_code = redis_parser_.get_error_code();
+    switch (error_code) {
+      case kRedisParserOk :
+        return kReadError;
+      case kRedisParserInitError :
+        return kReadError;
+      case kRedisParserFullError :
+        return kFullError;
+      case kRedisParserProtoError :
         return kParseError;
-      }
-      next_parse_pos_ = pos + 1;
-      argv_.clear();
-      if (next_parse_pos_ > last_read_pos_) {
-        return kReadHalf;
-      }
-    } else {
-      return kReadHalf;  // HALF
-    }
-  }
-  while (multibulk_len_) {
-    if (bulk_len_ == -1) {
-      pos = FindNextSeparators();
-      if (pos != -1) {
-        if (rbuf_[next_parse_pos_] != '$') {
-           return kParseError;  // PARSE_ERROR
-        }
-
-        if (GetNextNum(pos, &bulk_len_) != 0) {
-            // Protocol error: invalid bulk length
-            return kParseError;
-        }
-        next_parse_pos_ = pos + 1;
-      }
-      if (pos == -1 || next_parse_pos_ > last_read_pos_) {
-        return kReadHalf;
-      }
-    }
-    if (last_read_pos_ - next_parse_pos_ + 1 < bulk_len_ + 2) {
-      // Data not enough
-      break;
-    } else {
-      argv_.emplace_back(rbuf_ + next_parse_pos_, bulk_len_);
-      next_parse_pos_ = next_parse_pos_ + bulk_len_ + 2;
-      bulk_len_ = -1;
-      multibulk_len_--;
-    }
-  }
-
-  if (multibulk_len_ == 0) {
-    return kReadAll;  // OK
-  } else {
-    return kReadHalf;  // HALF
-  }
-}
-
-ReadStatus RedisConn::ProcessInputBuffer() {
-  ReadStatus ret;
-  while (next_parse_pos_ <= last_read_pos_) {
-    if (!req_type_) {
-      if (rbuf_[next_parse_pos_] == '*') {
-        req_type_ = REDIS_REQ_MULTIBULK;
-      } else {
-        req_type_ = REDIS_REQ_INLINE;
-      }
-    }
-
-    if (req_type_ == REDIS_REQ_INLINE) {
-      ret = ProcessInlineBuffer();
-      if (ret != kReadAll) {
-        return ret;
-      }
-    } else if (req_type_ == REDIS_REQ_MULTIBULK) {
-      ret = ProcessMultibulkBuffer();
-      if (ret != kReadAll) { // FULL_ERROR || HALF || PARSE_ERROR
-        return ret;
-      }
-    } else {
-      // Unknown requeset type;
-      return kParseError;
-    }
-
-    if (!argv_.empty()) {
-      if (DealMessage(argv_, &response_) != 0) {
+      case kRedisParserDealError :
         return kDealError;
-      }
-      if (!response_.empty()) {
-        set_is_reply(true);
-      }
+      default :
+        return kReadError;
     }
-    // ResetClient
-    argv_.clear();
-    req_type_ = 0;
-    multibulk_len_ = 0;
-    bulk_len_ = -1;
+  } else {
+    return kReadError;
   }
-
-  return kReadAll; // OK
 }
 
 ReadStatus RedisConn::GetRequest() {
@@ -302,18 +105,22 @@ ReadStatus RedisConn::GetRequest() {
     // client closed, close client
     return kReadClose;
   }
-
   // assert(nread > 0);
   last_read_pos_ += nread;
   msg_peak_ = last_read_pos_;
 
-  ReadStatus ret = ProcessInputBuffer();
-  if (ret == kReadAll) {
-    next_parse_pos_ = 0;
+  int processed_len = 0;
+  RedisParserStatus ret = redis_parser_.ProcessInputBuffer(
+      rbuf_ + next_read_pos, nread, &processed_len);
+  ReadStatus read_status = ParseRedisParserStatus(ret);
+  if (read_status == kReadAll || read_status == kReadHalf) {
     last_read_pos_ = -1;
+    bulk_len_ = redis_parser_.get_bulk_len();
   }
-
-  return ret; // OK || HALF || FULL_ERROR || PARSE_ERROR
+  if (!response_.empty()) {
+    set_is_reply(true);
+  }
+  return read_status; // OK || HALF || FULL_ERROR || PARSE_ERROR
 }
 
 WriteStatus RedisConn::SendReply() {
@@ -359,7 +166,6 @@ void RedisConn::WriteResp(const std::string& resp) {
 }
 
 void RedisConn::TryResizeBuffer() {
-  log_info("Current buffer size: %d", rbuf_len_);
   struct timeval now;
   gettimeofday(&now, nullptr);
   int idletime = now.tv_sec - last_interaction().tv_sec;
@@ -377,35 +183,43 @@ void RedisConn::TryResizeBuffer() {
   }
 }
 
-int RedisConn::FindNextSeparators() {
-  if (next_parse_pos_ > last_read_pos_) {
-    return -1;
-  }
-  int pos = next_parse_pos_;
-  while (pos <= last_read_pos_) {
-    if (rbuf_[pos] == '\n') {
-      return pos;
-    }
-    pos++;
-  }
-  return -1;
+void RedisConn::SetHandleType(const HandleType& handle_type) {
+  handle_type_ = handle_type;
 }
 
-int RedisConn::GetNextNum(int pos, long* value) {
-  std::string tmp;
-  assert(pos > next_parse_pos_);
-  // next_parse_pos_    pos
-  //      |    ----------|
-  //      |    |
-  //      *3\r\n
-  // [next_parse_pos_ + 1, pos - next_parse_pos_- 2]
+HandleType RedisConn::GetHandleType() {
+  return handle_type_;
+}
 
-  if (slash::string2l(rbuf_ + next_parse_pos_ + 1,
-                            pos - next_parse_pos_ - 2,
-                            value)) {
-    return 0; // Success
+void RedisConn::AsynProcessRedisCmds(const std::vector<RedisCmdArgsType>& argvs, std::string* response) {
+  // If the current HandleType is kAsynchronous
+  // you need to implement this method yourself
+}
+
+void RedisConn::NotifyEpoll(bool success) {
+  PinkItem ti(fd(), ip_port(), success ? kNotiEpolloutAndEpollin : kNotiClose);
+  pink_epoll()->notify_queue_lock();
+  std::queue<PinkItem> *q = &(pink_epoll()->notify_queue_);
+  q->push(ti);
+  pink_epoll()->notify_queue_unlock();
+  write(pink_epoll()->notify_send_fd(), "", 1);
+}
+
+int RedisConn::ParserDealMessageCb(RedisParser* parser, const RedisCmdArgsType& argv) {
+  RedisConn* conn = reinterpret_cast<RedisConn*>(parser->data);
+  if (conn->GetHandleType() == HandleType::kSynchronous) {
+    return conn->DealMessage(argv, &(conn->response_));
+  } else {
+    return 0;
   }
-  return -1; // Failed
+}
+
+int RedisConn::ParserCompleteCb(RedisParser* parser, const std::vector<RedisCmdArgsType>& argvs) {
+  RedisConn* conn = reinterpret_cast<RedisConn*>(parser->data);
+  if (conn->GetHandleType() == HandleType::kAsynchronous) {
+    conn->AsynProcessRedisCmds(argvs, &(conn->response_));
+  }
+  return 0;
 }
 
 }  // namespace pink

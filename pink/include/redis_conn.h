@@ -13,14 +13,24 @@
 #include "slash/include/slash_status.h"
 #include "pink/include/pink_define.h"
 #include "pink/include/pink_conn.h"
+#include "pink/include/redis_parser.h"
 
 namespace pink {
 
 typedef std::vector<std::string> RedisCmdArgsType;
 
+enum HandleType {
+  kSynchronous,
+  kAsynchronous
+};
+
 class RedisConn: public PinkConn {
  public:
-  RedisConn(const int fd, const std::string &ip_port, ServerThread *thread);
+  RedisConn(const int fd,
+            const std::string& ip_port,
+            Thread* thread,
+            PinkEpoll* pink_epoll = nullptr,
+            const HandleType& handle_type = kSynchronous);
   virtual ~RedisConn();
 
   virtual ReadStatus GetRequest();
@@ -28,29 +38,31 @@ class RedisConn: public PinkConn {
   virtual void WriteResp(const std::string& resp);
 
   void TryResizeBuffer() override;
+  void SetHandleType(const HandleType& handle_type);
+  HandleType GetHandleType();
 
-  virtual int DealMessage(RedisCmdArgsType& argv, std::string* response) = 0;
+  virtual void AsynProcessRedisCmds(const std::vector<RedisCmdArgsType>& argvs, std::string* response);
+  void NotifyEpoll(bool success);
+
+  virtual int DealMessage(const RedisCmdArgsType& argv, std::string* response) = 0;
 
  private:
-  ReadStatus ProcessInputBuffer();
-  ReadStatus ProcessMultibulkBuffer();
-  ReadStatus ProcessInlineBuffer();
-  int FindNextSeparators();
-  int GetNextNum(int pos, long *value);
+  static int ParserDealMessageCb(RedisParser* parser, const RedisCmdArgsType& argv);
+  static int ParserCompleteCb(RedisParser* parser, const std::vector<RedisCmdArgsType>& argvs);
+  ReadStatus ParseRedisParserStatus(RedisParserStatus status);
+
+  HandleType handle_type_;
 
   char* rbuf_;
   int rbuf_len_;
   int msg_peak_;
-  RedisCmdArgsType argv_;
 
   uint32_t wbuf_pos_;
   std::string response_;
 
   // For Redis Protocol parser
   int last_read_pos_;
-  int next_parse_pos_;
-  int req_type_;
-  long multibulk_len_;
+  RedisParser redis_parser_;
   long bulk_len_;
 };
 

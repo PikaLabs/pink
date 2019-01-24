@@ -143,7 +143,7 @@ class ServerThread : public Thread {
   virtual std::vector<ConnInfo> conns_info() const = 0;
 
   // Move out from server thread
-  virtual PinkConn* MoveConnOut(int fd) = 0;
+  virtual std::shared_ptr<PinkConn> MoveConnOut(int fd) = 0;
 
   virtual void KillAllConns() = 0;
   virtual bool KillConn(const std::string& ip_port) = 0;
@@ -167,6 +167,9 @@ class ServerThread : public Thread {
 
   int cron_interval_;
   virtual void DoCronTask();
+
+  // process events in epoll notify_queue
+  virtual void ProcessNotifyEvents(const PinkFiredEvent* pfe);
 
   const ServerHandle *handle_;
   bool own_handle_;

@@ -10,6 +10,7 @@
 #include "pink/src/pink_epoll.h"
 #include "pink/src/pink_item.h"
 #include "pink/include/pink_conn.h"
+#include "slash/include/xdebug.h"
 
 namespace pink {
 
@@ -58,9 +59,9 @@ std::vector<ServerThread::ConnInfo> HolyThread::conns_info() const {
   return result;
 }
 
-PinkConn* HolyThread::MoveConnOut(int fd) {
+std::shared_ptr<PinkConn> HolyThread::MoveConnOut(int fd) {
   slash::WriteLock l(&rwlock_);
-  PinkConn* conn = nullptr;
+  std::shared_ptr<PinkConn> conn = nullptr;
   auto iter = conns_.find(fd);
   if (iter != conns_.end()) {
     int fd = iter->first;
@@ -69,6 +70,16 @@ PinkConn* HolyThread::MoveConnOut(int fd) {
     conns_.erase(iter);
   }
   return conn;
+}
+
+std::shared_ptr<PinkConn> HolyThread::get_conn(int fd) {
+  slash::ReadLock l(&rwlock_);
+  auto iter = conns_.find(fd);
+  if (iter != conns_.end()) {
+    return iter->second;
+  } else {
+    return nullptr;
+  }
 }
 
 int HolyThread::StartThread() {
@@ -91,7 +102,7 @@ int HolyThread::StopThread() {
 }
 
 void HolyThread::HandleNewConn(const int connfd, const std::string &ip_port) {
-  PinkConn *tc = conn_factory_->NewPinkConn(
+  std::shared_ptr<PinkConn> tc = conn_factory_->NewPinkConn(
       connfd, ip_port, this, private_data_);
   tc->SetNonblock();
   {
@@ -106,9 +117,9 @@ void HolyThread::HandleConnEvent(PinkFiredEvent *pfe) {
   if (pfe == nullptr) {
     return;
   }
-  PinkConn *in_conn = nullptr;
+  std::shared_ptr<PinkConn> in_conn = nullptr;
   int should_close = 0;
-  std::map<int, PinkConn *>::iterator iter;
+  std::map<int, std::shared_ptr<PinkConn>>::iterator iter;
   {
     slash::ReadLock l(&rwlock_);
     if ((iter = conns_.find(pfe->fd)) == conns_.end()) {
@@ -118,20 +129,20 @@ void HolyThread::HandleConnEvent(PinkFiredEvent *pfe) {
   }
   in_conn = iter->second;
   if (pfe->mask & EPOLLIN) {
-    ReadStatus getRes = in_conn->GetRequest();
+    ReadStatus read_status = in_conn->GetRequest();
     struct timeval now;
     gettimeofday(&now, nullptr);
     in_conn->set_last_interaction(now);
-    if (getRes != kReadAll && getRes != kReadHalf) {
+    if (read_status == kReadAll) {
+      pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLOUT);
+    } else if (read_status == kReadHalf) {
+      return;
+    } else {
       // kReadError kReadClose kFullError kParseError kDealError
       should_close = 1;
-    } else if (in_conn->is_reply()) {
-      pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLOUT);
-    } else {
-      return;
     }
   }
-  if (pfe->mask & EPOLLOUT) {
+  if ((pfe->mask & EPOLLOUT) && in_conn->is_reply()) {
     WriteStatus write_status = in_conn->SendReply();
     if (write_status == kWriteAll) {
       in_conn->set_is_reply(false);
@@ -145,7 +156,6 @@ void HolyThread::HandleConnEvent(PinkFiredEvent *pfe) {
   if ((pfe->mask & EPOLLERR) || (pfe->mask & EPOLLHUP) || should_close) {
     pink_epoll_->PinkDelEvent(pfe->fd);
     CloseFd(in_conn);
-    delete(in_conn);
     in_conn = nullptr;
 
     slash::WriteLock l(&rwlock_);
@@ -163,21 +173,19 @@ void HolyThread::DoCronTask() {
   if (deleting_conn_ipport_.count(kKillAllConnsTask)) {
     for (auto& conn : conns_) {
       CloseFd(conn.second);
-      delete conn.second;
     }
     conns_.clear();
     deleting_conn_ipport_.clear();
     return;
   }
 
-  std::map<int, PinkConn*>::iterator iter = conns_.begin();
+  std::map<int, std::shared_ptr<PinkConn>>::iterator iter = conns_.begin();
   while (iter != conns_.end()) {
-    PinkConn* conn = iter->second;
+    std::shared_ptr<PinkConn> conn = iter->second;
     // Check connection should be closed
     if (deleting_conn_ipport_.count(conn->ip_port())) {
       CloseFd(conn);
       deleting_conn_ipport_.erase(conn->ip_port());
-      delete conn;
       iter = conns_.erase(iter);
       continue;
     }
@@ -188,7 +196,6 @@ void HolyThread::DoCronTask() {
          keepalive_timeout_)) {
       CloseFd(conn);
       handle_->FdTimeoutHandle(conn->fd(), conn->ip_port());
-      delete conn;
       iter = conns_.erase(iter);
       continue;
     }
@@ -200,7 +207,7 @@ void HolyThread::DoCronTask() {
   }
 }
 
-void HolyThread::CloseFd(PinkConn* conn) {
+void HolyThread::CloseFd(std::shared_ptr<PinkConn> conn) {
   close(conn->fd());
   handle_->FdClosedHandle(conn->fd(), conn->ip_port());
 }
@@ -210,7 +217,6 @@ void HolyThread::Cleanup() {
   slash::WriteLock l(&rwlock_);
   for (auto& iter : conns_) {
     CloseFd(iter.second);
-    delete iter.second;
   }
   conns_.clear();
 }
@@ -256,5 +262,4 @@ extern ServerThread *NewHolyThread(
     int cron_interval, const ServerHandle* handle) {
   return new HolyThread(bind_ips, port, conn_factory, cron_interval, handle);
 }
-
 };  // namespace pink

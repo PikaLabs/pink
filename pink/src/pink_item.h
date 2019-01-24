@@ -15,9 +15,10 @@ namespace pink {
 class PinkItem {
  public:
   PinkItem() {}
-  PinkItem(const int fd, const std::string &ip_port)
+  PinkItem(const int fd, const std::string &ip_port, const NotifyType& type = kNotiConnect)
       : fd_(fd),
-        ip_port_(ip_port) {
+        ip_port_(ip_port),
+        notify_type_(type) {
   }
 
   int fd() const {
@@ -27,9 +28,14 @@ class PinkItem {
     return ip_port_;
   }
 
+  NotifyType notify_type() const {
+    return notify_type_;
+  }
+
  private:
   int fd_;
   std::string ip_port_;
+  NotifyType notify_type_;
 };
 
 }  // namespace pink

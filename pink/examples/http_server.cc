@@ -62,12 +62,13 @@ class MyHTTPHandles : public pink::HTTPHandles {
 
 class MyConnFactory : public ConnFactory {
  public:
-  virtual PinkConn* NewPinkConn(int connfd, const std::string& ip_port,
-                                ServerThread* thread,
-                                void* worker_specific_data) const {
+  virtual std::shared_ptr<PinkConn> NewPinkConn(int connfd, const std::string& ip_port,
+                                                Thread* thread,
+                                                void* worker_specific_data,
+                                                PinkEpoll* pink_epoll) const {
     auto my_handles = std::make_shared<MyHTTPHandles>();
-    return new pink::HTTPConn(connfd, ip_port, thread, my_handles,
-                              worker_specific_data);
+    return std::make_shared<pink::HTTPConn>(connfd, ip_port, thread, my_handles,
+                                       worker_specific_data);
   }
 };
 

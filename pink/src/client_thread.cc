@@ -23,29 +23,61 @@ namespace pink {
 
 using slash::Status;
 
-ClientThread::ClientThread(ConnFactory* conn_factory, int cron_interval, int keepalive_timeout)
+ClientThread::ClientThread(ConnFactory* conn_factory, int cron_interval, int keepalive_timeout, ClientHandle* handle, void* private_data)
     : keepalive_timeout_(keepalive_timeout),
       cron_interval_(cron_interval),
+      handle_(handle),
+      own_handle_(NULL),
+      private_data_(private_data),
       pink_epoll_(NULL),
       conn_factory_(conn_factory) {
 }
 
 ClientThread::~ClientThread() {
-  delete(pink_epoll_);
 }
 
 int ClientThread::StartThread() {
+  if (!handle_) {
+    own_handle_ = new ClientHandle();
+    handle_ = own_handle_;
+  }
+  int res = handle_->CreateWorkerSpecificData(&private_data_);
+  if (res != 0) {
+    return res;
+  }
   pink_epoll_ = new PinkEpoll();
   return Thread::StartThread();
 }
 
-void ClientThread::Write(const std::string& ip, const int port, const std::string& msg) {
+int ClientThread::StopThread() {
+  if (private_data_) {
+    int res = handle_->DeleteWorkerSpecificData(private_data_);
+    if (res != 0) {
+      return res;
+    }
+    private_data_ = nullptr;
+  }
+  if (own_handle_) {
+    delete(own_handle_);
+  }
+  delete(pink_epoll_);
+  return Thread::StopThread();
+}
+
+Status ClientThread::Write(const std::string& ip, const int port, const std::string& msg) {
   std::string ip_port = ip + ":" + std::to_string(port);
+  if (!handle_->AccessHandle(ip_port)) {
+    return Status::Corruption(ip_port + " is baned by user!");
+  }
   {
   slash::MutexLock l(&mu_);
+  if (to_send_[ip_port].size() > kConnWriteBuf) {
+    return Status::Corruption("Connection buffer over maximum size");
+  }
   to_send_[ip_port] += msg;
   }
   NotifyWrite(ip_port);
+  return Status::OK();
 }
 
 void ClientThread::ProcessConnectStatus(PinkFiredEvent* pfe, int* should_close) {
@@ -104,7 +136,7 @@ Status ClientThread::ScheduleConnect(const std::string& dst_ip, int dst_port) {
 
     if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
       if (errno == EHOSTUNREACH) {
-        close(sockfd);
+        CloseFd(sockfd, dst_ip + ":" + std::to_string(dst_port));
         continue;
       } else if (errno == EINPROGRESS ||
                  errno == EAGAIN ||
@@ -114,7 +146,7 @@ Status ClientThread::ScheduleConnect(const std::string& dst_ip, int dst_port) {
         freeaddrinfo(servinfo);
         return Status::OK();
       } else {
-        close(sockfd);
+        CloseFd(sockfd, dst_ip + ":" + std::to_string(dst_port));
         freeaddrinfo(servinfo);
         return Status::IOError("EHOSTUNREACH",
                                "The target host cannot be reached");
@@ -149,6 +181,12 @@ Status ClientThread::ScheduleConnect(const std::string& dst_ip, int dst_port) {
 
 void ClientThread::CloseFd(std::shared_ptr<PinkConn> conn) {
   close(conn->fd());
+  handle_->FdClosedHandle(conn->fd(), conn->ip_port());
+}
+
+void ClientThread::CloseFd(int fd, const std::string& ip_port) {
+  close(fd);
+  handle_->FdClosedHandle(fd, ip_port);
 }
 
 void ClientThread::DoCronTask() {
@@ -170,6 +208,7 @@ void ClientThread::DoCronTask() {
       if (connecting_fds_.count(conn->fd())) {
         connecting_fds_.erase(conn->fd());
       }
+      handle_->FdTimeoutHandle(conn->fd(), conn->ip_port());
       iter = fd_conns_.erase(iter);
       continue;
     }
@@ -294,6 +333,9 @@ void *ClientThread::ThreadMain() {
         timeout = (when.tv_sec - now.tv_sec) * 1000 +
           (when.tv_usec - now.tv_usec) / 1000;
       } else {
+        // do user defined cron
+        handle_->CronHandle();
+
         DoCronTask();
         when.tv_sec = now.tv_sec + (cron_interval_ / 1000);
         when.tv_usec = now.tv_usec + ((cron_interval_ % 1000) * 1000);

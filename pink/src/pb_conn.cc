@@ -22,13 +22,12 @@ PbConn::PbConn(const int fd, const std::string &ip_port, Thread *thread) :
   connStatus_(kHeader),
   wbuf_len_(0),
   wbuf_pos_(0) {
+  response_.reserve(DEFAULT_WBUF_SIZE);
   rbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * kProtoMaxMessage));
-  wbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * kProtoMaxMessage));
 }
 
 PbConn::~PbConn() {
   free(rbuf_);
-  free(wbuf_);
 }
 
 // Msg is [ length(COMMAND_HEADER_LENGTH) | body(length bytes) ]
@@ -111,17 +110,18 @@ ReadStatus PbConn::GetRequest() {
 }
 
 WriteStatus PbConn::SendReply() {
-  if (!BuildObuf().ok()) {
-    return kWriteError;
-  }
   ssize_t nwritten = 0;
+  wbuf_len_ = response_.size();
   while (wbuf_len_ > 0) {
-    nwritten = write(fd(), wbuf_ + wbuf_pos_, wbuf_len_ - wbuf_pos_);
+    nwritten = write(fd(), response_.data() + wbuf_pos_, wbuf_len_ - wbuf_pos_);
     if (nwritten <= 0) {
       break;
     }
     wbuf_pos_ += nwritten;
     if (wbuf_pos_ == wbuf_len_) {
+      std::string buf;
+      buf.reserve(DEFAULT_WBUF_SIZE); // for now 256k
+      response_.swap(buf);
       wbuf_len_ = 0;
       wbuf_pos_ = 0;
     }
@@ -141,18 +141,18 @@ WriteStatus PbConn::SendReply() {
   }
 }
 
-Status PbConn::BuildObuf() {
-  wbuf_len_ = res_->ByteSize();
-  if (wbuf_len_ > kProtoMaxMessage - 4
-      || !(res_->SerializeToArray(wbuf_ + 4, wbuf_len_))) {
-    return Status::Corruption("Serialize to buffer failed");
-  }
-  uint32_t u;
-  u = htonl(wbuf_len_);
-  memcpy(wbuf_, &u, sizeof(uint32_t));
-  wbuf_len_ += COMMAND_HEADER_LENGTH;
+int PbConn::WriteResp(const std::string& resp) {
+  std::string tag;
+  BuildInternalTag(resp, &tag);
+  response_ = response_ + (tag + resp);
+  set_is_reply(true);
+  return 0;
+}
 
-  return Status::OK();
+void PbConn::BuildInternalTag(const std::string& resp, std::string* tag) {
+  uint32_t resp_size = resp.size();
+  resp_size = htonl(resp_size);
+  *tag = std::string(reinterpret_cast<char*>(&resp_size), 4);
 }
 
 }  // namespace pink

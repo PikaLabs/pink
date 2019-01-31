@@ -160,9 +160,10 @@ WriteStatus RedisConn::SendReply() {
   }
 }
 
-void RedisConn::WriteResp(const std::string& resp) {
+int RedisConn::WriteResp(const std::string& resp) {
   response_.append(resp);
   set_is_reply(true);
+  return 0;
 }
 
 void RedisConn::TryResizeBuffer() {

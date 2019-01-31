@@ -38,7 +38,9 @@ class PinkConn : public std::enable_shared_from_this<PinkConn> {
 
   virtual ReadStatus GetRequest() = 0;
   virtual WriteStatus SendReply() = 0;
-  virtual void WriteResp(const std::string& resp) { }
+  virtual int WriteResp(const std::string& resp) {
+    return 0;
+  }
 
   virtual void TryResizeBuffer() {}
 

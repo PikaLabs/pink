@@ -301,7 +301,10 @@ void ClientThread::ProcessNotifyEvents(const PinkFiredEvent* pfe) {
           to_send_.erase(iter);
           }
           // this should be append write
-          ipport_conns_[ip_port]->WriteResp(msg);
+          if (ipport_conns_[ip_port]->WriteResp(msg)) {
+            to_send_[ip_port] += msg;
+            NotifyWrite(ip_port);
+          }
         }
       }
     }

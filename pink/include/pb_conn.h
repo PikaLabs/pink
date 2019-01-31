@@ -25,6 +25,7 @@ class PbConn: public PinkConn {
 
   ReadStatus GetRequest() override;
   WriteStatus SendReply() override;
+  int WriteResp(const std::string& resp) override ;
 
   /*
    * The Variable need by read the buf,
@@ -37,8 +38,6 @@ class PbConn: public PinkConn {
   int32_t remain_packet_len_;
 
   ConnStatus connStatus_;
-
-  google::protobuf::Message *res_;
 
  protected:
   // NOTE: if this function return non 0, the the server will close this connection
@@ -64,14 +63,17 @@ class PbConn: public PinkConn {
   // the service logic error we should put it in res_, and return 0
   // since this is the service logic error, not the network error.
   // this connection we can use again.
-  // 
+
+
+  // If you want to send response back, build your bp version response yourself,
+  // serializeToString and invoke WriteResp.
   virtual int DealMessage() = 0;
 
  private:
-  char* wbuf_;
   uint32_t wbuf_len_;
   uint32_t wbuf_pos_;
-  virtual Status BuildObuf();
+  std::string response_;
+  virtual void BuildInternalTag(const std::string& resp, std::string* tag);
 };
 
 }  // namespace pink

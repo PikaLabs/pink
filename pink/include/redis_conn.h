@@ -35,7 +35,7 @@ class RedisConn: public PinkConn {
 
   virtual ReadStatus GetRequest();
   virtual WriteStatus SendReply();
-  virtual void WriteResp(const std::string& resp);
+  virtual int WriteResp(const std::string& resp);
 
   void TryResizeBuffer() override;
   void SetHandleType(const HandleType& handle_type);

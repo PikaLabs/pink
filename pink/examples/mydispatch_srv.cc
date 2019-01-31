@@ -45,8 +45,9 @@ int MyConn::DealMessage() {
   ping_res_.set_res(11234);
   ping_res_.set_mess("heiheidfdfdf");
   printf ("DealMessage receive (%s)\n", ping_res_.mess().c_str());
-  res_ = &ping_res_;
-  set_is_reply(true);
+  std::string res;
+  ping_res_.SerializeToString(&res);
+  WriteResp(res);
   return 0;
 }
 

@@ -51,8 +51,9 @@ int MyConn::DealMessage() {
   ping_res_.Clear();
   ping_res_.set_res(11234);
   ping_res_.set_mess("heiheidfdfdf");
-  res_ = &ping_res_;
-  set_is_reply(true);
+  std::string res;
+  ping_res_.SerializeToString(&res);
+  WriteResp(res);
   return 0;
 }
 

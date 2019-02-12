@@ -125,7 +125,7 @@ class ClientThread : public Thread {
   int keepalive_timeout_;
   int cron_interval_;
   ClientHandle* handle_;
-  ClientHandle* own_handle_;
+  bool own_handle_;
   void* private_data_;
 
   /*

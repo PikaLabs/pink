@@ -27,7 +27,7 @@ ClientThread::ClientThread(ConnFactory* conn_factory, int cron_interval, int kee
     : keepalive_timeout_(keepalive_timeout),
       cron_interval_(cron_interval),
       handle_(handle),
-      own_handle_(NULL),
+      own_handle_(false),
       private_data_(private_data),
       pink_epoll_(NULL),
       conn_factory_(conn_factory) {
@@ -38,9 +38,10 @@ ClientThread::~ClientThread() {
 
 int ClientThread::StartThread() {
   if (!handle_) {
-    own_handle_ = new ClientHandle();
-    handle_ = own_handle_;
+    handle_ = new ClientHandle();
+    own_handle_ = true;
   }
+  own_handle_ = false;
   int res = handle_->CreateWorkerSpecificData(&private_data_);
   if (res != 0) {
     return res;
@@ -58,9 +59,8 @@ int ClientThread::StopThread() {
     private_data_ = nullptr;
   }
   if (own_handle_) {
-    delete(own_handle_);
+    delete handle_;
   }
-  delete(pink_epoll_);
   return Thread::StopThread();
 }
 

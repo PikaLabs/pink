@@ -23,7 +23,8 @@ PbConn::PbConn(const int fd, const std::string &ip_port, Thread *thread) :
   wbuf_len_(0),
   wbuf_pos_(0) {
   response_.reserve(DEFAULT_WBUF_SIZE);
-  rbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * kProtoMaxMessage));
+  rbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * PB_IOBUF_LEN));
+  rbuf_len_ = PB_IOBUF_LEN;
 }
 
 PbConn::~PbConn() {
@@ -38,7 +39,7 @@ ReadStatus PbConn::GetRequest() {
     switch (connStatus_) {
       case kHeader: {
         ssize_t nread = read(
-            fd(), rbuf_ + rbuf_len_, COMMAND_HEADER_LENGTH - rbuf_len_);
+            fd(), rbuf_ + cur_pos_, COMMAND_HEADER_LENGTH - cur_pos_);
         if (nread == -1) {
           if (errno == EAGAIN) {
             return kReadHalf;
@@ -48,14 +49,13 @@ ReadStatus PbConn::GetRequest() {
         } else if (nread == 0) {
           return kReadClose;
         } else {
-          rbuf_len_ += nread;
-          if (rbuf_len_ - cur_pos_ == COMMAND_HEADER_LENGTH) {
+          cur_pos_ += nread;
+          if (cur_pos_ == COMMAND_HEADER_LENGTH) {
             uint32_t integer = 0;
             memcpy(reinterpret_cast<char*>(&integer),
-                   rbuf_ + cur_pos_, sizeof(uint32_t));
+                   rbuf_, sizeof(uint32_t));
             header_len_ = ntohl(integer);
             remain_packet_len_ = header_len_;
-            cur_pos_ += COMMAND_HEADER_LENGTH;
             connStatus_ = kPacket;
             continue;
           }
@@ -63,30 +63,38 @@ ReadStatus PbConn::GetRequest() {
         }
       }
       case kPacket: {
-        if (header_len_ >= kProtoMaxMessage - COMMAND_HEADER_LENGTH) {
-          return kFullError;
-        } else {
-          // read msg body
-          ssize_t nread = read(fd(), rbuf_ + rbuf_len_, remain_packet_len_);
-          if (nread == -1) {
-            if (errno == EAGAIN) {
-              return kReadHalf;
-            } else {
-              return kReadError;
+        if (header_len_ > rbuf_len_ - COMMAND_HEADER_LENGTH) {
+          uint32_t new_size = header_len_ + COMMAND_HEADER_LENGTH;
+          if (new_size < kProtoMaxMessage) {
+            rbuf_ = reinterpret_cast<char *>(realloc(rbuf_, sizeof(char) * new_size));
+            if (rbuf_ == NULL) {
+              return kFullError;
             }
-          } else if (nread == 0) {
-            return kReadClose;
+            rbuf_len_ = new_size;
+            log_info("Thread_id %ld Expand rbuf to %u, cur_pos_ %u\n", pthread_self(), new_size, cur_pos_);
+          } else {
+            return kFullError;
           }
-
-          rbuf_len_ += nread;
-          remain_packet_len_ -= nread;
-          if (remain_packet_len_ == 0) {
-            cur_pos_ = rbuf_len_;
-            connStatus_ = kComplete;
-            continue;
-          }
-          return kReadHalf;
         }
+        // read msg body
+        ssize_t nread = read(fd(), rbuf_ + cur_pos_, remain_packet_len_);
+        if (nread == -1) {
+          if (errno == EAGAIN) {
+            return kReadHalf;
+          } else {
+            return kReadError;
+          }
+        } else if (nread == 0) {
+          return kReadClose;
+        }
+
+        cur_pos_ += nread;
+        remain_packet_len_ -= nread;
+        if (remain_packet_len_ == 0) {
+          connStatus_ = kComplete;
+          continue;
+        }
+        return kReadHalf;
       }
       case kComplete: {
         if (DealMessage() != 0) {
@@ -94,7 +102,6 @@ ReadStatus PbConn::GetRequest() {
         }
         connStatus_ = kHeader;
         cur_pos_ = 0;
-        rbuf_len_ = 0;
         return kReadAll;
       }
       // Add this switch case just for delete compile warning
@@ -153,6 +160,23 @@ void PbConn::BuildInternalTag(const std::string& resp, std::string* tag) {
   uint32_t resp_size = resp.size();
   resp_size = htonl(resp_size);
   *tag = std::string(reinterpret_cast<char*>(&resp_size), 4);
+}
+
+void PbConn::TryResizeBuffer() {
+  struct timeval now;
+  gettimeofday(&now, nullptr);
+  int idletime = now.tv_sec - last_interaction().tv_sec;
+  if (rbuf_len_ > PB_IOBUF_LEN &&
+      ((rbuf_len_ / (cur_pos_ + 1)) > 2 || idletime > 2)) {
+    uint32_t new_size =
+      ((cur_pos_ + PB_IOBUF_LEN) / PB_IOBUF_LEN) * PB_IOBUF_LEN;
+    if (new_size < rbuf_len_) {
+      rbuf_ = static_cast<char*>(realloc(rbuf_, new_size));
+      rbuf_len_ = new_size;
+      log_info("Thread_id %ld Shrink rbuf to %u, cur_pos_: %u\n",
+               pthread_self(), rbuf_len_, cur_pos_);
+    }
+  }
 }
 
 }  // namespace pink

@@ -16,8 +16,8 @@ namespace pink {
 #define PINK_MAX_MESSAGE 1024
 #define PINK_NAME_LEN 1024
 
-const int kProtoMaxMessage = 64 * 1024 * 1024;  // 64MB
-
+const int kProtoMaxMessage = 512 * 1024 * 1024;  // 512MB
+#define PB_IOBUF_LEN  67108864 // 64MB
 /*
  * The pb head and code length
  */

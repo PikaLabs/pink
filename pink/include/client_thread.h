@@ -20,7 +20,7 @@
 // remove 'unused parameter' warning
 #define UNUSED(expr) do { (void)(expr); } while (0)
 
-#define kConnWriteBuf 1024*1024*100  // cache 100 MB data per connection
+#define kConnWriteBuf (1024*1024*100)  // cache 100 MB data per connection
 
 namespace pink {
 

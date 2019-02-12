@@ -213,6 +213,9 @@ void ClientThread::DoCronTask() {
       continue;
     }
 
+    // Maybe resize connection buffer
+    conn->TryResizeBuffer();
+
     ++iter;
   }
 }

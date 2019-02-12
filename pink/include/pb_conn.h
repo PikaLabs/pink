@@ -25,6 +25,7 @@ class PbConn: public PinkConn {
 
   ReadStatus GetRequest() override;
   WriteStatus SendReply() override;
+  void TryResizeBuffer() override;
   int WriteResp(const std::string& resp) override ;
 
   /*

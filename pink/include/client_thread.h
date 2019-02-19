@@ -12,6 +12,7 @@
 #include <string>
 #include <map>
 #include <memory>
+#include <vector>
 
 #include "slash/include/slash_status.h"
 #include "slash/include/slash_mutex.h"
@@ -136,7 +137,7 @@ class ClientThread : public Thread {
   ConnFactory *conn_factory_;
 
   slash::Mutex mu_;
-  std::map<std::string, std::string> to_send_;  // ip+:+port, to_send_msg
+  std::map<std::string, std::vector<std::string>> to_send_;  // ip+":"+port, to_send_msg
 
   std::map<int, std::shared_ptr<PinkConn>> fd_conns_;
   std::map<std::string, std::shared_ptr<PinkConn>> ipport_conns_;

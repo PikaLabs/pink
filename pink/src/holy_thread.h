@@ -24,13 +24,13 @@ class HolyThread: public ServerThread {
  public:
   // This type thread thread will listen and work self list redis thread
   HolyThread(int port, ConnFactory* conn_factory,
-             int cron_interval = 0, const ServerHandle* handle = nullptr);
+             int cron_interval = 0, const ServerHandle* handle = nullptr, bool async = true);
   HolyThread(const std::string& bind_ip, int port,
              ConnFactory* conn_factory,
-             int cron_interval = 0, const ServerHandle* handle = nullptr);
+             int cron_interval = 0, const ServerHandle* handle = nullptr, bool async = true);
   HolyThread(const std::set<std::string>& bind_ips, int port,
              ConnFactory* conn_factory,
-             int cron_interval = 0, const ServerHandle* handle = nullptr);
+             int cron_interval = 0, const ServerHandle* handle = nullptr, bool async = true);
   virtual ~HolyThread();
 
   virtual int StartThread() override;
@@ -60,6 +60,7 @@ class HolyThread: public ServerThread {
   void* private_data_;
 
   std::atomic<int> keepalive_timeout_;  // keepalive second
+  bool async_;
 
   void DoCronTask() override;
 

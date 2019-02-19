@@ -71,10 +71,14 @@ Status ClientThread::Write(const std::string& ip, const int port, const std::str
   }
   {
   slash::MutexLock l(&mu_);
-  if (to_send_[ip_port].size() > kConnWriteBuf) {
+  size_t size = 0;
+  for (auto& str : to_send_[ip_port]) {
+    size += str.size();
+  }
+  if (size > kConnWriteBuf) {
     return Status::Corruption("Connection buffer over maximum size");
   }
-  to_send_[ip_port] += msg;
+  to_send_[ip_port].push_back(msg);
   }
   NotifyWrite(ip_port);
   return Status::OK();
@@ -227,7 +231,11 @@ void ClientThread::InternalDebugPrint() {
   log_info("To send map: \n");
   for (const auto& to_send : to_send_) {
     UNUSED(to_send);
-    log_info("%s %s\n", to_send.first.c_str(), to_send.second.c_str());
+    const std::vector<std::string>& tmp = to_send.second;
+    for (const auto& tmp_to_send : tmp) {
+      UNUSED(tmp_to_send);
+      log_info("%s %s\n", to_send.first.c_str(), tmp_to_send.c_str());
+    }
   }
   }
   log_info("Ipport conn map: \n");
@@ -292,21 +300,21 @@ void ClientThread::ProcessNotifyEvents(const PinkFiredEvent* pfe) {
             // connection exist
             pink_epoll_->PinkModEvent(ipport_conns_[ip_port]->fd(), 0, EPOLLOUT | EPOLLIN);
           }
-          // get msg from to_send_
-          std::string msg;
           {
           slash::MutexLock l(&mu_);
           auto iter = to_send_.find(ip_port);
           if (iter == to_send_.end()) {
             continue;
           }
-          msg = iter->second;
-          to_send_.erase(iter);
+          // get msg from to_send_
+          std::vector<std::string>& msgs = iter->second;
+          for (auto& msg : msgs) {
+            if (ipport_conns_[ip_port]->WriteResp(msg)) {
+              to_send_[ip_port].push_back(msg);
+              NotifyWrite(ip_port);
+            }
           }
-          // this should be append write
-          if (ipport_conns_[ip_port]->WriteResp(msg)) {
-            to_send_[ip_port] += msg;
-            NotifyWrite(ip_port);
+          to_send_.erase(iter);
           }
         }
       }

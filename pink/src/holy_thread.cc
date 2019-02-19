@@ -16,25 +16,28 @@ namespace pink {
 
 HolyThread::HolyThread(int port,
                        ConnFactory* conn_factory,
-                       int cron_interval, const ServerHandle* handle)
+                       int cron_interval, const ServerHandle* handle, bool async)
     : ServerThread::ServerThread(port, cron_interval, handle),
       conn_factory_(conn_factory),
       private_data_(nullptr),
-      keepalive_timeout_(kDefaultKeepAliveTime) {
+      keepalive_timeout_(kDefaultKeepAliveTime),
+      async_(async) {
 }
 
 HolyThread::HolyThread(const std::string& bind_ip, int port,
                        ConnFactory* conn_factory,
-                       int cron_interval, const ServerHandle* handle)
+                       int cron_interval, const ServerHandle* handle, bool async)
     : ServerThread::ServerThread(bind_ip, port, cron_interval, handle),
-      conn_factory_(conn_factory) {
+      conn_factory_(conn_factory),
+      async_(async) {
 }
 
 HolyThread::HolyThread(const std::set<std::string>& bind_ips, int port,
                        ConnFactory* conn_factory,
-                       int cron_interval, const ServerHandle* handle)
+                       int cron_interval, const ServerHandle* handle, bool async)
     : ServerThread::ServerThread(bind_ips, port, cron_interval, handle),
-      conn_factory_(conn_factory) {
+      conn_factory_(conn_factory),
+      async_(async) {
 }
 
 HolyThread::~HolyThread() {
@@ -128,29 +131,57 @@ void HolyThread::HandleConnEvent(PinkFiredEvent *pfe) {
     }
   }
   in_conn = iter->second;
-  if (pfe->mask & EPOLLIN) {
-    ReadStatus read_status = in_conn->GetRequest();
-    struct timeval now;
-    gettimeofday(&now, nullptr);
-    in_conn->set_last_interaction(now);
-    if (read_status == kReadAll) {
-      pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLOUT);
-    } else if (read_status == kReadHalf) {
-      return;
-    } else {
-      // kReadError kReadClose kFullError kParseError kDealError
-      should_close = 1;
+  if (async_) {
+    if (pfe->mask & EPOLLIN) {
+      ReadStatus read_status = in_conn->GetRequest();
+      struct timeval now;
+      gettimeofday(&now, nullptr);
+      in_conn->set_last_interaction(now);
+      if (read_status == kReadAll) {
+      // do nothing still watch EPOLLIN
+      } else if (read_status == kReadHalf) {
+        return;
+      } else {
+        // kReadError kReadClose kFullError kParseError kDealError
+        should_close = 1;
+      }
     }
-  }
-  if ((pfe->mask & EPOLLOUT) && in_conn->is_reply()) {
-    WriteStatus write_status = in_conn->SendReply();
-    if (write_status == kWriteAll) {
-      in_conn->set_is_reply(false);
-      pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLIN);
-    } else if (write_status == kWriteHalf) {
-      return;
-    } else if (write_status == kWriteError) {
-      should_close = 1;
+    if ((pfe->mask & EPOLLOUT) && in_conn->is_reply()) {
+      WriteStatus write_status = in_conn->SendReply();
+      if (write_status == kWriteAll) {
+        in_conn->set_is_reply(false);
+        pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLIN);
+      } else if (write_status == kWriteHalf) {
+        return;
+      } else if (write_status == kWriteError) {
+        should_close = 1;
+      }
+    }
+  } else {
+    if (pfe->mask & EPOLLIN) {
+      ReadStatus getRes = in_conn->GetRequest();
+      struct timeval now;
+      gettimeofday(&now, nullptr);
+      in_conn->set_last_interaction(now);
+      if (getRes != kReadAll && getRes != kReadHalf) {
+        // kReadError kReadClose kFullError kParseError kDealError
+        should_close = 1;
+      } else if (in_conn->is_reply()) {
+        pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLOUT);
+      } else {
+        return;
+      }
+    }
+    if (pfe->mask & EPOLLOUT) {
+      WriteStatus write_status = in_conn->SendReply();
+      if (write_status == kWriteAll) {
+        in_conn->set_is_reply(false);
+        pink_epoll_->PinkModEvent(pfe->fd, 0, EPOLLIN);
+      } else if (write_status == kWriteHalf) {
+        return;
+      } else if (write_status == kWriteError) {
+        should_close = 1;
+      }
     }
   }
   if ((pfe->mask & EPOLLERR) || (pfe->mask & EPOLLHUP) || should_close) {

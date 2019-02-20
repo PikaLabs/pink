@@ -13,8 +13,8 @@
 
 namespace pink {
 
-PbConn::PbConn(const int fd, const std::string &ip_port, Thread *thread) :
-  PinkConn(fd, ip_port, thread),
+PbConn::PbConn(const int fd, const std::string &ip_port, Thread *thread, PinkEpoll* epoll) :
+  PinkConn(fd, ip_port, thread, epoll),
   header_len_(-1),
   cur_pos_(0),
   rbuf_len_(0),
@@ -118,6 +118,8 @@ ReadStatus PbConn::GetRequest() {
 
 WriteStatus PbConn::SendReply() {
   ssize_t nwritten = 0;
+  {
+  slash::MutexLock l(&resp_mu_);
   wbuf_len_ = response_.size();
   while (wbuf_len_ > 0) {
     nwritten = write(fd(), response_.data() + wbuf_pos_, wbuf_len_ - wbuf_pos_);
@@ -132,6 +134,7 @@ WriteStatus PbConn::SendReply() {
       wbuf_len_ = 0;
       wbuf_pos_ = 0;
     }
+  }
   }
   if (nwritten == -1) {
     if (errno == EAGAIN) {
@@ -151,6 +154,7 @@ WriteStatus PbConn::SendReply() {
 int PbConn::WriteResp(const std::string& resp) {
   std::string tag;
   BuildInternalTag(resp, &tag);
+  slash::MutexLock l(&resp_mu_);
   response_ = response_ + (tag + resp);
   set_is_reply(true);
   return 0;
@@ -177,6 +181,15 @@ void PbConn::TryResizeBuffer() {
                pthread_self(), rbuf_len_, cur_pos_);
     }
   }
+}
+
+void PbConn::NotifyWrite() {
+  pink::PinkItem ti(fd(), ip_port(), pink::kNotiWrite);
+  pink_epoll()->notify_queue_lock();
+  std::queue<pink::PinkItem> *q = &(pink_epoll()->notify_queue_);
+  q->push(ti);
+  pink_epoll()->notify_queue_unlock();
+  write(pink_epoll()->notify_send_fd(), "", 1);
 }
 
 }  // namespace pink

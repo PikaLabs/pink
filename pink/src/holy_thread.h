@@ -55,8 +55,6 @@ class HolyThread: public ServerThread {
 
   void ProcessNotifyEvents(const pink::PinkFiredEvent* pfe) override;
 
-  int Write(const std::string& msg, const std::string& ip_port, int fd);
-
  private:
   mutable slash::RWMutex rwlock_; /* For external statistics */
   std::map<int, std::shared_ptr<PinkConn>> conns_;
@@ -66,9 +64,6 @@ class HolyThread: public ServerThread {
 
   std::atomic<int> keepalive_timeout_;  // keepalive second
   bool async_;
-  slash::Mutex write_buf_mu_;
-  // used to cache write response
-  std::map<int, std::vector<std::string>> write_buf_;
 
   void DoCronTask() override;
 
@@ -80,8 +75,6 @@ class HolyThread: public ServerThread {
 
   void CloseFd(std::shared_ptr<PinkConn> conn);
   void Cleanup();
-
-  void NotifyWrite(const std::string& ip_port, int fd);
 };  // class HolyThread
 
 

@@ -106,7 +106,7 @@ int HolyThread::StopThread() {
 
 void HolyThread::HandleNewConn(const int connfd, const std::string &ip_port) {
   std::shared_ptr<PinkConn> tc = conn_factory_->NewPinkConn(
-      connfd, ip_port, this, private_data_);
+      connfd, ip_port, this, private_data_, pink_epoll_);
   tc->SetNonblock();
   {
     slash::WriteLock l(&rwlock_);
@@ -295,40 +295,11 @@ void HolyThread::ProcessNotifyEvents(const pink::PinkFiredEvent* pfe) {
         int fd = ti.fd();
         if (ti.notify_type() == pink::kNotiWrite) {
           std::shared_ptr<pink::PinkConn> conn = get_conn(fd);
-          {
-          slash::MutexLock l(&write_buf_mu_);
-          for(const std::string& one_piece : write_buf_[fd]) {
-            conn->WriteResp(one_piece);
-          }
-          write_buf_.erase(fd);
           pink_epoll_->PinkModEvent(ti.fd(), 0, EPOLLOUT);
-          }
         }
       }
     }
   }
-}
-
-int HolyThread::Write(const std::string& msg, const std::string& ip_port, int fd) {
-  if (!async_) {
-    log_info("Not support in sync mode");
-    return -1;
-  }
-  {
-    slash::MutexLock l(&write_buf_mu_);
-    write_buf_[fd].push_back(msg);
-  }
-  NotifyWrite(ip_port, fd);
-  return 0;
-}
-
-void HolyThread::NotifyWrite(const std::string& ip_port, int fd) {
-  pink::PinkItem ti(fd, ip_port, pink::kNotiWrite);
-  pink_epoll_->notify_queue_lock();
-  std::queue<pink::PinkItem> *q = &(pink_epoll_->notify_queue_);
-  q->push(ti);
-  pink_epoll_->notify_queue_unlock();
-  write(pink_epoll_->notify_send_fd(), "", 1);
 }
 
 extern ServerThread *NewHolyThread(

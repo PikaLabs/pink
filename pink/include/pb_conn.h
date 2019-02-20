@@ -20,13 +20,14 @@ using slash::Status;
 
 class PbConn: public PinkConn {
  public:
-  PbConn(const int fd, const std::string &ip_port, Thread *thread);
+  PbConn(const int fd, const std::string &ip_port, Thread *thread, PinkEpoll* epoll = NULL);
   virtual ~PbConn();
 
   ReadStatus GetRequest() override;
   WriteStatus SendReply() override;
   void TryResizeBuffer() override;
   int WriteResp(const std::string& resp) override ;
+  void NotifyWrite();
 
   /*
    * The Variable need by read the buf,
@@ -66,13 +67,15 @@ class PbConn: public PinkConn {
   // this connection we can use again.
 
 
-  // If you want to send response back, build your bp version response yourself,
-  // serializeToString and invoke WriteResp.
+  // If you want to send response back, build your pb version response yourself,
+  // serializeToString and invoke WriteResp and NotifyWrite if necessary.
   virtual int DealMessage() = 0;
 
  private:
   uint32_t wbuf_len_;
   uint32_t wbuf_pos_;
+
+  slash::Mutex resp_mu_;
   std::string response_;
   virtual void BuildInternalTag(const std::string& resp, std::string* tag);
 };

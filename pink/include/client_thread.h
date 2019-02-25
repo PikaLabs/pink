@@ -90,6 +90,9 @@ class ClientHandle {
     return 0;
   }
 
+  /*
+   * DestConnectFailedHandle(...) will run the invoker's logic when socket connect failed
+   */
   virtual void DestConnectFailedHandle(std::string ip_port, std::string reason) const {
     UNUSED(ip_port);
     UNUSED(reason);

@@ -84,19 +84,23 @@ Status ClientThread::Write(const std::string& ip, const int port, const std::str
   return Status::OK();
 }
 
-void ClientThread::ProcessConnectStatus(PinkFiredEvent* pfe, int* should_close) {
+Status ClientThread::ProcessConnectStatus(PinkFiredEvent* pfe, int* should_close) {
   if ((pfe->mask & EPOLLERR) || (pfe->mask & EPOLLHUP)) {
     *should_close = 1;
+    return Status::Corruption("EPOLLERR or EPOLLHUP");
   }
   int val = 0;
   socklen_t lon = sizeof(int);
 
   if (getsockopt(pfe->fd, SOL_SOCKET, SO_ERROR, &val, &lon) == -1) {
     *should_close = 1;
+    return Status::Corruption("Get Socket opt failed");
   }
   if (val) {
     *should_close = 1;
+    return Status::Corruption("Get socket error " + std::to_string(val));
   }
+  return Status::OK();
 }
 
 void ClientThread::SetWaitConnectOnEpoll(int sockfd) {
@@ -293,6 +297,8 @@ void ClientThread::ProcessNotifyEvents(const PinkFiredEvent* pfe) {
             }
             Status s = ScheduleConnect(ip, port);
             if (!s.ok()) {
+              std::string ip_port = ip + ":" + std::to_string(port);
+              handle_->DestConnectFailedHandle(ip_port, s.ToString());
               log_info("Ip %s, port %d Connect err %s\n", ip.c_str(), port, s.ToString().c_str());
               continue;
             }
@@ -379,11 +385,15 @@ void *ClientThread::ThreadMain() {
         continue;
       }
 
+      std::shared_ptr<PinkConn> conn = iter->second;
+
       if (connecting_fds_.count(pfe->fd)) {
-        ProcessConnectStatus(pfe, &should_close);
+        Status s = ProcessConnectStatus(pfe, &should_close);
+        if (!s.ok()) {
+          handle_->DestConnectFailedHandle(conn->ip_port(), s.ToString());
+        }
         connecting_fds_.erase(pfe->fd);
       }
-      std::shared_ptr<PinkConn> conn = iter->second;
 
       if (!should_close && (pfe->mask & EPOLLOUT) && conn->is_reply()) {
         WriteStatus write_status = conn->SendReply();

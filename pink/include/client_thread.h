@@ -89,6 +89,11 @@ class ClientHandle {
     UNUSED(data);
     return 0;
   }
+
+  virtual void DestConnectFailedHandle(std::string ip_port, std::string reason) const {
+    UNUSED(ip_port);
+    UNUSED(reason);
+  }
 };
 
 
@@ -110,7 +115,7 @@ class ClientThread : public Thread {
   void InternalDebugPrint();
   // Set connect fd into epoll
   // connect condition: no EPOLLERR EPOLLHUP events,  no error in socket opt
-  void ProcessConnectStatus(PinkFiredEvent* pfe, int* should_close);
+  slash::Status ProcessConnectStatus(PinkFiredEvent* pfe, int* should_close);
   void SetWaitConnectOnEpoll(int sockfd);
 
   void NewConnection(const std::string& peer_ip, int peer_port, int sockfd);

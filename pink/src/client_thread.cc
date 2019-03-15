@@ -189,12 +189,19 @@ Status ClientThread::ScheduleConnect(const std::string& dst_ip, int dst_port) {
 
 void ClientThread::CloseFd(std::shared_ptr<PinkConn> conn) {
   close(conn->fd());
+  CleanUpConnRemaining(conn->ip_port());
   handle_->FdClosedHandle(conn->fd(), conn->ip_port());
 }
 
 void ClientThread::CloseFd(int fd, const std::string& ip_port) {
   close(fd);
+  CleanUpConnRemaining(ip_port);
   handle_->FdClosedHandle(fd, ip_port);
+}
+
+void ClientThread::CleanUpConnRemaining(const std::string& ip_port) {
+  slash::MutexLock l(&mu_);
+  to_send_.erase(ip_port);
 }
 
 void ClientThread::DoCronTask() {
@@ -288,6 +295,7 @@ void ClientThread::ProcessNotifyEvents(const PinkFiredEvent* pfe) {
           pink_epoll_->notify_queue_unlock();
         }
         std::string ip_port = ti.ip_port();
+        int fd = ti.fd();
         if (ti.notify_type() == kNotiWrite) {
           if (ipport_conns_.find(ip_port) == ipport_conns_.end()) {
             std::string ip;
@@ -322,6 +330,12 @@ void ClientThread::ProcessNotifyEvents(const PinkFiredEvent* pfe) {
           }
           to_send_.erase(iter);
           }
+        } else if (ti.notify_type() == kNotiClose) {
+          log_info("received kNotiClose\n");
+          CloseFd(fd, ip_port);
+          fd_conns_.erase(fd);
+          ipport_conns_.erase(ip_port);
+          connecting_fds_.erase(fd);
         }
       }
     }

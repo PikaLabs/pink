@@ -28,6 +28,7 @@ class PbConn: public PinkConn {
   void TryResizeBuffer() override;
   int WriteResp(const std::string& resp) override ;
   void NotifyWrite();
+  void NotifyClose();
 
   /*
    * The Variable need by read the buf,

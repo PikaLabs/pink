@@ -127,6 +127,7 @@ class ClientThread : public Thread {
   slash::Status ScheduleConnect(const std::string& dst_ip, int dst_port);
   void CloseFd(std::shared_ptr<PinkConn> conn);
   void CloseFd(int fd, const std::string& ip_port);
+  void CleanUpConnRemaining(const std::string& ip_port);
   void DoCronTask();
   void NotifyWrite(const std::string ip_port);
   void ProcessNotifyEvents(const PinkFiredEvent* pfe);

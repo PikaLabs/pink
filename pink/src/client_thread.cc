@@ -216,14 +216,16 @@ void ClientThread::DoCronTask() {
         (now.tv_sec - conn->last_interaction().tv_sec > keepalive_timeout_)) {
       log_info("Do cron task del fd %d\n", conn->fd());
       pink_epoll_->PinkDelEvent(conn->fd());
-      CloseFd(conn);
+      // did not clean up content in to_send queue
+      // will try to send remaining by reconnecting
+      close(conn->fd());
+      handle_->FdTimeoutHandle(conn->fd(), conn->ip_port());
       if (ipport_conns_.count(conn->ip_port())) {
         ipport_conns_.erase(conn->ip_port());
       }
       if (connecting_fds_.count(conn->fd())) {
         connecting_fds_.erase(conn->fd());
       }
-      handle_->FdTimeoutHandle(conn->fd(), conn->ip_port());
       iter = fd_conns_.erase(iter);
       continue;
     }

@@ -60,11 +60,11 @@ class PinkConn : public std::enable_shared_from_this<PinkConn> {
     return ip_port_;
   }
 
-  void set_is_reply(const bool is_reply) {
+  virtual void set_is_reply(const bool is_reply) {
     is_reply_ = is_reply;
   }
 
-  bool is_reply() const {
+  virtual bool is_reply() {
     return is_reply_;
   }
 

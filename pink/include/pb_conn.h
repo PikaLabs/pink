@@ -29,7 +29,8 @@ class PbConn: public PinkConn {
   int WriteResp(const std::string& resp) override ;
   void NotifyWrite();
   void NotifyClose();
-
+  void set_is_reply(const bool reply) override;
+  bool is_reply() override;
   /*
    * The Variable need by read the buf,
    * We allocate the memory when we start the server
@@ -78,6 +79,8 @@ class PbConn: public PinkConn {
 
   slash::Mutex resp_mu_;
   std::string response_;
+  slash::Mutex is_reply_mu_;
+  int64_t is_reply_;
   virtual void BuildInternalTag(const std::string& resp, std::string* tag);
 };
 

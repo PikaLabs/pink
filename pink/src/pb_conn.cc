@@ -21,7 +21,8 @@ PbConn::PbConn(const int fd, const std::string &ip_port, Thread *thread, PinkEpo
   remain_packet_len_(0),
   connStatus_(kHeader),
   wbuf_len_(0),
-  wbuf_pos_(0) {
+  wbuf_pos_(0),
+  is_reply_(0) {
   response_.reserve(DEFAULT_WBUF_SIZE);
   rbuf_ = reinterpret_cast<char *>(malloc(sizeof(char) * PB_IOBUF_LEN));
   rbuf_len_ = PB_IOBUF_LEN;
@@ -87,7 +88,6 @@ ReadStatus PbConn::GetRequest() {
         } else if (nread == 0) {
           return kReadClose;
         }
-
         cur_pos_ += nread;
         remain_packet_len_ -= nread;
         if (remain_packet_len_ == 0) {
@@ -149,6 +149,23 @@ WriteStatus PbConn::SendReply() {
   } else {
     return kWriteHalf;
   }
+}
+
+void PbConn::set_is_reply(const bool is_reply) {
+  slash::MutexLock l(&is_reply_mu_);
+  if (is_reply) {
+    is_reply_++;
+  } else {
+    is_reply_--;
+  }
+  if (is_reply_ < 0) {
+    is_reply_ = 0;
+  }
+}
+
+bool PbConn::is_reply() {
+  slash::MutexLock l(&is_reply_mu_);
+  return is_reply_ > 0;
 }
 
 int PbConn::WriteResp(const std::string& resp) {

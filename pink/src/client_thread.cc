@@ -84,6 +84,14 @@ Status ClientThread::Write(const std::string& ip, const int port, const std::str
   return Status::OK();
 }
 
+Status ClientThread::Close(const std::string& ip, const int port) {
+  {
+  slash::MutexLock l(&to_del_mu_);
+  to_del_.push_back(ip + ":" + std::to_string(port));
+  }
+  return Status::OK();
+}
+
 Status ClientThread::ProcessConnectStatus(PinkFiredEvent* pfe, int* should_close) {
   if ((pfe->mask & EPOLLERR) || (pfe->mask & EPOLLHUP)) {
     *should_close = 1;
@@ -235,6 +243,22 @@ void ClientThread::DoCronTask() {
 
     ++iter;
   }
+  {
+  slash::MutexLock l(&to_del_mu_);
+  for (auto& conn_name : to_del_) {
+    std::map<std::string, std::shared_ptr<PinkConn>>::iterator iter = ipport_conns_.find(conn_name);
+    if (iter == ipport_conns_.end()) {
+      continue;
+    }
+    std::shared_ptr<PinkConn> conn = iter->second;
+    pink_epoll_->PinkDelEvent(conn->fd());
+    CloseFd(conn);
+    fd_conns_.erase(conn->fd());
+    ipport_conns_.erase(conn->ip_port());
+    connecting_fds_.erase(conn->fd());
+  }
+  to_del_.clear();
+  }
 }
 
 void ClientThread::InternalDebugPrint() {
@@ -334,6 +358,7 @@ void ClientThread::ProcessNotifyEvents(const PinkFiredEvent* pfe) {
           }
         } else if (ti.notify_type() == kNotiClose) {
           log_info("received kNotiClose\n");
+          pink_epoll_->PinkDelEvent(fd);
           CloseFd(fd, ip_port);
           fd_conns_.erase(fd);
           ipport_conns_.erase(ip_port);

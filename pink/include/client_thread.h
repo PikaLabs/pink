@@ -111,6 +111,7 @@ class ClientThread : public Thread {
   virtual int StartThread() override;
   virtual int StopThread() override;
   slash::Status Write(const std::string& ip, const int port, const std::string& msg);
+  slash::Status Close(const std::string& ip, const int port);
 
  private:
   virtual void *ThreadMain() override;
@@ -151,6 +152,9 @@ class ClientThread : public Thread {
   std::map<int, std::shared_ptr<PinkConn>> fd_conns_;
   std::map<std::string, std::shared_ptr<PinkConn>> ipport_conns_;
   std::set<int> connecting_fds_;
+
+  slash::Mutex to_del_mu_;
+  std::vector<std::string> to_del_;
 };
 
 }  // namespace pink

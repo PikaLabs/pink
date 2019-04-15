@@ -31,9 +31,11 @@ ClientThread::ClientThread(ConnFactory* conn_factory, int cron_interval, int kee
       private_data_(private_data),
       pink_epoll_(NULL),
       conn_factory_(conn_factory) {
+  pink_epoll_ = new PinkEpoll();
 }
 
 ClientThread::~ClientThread() {
+  delete(pink_epoll_);
 }
 
 int ClientThread::StartThread() {
@@ -46,7 +48,6 @@ int ClientThread::StartThread() {
   if (res != 0) {
     return res;
   }
-  pink_epoll_ = new PinkEpoll();
   return Thread::StartThread();
 }
 
@@ -479,10 +480,6 @@ void *ClientThread::ThreadMain() {
       }
     }
   }
-
-  delete pink_epoll_;
-  pink_epoll_ = nullptr;
-
   return nullptr;
 }
 

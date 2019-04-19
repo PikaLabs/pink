@@ -294,11 +294,13 @@ void HolyThread::ProcessNotifyEvents(const pink::PinkFiredEvent* pfe) {
         std::string ip_port = ti.ip_port();
         int fd = ti.fd();
         if (ti.notify_type() == pink::kNotiWrite) {
-          std::shared_ptr<pink::PinkConn> conn = get_conn(fd);
           pink_epoll_->PinkModEvent(ti.fd(), 0, EPOLLOUT | EPOLLIN);
         } else if (ti.notify_type() == pink::kNotiClose) {
           log_info("receive noti close\n");
           std::shared_ptr<pink::PinkConn> conn = get_conn(fd);
+          if (conn == nullptr) {
+            return;
+          }
           CloseFd(conn);
           conn = nullptr;
           slash::WriteLock l(&rwlock_);

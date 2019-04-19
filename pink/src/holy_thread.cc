@@ -299,7 +299,7 @@ void HolyThread::ProcessNotifyEvents(const pink::PinkFiredEvent* pfe) {
           log_info("receive noti close\n");
           std::shared_ptr<pink::PinkConn> conn = get_conn(fd);
           if (conn == nullptr) {
-            return;
+            continue;
           }
           CloseFd(conn);
           conn = nullptr;

@@ -33,6 +33,7 @@ void BGThread::QueueClear() {
   slash::MutexLock l(&mu_);
   std::queue<BGItem>().swap(queue_);
   std::priority_queue<TimerItem>().swap(timer_queue_);
+  wsignal_.Signal();
 }
 
 void BGThread::SwallowReadyTasks() {

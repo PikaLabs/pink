@@ -66,6 +66,7 @@ ServerThread::ServerThread(int port,
       security_(false),
 #endif
       port_(port) {
+  pink_epoll_ = new PinkEpoll();
   ips_.insert("0.0.0.0");
 }
 
@@ -78,6 +79,7 @@ ServerThread::ServerThread(const std::string& bind_ip, int port,
       security_(false),
 #endif
       port_(port) {
+  pink_epoll_ = new PinkEpoll();
   ips_.insert(bind_ip);
 }
 
@@ -90,6 +92,7 @@ ServerThread::ServerThread(const std::set<std::string>& bind_ips, int port,
       security_(false),
 #endif
       port_(port) {
+  pink_epoll_ = new PinkEpoll();
   ips_ = bind_ips;
 }
 
@@ -101,6 +104,7 @@ ServerThread::~ServerThread() {
   }
 #endif
   delete(pink_epoll_);
+  pink_epoll_ = nullptr;
   for (std::vector<ServerSocket*>::iterator iter = server_sockets_.begin();
        iter != server_sockets_.end();
        ++iter) {
@@ -122,7 +126,6 @@ int ServerThread::StartThread() {
 int ServerThread::InitHandle() {
   int ret = 0;
   ServerSocket* socket_p;
-  pink_epoll_ = new PinkEpoll();
   if (ips_.find("0.0.0.0") != ips_.end()) {
     ips_.clear();
     ips_.insert("0.0.0.0");
@@ -259,8 +262,6 @@ void *ServerThread::ThreadMain() {
   }
   server_sockets_.clear();
   server_fds_.clear();
-  delete pink_epoll_;
-  pink_epoll_ = nullptr;
 
   return nullptr;
 }

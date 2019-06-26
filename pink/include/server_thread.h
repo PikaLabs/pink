@@ -125,6 +125,8 @@ class ServerThread : public Thread {
   bool security() { return security_; }
 #endif
 
+  int SetTcpNoDelay(int connfd);
+
   /*
    * StartThread will return the error code as pthread_create
    * Return 0 if success

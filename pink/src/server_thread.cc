@@ -8,6 +8,10 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <fcntl.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+
 
 #include "slash/include/xdebug.h"
 #include "pink/src/pink_epoll.h"
@@ -115,6 +119,11 @@ ServerThread::~ServerThread() {
   }
 }
 
+int ServerThread::SetTcpNoDelay(int connfd) {
+  int val = 1;
+  return setsockopt(connfd, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val));
+}
+
 int ServerThread::StartThread() {
   int ret = 0;
   ret = InitHandle();
@@ -218,6 +227,14 @@ void *ServerThread::ThreadMain() {
             continue;
           }
           fcntl(connfd, F_SETFD, fcntl(connfd, F_GETFD) | FD_CLOEXEC);
+
+          // not use nagel to avoid tcp 40ms delay
+          if (SetTcpNoDelay(connfd) == -1) {
+            log_warn("setsockopt error, errno numberis %d, error reason %s",
+                     errno, strerror(errno));
+            close(connfd);
+            continue;
+          }
 
           // Just ip
           ip_port =

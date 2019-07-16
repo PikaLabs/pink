@@ -72,6 +72,7 @@ PubSubThread::PubSubThread()
 }
 
 PubSubThread::~PubSubThread() {
+  StopThread();
   delete(pink_epoll_);
 }
 
@@ -363,7 +364,7 @@ void *PubSubThread::ThreadMain() {
   char triger[1];
 
   while (!should_stop()) {
-    nfds = pink_epoll_->PinkPoll(-1);
+    nfds = pink_epoll_->PinkPoll(PINK_CRON_INTERVAL);
     for (int i = 0; i < nfds; i++) {
       pfe = (pink_epoll_->firedevent()) + i;
       if (pfe->fd == notify_pfd_[0]) {        // New connection comming

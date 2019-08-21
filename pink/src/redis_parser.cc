@@ -391,6 +391,7 @@ RedisParserStatus RedisParser::ProcessRequestBuffer() {
 }
 
 void RedisParser::ResetCommandStatus() {
+  redis_type_ = 0;
   multibulk_len_ = 0;
   bulk_len_ = -1;
   half_argv_.clear();

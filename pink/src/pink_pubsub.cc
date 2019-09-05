@@ -63,11 +63,17 @@ PubSubThread::PubSubThread()
   if (pipe(msg_pfd_)) {
     exit(-1);
   }
+  fcntl(msg_pfd_[0], F_SETFD, fcntl(msg_pfd_[0], F_GETFD) | FD_CLOEXEC);
+  fcntl(msg_pfd_[1], F_SETFD, fcntl(msg_pfd_[1], F_GETFD) | FD_CLOEXEC);
+
   pink_epoll_->PinkAddEvent(msg_pfd_[0], EPOLLIN | EPOLLERR | EPOLLHUP);
 
   if (pipe(notify_pfd_)) {
     exit(-1);
   }
+  fcntl(notify_pfd_[0], F_SETFD, fcntl(notify_pfd_[0], F_GETFD) | FD_CLOEXEC);
+  fcntl(notify_pfd_[1], F_SETFD, fcntl(notify_pfd_[1], F_GETFD) | FD_CLOEXEC);
+
   pink_epoll_->PinkAddEvent(notify_pfd_[0], EPOLLIN | EPOLLERR | EPOLLHUP);
 }
 

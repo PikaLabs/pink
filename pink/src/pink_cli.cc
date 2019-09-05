@@ -100,6 +100,7 @@ Status PinkCli::Connect(const std::string &ip, const int port,
 
     int flags = fcntl(r->sockfd, F_GETFL, 0);
     fcntl(r->sockfd, F_SETFL, flags | O_NONBLOCK);
+    fcntl(r->sockfd, F_SETFD, fcntl(r->sockfd, F_GETFD) | FD_CLOEXEC);
 
     if (connect(r->sockfd, p->ai_addr, p->ai_addrlen) == -1) {
       if (errno == EHOSTUNREACH) {

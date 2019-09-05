@@ -40,6 +40,10 @@ PinkEpoll::PinkEpoll() : timeout_(1000) {
   }
   notify_receive_fd_ = fds[0];
   notify_send_fd_ = fds[1];
+
+  fcntl(notify_receive_fd_, F_SETFD, fcntl(notify_receive_fd_, F_GETFD) | FD_CLOEXEC);
+  fcntl(notify_send_fd_, F_SETFD, fcntl(notify_send_fd_, F_GETFD) | FD_CLOEXEC);
+
   PinkAddEvent(notify_receive_fd_, EPOLLIN | EPOLLERR | EPOLLHUP);
 }
 

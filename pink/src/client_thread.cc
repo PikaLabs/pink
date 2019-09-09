@@ -244,9 +244,15 @@ void ClientThread::DoCronTask() {
 
     ++iter;
   }
+
+  std::vector<std::string> to_del;
   {
-  slash::MutexLock l(&to_del_mu_);
-  for (auto& conn_name : to_del_) {
+    slash::MutexLock l(&to_del_mu_);
+    to_del = std::move(to_del_);
+    to_del_.clear();
+  }
+
+  for (auto& conn_name : to_del) {
     std::map<std::string, std::shared_ptr<PinkConn>>::iterator iter = ipport_conns_.find(conn_name);
     if (iter == ipport_conns_.end()) {
       continue;
@@ -257,8 +263,6 @@ void ClientThread::DoCronTask() {
     fd_conns_.erase(conn->fd());
     ipport_conns_.erase(conn->ip_port());
     connecting_fds_.erase(conn->fd());
-  }
-  to_del_.clear();
   }
 }
 

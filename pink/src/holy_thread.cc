@@ -189,52 +189,64 @@ void HolyThread::HandleConnEvent(PinkFiredEvent *pfe) {
     CloseFd(in_conn);
     in_conn = nullptr;
 
-    slash::WriteLock l(&rwlock_);
-    conns_.erase(pfe->fd);
+    {
+      slash::WriteLock l(&rwlock_);
+      conns_.erase(pfe->fd);
+    }
   }
 }
 
 void HolyThread::DoCronTask() {
   struct timeval now;
   gettimeofday(&now, NULL);
-  slash::WriteLock l(&rwlock_);
+  std::vector<std::shared_ptr<PinkConn>> to_close;
+  std::vector<std::shared_ptr<PinkConn>> to_timeout;
+  {
+    slash::WriteLock l(&rwlock_);
 
-  // Check whether close all connection
-  slash::MutexLock kl(&killer_mutex_);
-  if (deleting_conn_ipport_.count(kKillAllConnsTask)) {
-    for (auto& conn : conns_) {
-      CloseFd(conn.second);
+    // Check whether close all connection
+    slash::MutexLock kl(&killer_mutex_);
+    if (deleting_conn_ipport_.count(kKillAllConnsTask)) {
+      for (auto& conn : conns_) {
+        to_close.push_back(conn.second);
+      }
+      conns_.clear();
+      deleting_conn_ipport_.clear();
+      return;
     }
-    conns_.clear();
-    deleting_conn_ipport_.clear();
-    return;
+
+    std::map<int, std::shared_ptr<PinkConn>>::iterator iter = conns_.begin();
+    while (iter != conns_.end()) {
+      std::shared_ptr<PinkConn> conn = iter->second;
+      // Check connection should be closed
+      if (deleting_conn_ipport_.count(conn->ip_port())) {
+        to_close.push_back(conn);
+        deleting_conn_ipport_.erase(conn->ip_port());
+        iter = conns_.erase(iter);
+        continue;
+      }
+
+      // Check keepalive timeout connection
+      if (keepalive_timeout_ > 0 &&
+          (now.tv_sec - conn->last_interaction().tv_sec >
+           keepalive_timeout_)) {
+        to_timeout.push_back(conn);
+        iter = conns_.erase(iter);
+        continue;
+      }
+
+      // Maybe resize connection buffer
+      conn->TryResizeBuffer();
+
+      ++iter;
+    }
   }
-
-  std::map<int, std::shared_ptr<PinkConn>>::iterator iter = conns_.begin();
-  while (iter != conns_.end()) {
-    std::shared_ptr<PinkConn> conn = iter->second;
-    // Check connection should be closed
-    if (deleting_conn_ipport_.count(conn->ip_port())) {
-      CloseFd(conn);
-      deleting_conn_ipport_.erase(conn->ip_port());
-      iter = conns_.erase(iter);
-      continue;
-    }
-
-    // Check keepalive timeout connection
-    if (keepalive_timeout_ > 0 &&
-        (now.tv_sec - conn->last_interaction().tv_sec >
-         keepalive_timeout_)) {
-      CloseFd(conn);
-      handle_->FdTimeoutHandle(conn->fd(), conn->ip_port());
-      iter = conns_.erase(iter);
-      continue;
-    }
-
-    // Maybe resize connection buffer
-    conn->TryResizeBuffer();
-
-    ++iter;
+  for (const auto conn : to_close) {
+    CloseFd(conn);
+  }
+  for (const auto conn : to_timeout) {
+    CloseFd(conn);
+    handle_->FdTimeoutHandle(conn->fd(), conn->ip_port());
   }
 }
 
@@ -245,11 +257,15 @@ void HolyThread::CloseFd(std::shared_ptr<PinkConn> conn) {
 
 // clean all conns
 void HolyThread::Cleanup() {
-  slash::WriteLock l(&rwlock_);
-  for (auto& iter : conns_) {
+  std::map<int, std::shared_ptr<PinkConn>> to_close;
+  {
+    slash::WriteLock l(&rwlock_);
+    to_close = std::move(conns_);
+    conns_.clear();
+  }
+  for (auto& iter : to_close) {
     CloseFd(iter.second);
   }
-  conns_.clear();
 }
 
 void HolyThread::KillAllConns() {
@@ -303,8 +319,10 @@ void HolyThread::ProcessNotifyEvents(const pink::PinkFiredEvent* pfe) {
           }
           CloseFd(conn);
           conn = nullptr;
-          slash::WriteLock l(&rwlock_);
-          conns_.erase(pfe->fd);
+          {
+            slash::WriteLock l(&rwlock_);
+            conns_.erase(pfe->fd);
+          }
         }
       }
     }

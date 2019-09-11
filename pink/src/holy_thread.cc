@@ -347,4 +347,10 @@ extern ServerThread *NewHolyThread(
     int cron_interval, const ServerHandle* handle) {
   return new HolyThread(bind_ips, port, conn_factory, cron_interval, handle);
 }
+extern ServerThread *NewHolyThread(
+    const std::set<std::string>& bind_ips, int port,
+    ConnFactory *conn_factory, bool async,
+    int cron_interval, const ServerHandle* handle) {
+  return new HolyThread(bind_ips, port, conn_factory, cron_interval, handle, async);
+}
 };  // namespace pink

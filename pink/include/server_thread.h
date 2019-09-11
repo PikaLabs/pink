@@ -216,6 +216,11 @@ extern ServerThread *NewHolyThread(
     ConnFactory *conn_factory,
     int cron_interval = 0,
     const ServerHandle* handle = nullptr);
+extern ServerThread *NewHolyThread(
+    const std::set<std::string>& bind_ips, int port,
+    ConnFactory *conn_factory, bool async,
+    int cron_interval = 0,
+    const ServerHandle* handle = nullptr);
 
 /**
  * This type Dispatch thread just get Connection and then Dispatch the fd to

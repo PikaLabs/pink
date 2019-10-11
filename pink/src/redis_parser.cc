@@ -13,7 +13,7 @@
 namespace pink {
 
 static bool IsHexDigit(char ch) {
-  return (ch>='0' && ch<='9') || (ch>='a' && ch<='f') || (ch>='A' && ch<'F');
+  return (ch>='0' && ch<='9') || (ch>='a' && ch<='f') || (ch>='A' && ch<='F');
 }
 
 static int HexDigitToInt32(char ch) {

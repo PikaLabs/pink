@@ -70,12 +70,12 @@ int DispatchThread::StartThread() {
       return ret;
     }
 
+    if (!thread_name().empty()) {
+      worker_thread_[i]->set_thread_name("WorkerThread");
+    }
     ret = worker_thread_[i]->StartThread();
     if (ret != 0) {
       return ret;
-    }
-    if (!thread_name().empty()) {
-      worker_thread_[i]->set_thread_name("WorkerThread");
     }
   }
   return ServerThread::StartThread();

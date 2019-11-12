@@ -4,6 +4,7 @@
 // of patent rights can be found in the PATENTS file in the same directory.
 
 #include "pink/include/thread_pool.h"
+#include "pink/src/pink_thread_name.h"
 
 #include <sys/time.h>
 
@@ -21,6 +22,7 @@ int ThreadPool::Worker::start() {
       return -1;
     } else {
       start_.store(true);
+      SetThreadName(thread_id_, thread_pool_->thread_pool_name() + "Worker");
     }
   }
   return 0;
@@ -142,6 +144,10 @@ void ThreadPool::cur_queue_size(size_t* qsize) {
 void ThreadPool::cur_time_queue_size(size_t* qsize) {
   slash::MutexLock l(&mu_);
   *qsize = time_queue_.size();
+}
+
+std::string ThreadPool::thread_pool_name() {
+  return thread_pool_name_;
 }
 
 void ThreadPool::runInThread() {

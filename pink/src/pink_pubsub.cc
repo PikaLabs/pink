@@ -59,6 +59,7 @@ void CloseFd(std::shared_ptr<PinkConn> conn) {
 PubSubThread::PubSubThread()
       : receiver_rsignal_(&receiver_mutex_),
         receivers_(-1)  {
+  set_thread_name("PubSubThread");
   pink_epoll_ = new PinkEpoll();
   if (pipe(msg_pfd_)) {
     exit(-1);

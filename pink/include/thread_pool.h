@@ -76,6 +76,7 @@ class ThreadPool {
   size_t worker_size();
   void cur_queue_size(size_t* qsize);
   void cur_time_queue_size(size_t* qsize);
+  std::string thread_pool_name();
 
  private:
   void runInThread();

@@ -30,7 +30,8 @@ class RedisConn: public PinkConn {
             const std::string& ip_port,
             Thread* thread,
             PinkEpoll* pink_epoll = nullptr,
-            const HandleType& handle_type = kSynchronous);
+            const HandleType& handle_type = kSynchronous,
+            const int rbuf_max_len = REDIS_MAX_MESSAGE);
   virtual ~RedisConn();
 
   virtual ReadStatus GetRequest();
@@ -55,6 +56,7 @@ class RedisConn: public PinkConn {
 
   char* rbuf_;
   int rbuf_len_;
+  int rbuf_max_len_;
   int msg_peak_;
 
   uint32_t wbuf_pos_;

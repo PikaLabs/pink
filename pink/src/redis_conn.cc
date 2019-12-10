@@ -20,11 +20,13 @@ RedisConn::RedisConn(const int fd,
                      const std::string& ip_port,
                      Thread* thread,
                      PinkEpoll* pink_epoll,
-                     const HandleType& handle_type)
+                     const HandleType& handle_type,
+                     const int rbuf_max_len)
     : PinkConn(fd, ip_port, thread, pink_epoll),
       handle_type_(handle_type),
       rbuf_(nullptr),
       rbuf_len_(0),
+      rbuf_max_len_(rbuf_max_len),
       msg_peak_(0),
       wbuf_pos_(0),
       last_read_pos_(-1),
@@ -82,7 +84,7 @@ ReadStatus RedisConn::GetRequest() {
     remain = bulk_len_;
   }
   if (new_size > rbuf_len_) {
-    if (new_size > REDIS_MAX_MESSAGE) {
+    if (new_size > rbuf_max_len_) {
       return kFullError;
     }
     rbuf_ = static_cast<char*>(realloc(rbuf_, new_size));

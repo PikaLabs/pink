@@ -58,6 +58,7 @@ class RedisConn: public PinkConn {
   int rbuf_len_;
   int rbuf_max_len_;
   int msg_peak_;
+  int command_len_;
 
   uint32_t wbuf_pos_;
   std::string response_;

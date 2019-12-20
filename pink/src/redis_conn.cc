@@ -28,6 +28,7 @@ RedisConn::RedisConn(const int fd,
       rbuf_len_(0),
       rbuf_max_len_(rbuf_max_len),
       msg_peak_(0),
+      command_len_(0),
       wbuf_pos_(0),
       last_read_pos_(-1),
       bulk_len_(-1) {
@@ -110,12 +111,20 @@ ReadStatus RedisConn::GetRequest() {
   // assert(nread > 0);
   last_read_pos_ += nread;
   msg_peak_ = last_read_pos_;
+  command_len_ += nread;
+  if (command_len_ >= rbuf_max_len_) {
+    log_info("close conn command_len %d, rbuf_max_len %d", command_len_, rbuf_max_len_);
+    return kFullError;
+  }
 
   int processed_len = 0;
   RedisParserStatus ret = redis_parser_.ProcessInputBuffer(
       rbuf_ + next_read_pos, nread, &processed_len);
   ReadStatus read_status = ParseRedisParserStatus(ret);
   if (read_status == kReadAll || read_status == kReadHalf) {
+    if (read_status == kReadAll) {
+      command_len_ = 0;
+    }
     last_read_pos_ = -1;
     bulk_len_ = redis_parser_.get_bulk_len();
   }

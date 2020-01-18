@@ -118,37 +118,39 @@ ReadStatus PbConn::GetRequest() {
 
 WriteStatus PbConn::SendReply() {
   ssize_t nwritten = 0;
-  {
   slash::MutexLock l(&resp_mu_);
-  wbuf_len_ = response_.size();
-  while (wbuf_len_ > 0) {
-    nwritten = write(fd(), response_.data() + wbuf_pos_, wbuf_len_ - wbuf_pos_);
-    if (nwritten <= 0) {
-      break;
+  while (!response_buf_.empty()) {
+    std::string response = response_buf_.front();
+    wbuf_len_ = response.size();
+    uint64_t  last_pos = wbuf_pos_;
+    while (wbuf_len_ > 0) {
+      nwritten = write(fd(), response.data() + wbuf_pos_, wbuf_len_ - wbuf_pos_);
+      if (nwritten <= 0) {
+        break;
+      }
+      wbuf_pos_ += nwritten;
+      if (wbuf_pos_ == wbuf_len_) {
+        response_buf_.pop();
+        wbuf_len_ = 0;
+        wbuf_pos_ = 0;
+      }
     }
-    wbuf_pos_ += nwritten;
-    if (wbuf_pos_ == wbuf_len_) {
-      std::string buf;
-      buf.reserve(DEFAULT_WBUF_SIZE); // for now 256k
-      response_.swap(buf);
-      wbuf_len_ = 0;
-      wbuf_pos_ = 0;
+    if (nwritten == -1) {
+      if (errno == EAGAIN) {
+        std::cout << "send reply half ,queue size :" << response_buf_.size() << " send siz:" <<  wbuf_pos_ -last_pos <<std::endl;
+        return kWriteHalf;
+      } else {
+        // Here we should close the connection
+        return kWriteError;
+      }
     }
-  }
-  }
-  if (nwritten == -1) {
-    if (errno == EAGAIN) {
+    if (wbuf_len_ != 0) {
+      std::cout << "write 0 byte and write half"<< std::endl;
       return kWriteHalf;
-    } else {
-      // Here we should close the connection
-      return kWriteError;
     }
   }
-  if (wbuf_len_ == 0) {
-    return kWriteAll;
-  } else {
-    return kWriteHalf;
-  }
+  std::cout << "write all queue"<<std::endl;
+  return kWriteAll;
 }
 
 void PbConn::set_is_reply(const bool is_reply) {
@@ -169,11 +171,14 @@ bool PbConn::is_reply() {
 }
 
 int PbConn::WriteResp(const std::string& resp) {
+
   std::string tag;
   BuildInternalTag(resp, &tag);
   slash::MutexLock l(&resp_mu_);
-  response_ = response_ + (tag + resp);
+  response_buf_.push(tag);
+  response_buf_.push(resp);
   set_is_reply(true);
+  std::cout << "writeresp response_buf queue size : " << response_buf_.size()<< " response size: " << resp.size() <<std::endl;
   return 0;
 }
 

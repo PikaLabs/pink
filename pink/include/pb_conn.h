@@ -8,6 +8,7 @@
 
 #include <string>
 #include <map>
+#include <queue>
 
 #include "google/protobuf/message.h"
 #include "slash/include/slash_status.h"
@@ -79,6 +80,7 @@ class PbConn: public PinkConn {
 
   slash::Mutex resp_mu_;
   std::string response_;
+  std::queue<std::string> response_buf_;
   slash::Mutex is_reply_mu_;
   int64_t is_reply_;
   virtual void BuildInternalTag(const std::string& resp, std::string* tag);

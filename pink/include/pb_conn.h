@@ -21,6 +21,11 @@ using slash::Status;
 
 class PbConn: public PinkConn {
  public:
+    struct WriteBuf{
+        WriteBuf(const size_t item_pos = 0) : item_pos_(item_pos) {}
+        std::queue<std::string> queue_;
+        size_t item_pos_;
+    };
   PbConn(const int fd, const std::string &ip_port, Thread *thread, PinkEpoll* epoll = NULL);
   virtual ~PbConn();
 
@@ -75,12 +80,8 @@ class PbConn: public PinkConn {
   virtual int DealMessage() = 0;
 
  private:
-  uint32_t wbuf_len_;
-  uint32_t wbuf_pos_;
-
   slash::Mutex resp_mu_;
-  std::string response_;
-  std::queue<std::string> response_buf_;
+  WriteBuf write_buf_;
   slash::Mutex is_reply_mu_;
   int64_t is_reply_;
   virtual void BuildInternalTag(const std::string& resp, std::string* tag);

@@ -1,6 +1,13 @@
 CXX=g++
 LDFLAGS= -lpthread -lrt -lprotobuf
-CXXFLAGS=-O2 -std=c++11 -fno-builtin-memcmp -msse -msse4.2
+CXXFLAGS=-O2 -std=c++11 -fno-builtin-memcmp
+ARCH:=$(shell uname -p)
+ifeq ($(ARCH), aarch64)
+       CXXFLAGS+=-march=armv8-a+crc+crypto -moutline-atomics
+endif
+ifeq ($(ARCH), x86_64)
+       CXXFLAGS+=-msse -msse4.2
+endif
 
 .PHONY: clean all
 

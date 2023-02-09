@@ -339,7 +339,7 @@ WriteStatus RedisConn::SendReply() {
     }
   }
   if (nwritten == -1) {
-    if (errno == EAGAIN) {
+    if (errno == EAGAIN || errno == EWOULDBLOCK) {
       return kWriteHalf;
     } else {
       // Here we should close the connection
